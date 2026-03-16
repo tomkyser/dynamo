@@ -290,7 +290,7 @@ All 12 requirements (DOCS-01 through MEMO-03) are addressed by non-empty deliver
 - Locked decision compliance: COMPLIANT (7/7 decisions honored)
 - Anti-pattern check: PASS (no eliminated tool recommended)
 
-**One minor fix to apply:** CREATIVE-WRITING.md — add a clearer verdict line to the Recommendation section (no new research required, editorial fix only).
+**Minor fix applied (Task 2):** CREATIVE-WRITING.md — added explicit "Final verdict" section to the Recommendation with clearly labeled CONSIDER tier for professional writing and explicit v2 gap call for personal/fiction.
 
 **Phase 3 inputs ready:**
 - 5 named tool assessments with verdicts: Context7 INCLUDE, WPCS INCLUDE, GitHub CONSIDER, Playwright INCLUDE, Sequential Thinking INCLUDE

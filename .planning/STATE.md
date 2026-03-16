@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-03-16T20:33:00.790Z"
+stopped_at: Completed 02-04-PLAN.md
+last_updated: "2026-03-16T20:34:41.665Z"
 last_activity: 2026-03-16 — Plan 01-01 complete — VETTING-PROTOCOL.md and ANTI-FEATURES.md authored
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 7
-  completed_plans: 3
+  completed_plans: 6
   percent: 10
 ---
 
@@ -52,6 +52,8 @@ Progress: [█░░░░░░░░░] 10%
 *Updated after each plan completion*
 | Phase 02-research P05 | 10 | 2 tasks | 2 files |
 | Phase 02-research P02 | 4 | 2 tasks | 2 files |
+| Phase 02-research P01 | 20 | 3 tasks | 3 files |
+| Phase 02-research P04 | 6 | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -72,6 +74,12 @@ Recent decisions affecting current work:
 - [Phase 02-research]: Coexistence doc scoped to risk flagging only, no recovery procedures — per locked 02-CONTEXT.md decision
 - [Phase 02-research]: Playwright MCP INCLUDE — stateful browser automation fills gap WebFetch cannot cover; 59 tools mitigated by Tool Search lazy-loading; MEDIUM security is FEATURE for DDEV localhost testing
 - [Phase 02-research]: Sequential Thinking MCP INCLUDE — 1 tool (~150-200 tokens) near-zero overhead; revision and branching features additive to, not duplicative of, model-native reasoning; monorepo stars recorded with explicit attribution
+- [Phase 02-research]: Context7 MCP INCLUDE: 2 tools, ~300-500 token overhead, PHP/WP coverage depth deferred to Phase 3 hands-on testing
+- [Phase 02-research]: WPCS Skill INCLUDE: file-based Skill, Stars gate adapted N/A with explanation, ~30-130 token overhead, all ops via CC native tools
+- [Phase 02-research]: GitHub MCP CONSIDER: 84 tools / ~12,600 token overhead HIGH, gh CLI functional overlap documented (not duplicate), PAT scopes: repo + read:org
+- [Phase 02-04]: mcp-neo4j-cypher eliminated: 918 stars below community threshold of 1,000 — re-evaluate when stars >= 1,000
+- [Phase 02-04]: Session listing is a first-class gap: no list_group_ids endpoint in Graphiti MCP API; flag for v2 upstream contribution
+- [Phase 02-04]: Hook Gap Tier 1: Bash error capture, semantic diffs, and task state at SessionStart are highest-value improvements closable with current hook API
 
 ### Pending Todos
 
@@ -85,6 +93,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-16T20:33:00.788Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-03-16T20:34:41.662Z
+Stopped at: Completed 02-04-PLAN.md
 Resume file: None

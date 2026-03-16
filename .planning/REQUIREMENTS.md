@@ -7,12 +7,12 @@
 
 ### Research & Documentation
 
-- [ ] **DOCS-01**: Produce vetted assessment of Context7 MCP — GitHub activity, stars, self-management capability, install method, context cost, PHP/WP coverage depth
-- [ ] **DOCS-02**: Produce vetted assessment of WPCS Skill — scope, maintenance approach, how CC self-manages it, zero context cost verification
+- [x] **DOCS-01**: Produce vetted assessment of Context7 MCP — GitHub activity, stars, self-management capability, install method, context cost, PHP/WP coverage depth
+- [x] **DOCS-02**: Produce vetted assessment of WPCS Skill — scope, maintenance approach, how CC self-manages it, zero context cost verification
 
 ### Dev Tools
 
-- [ ] **DEVT-01**: Produce vetted assessment of GitHub MCP — GitHub activity, stars, self-management capability, PAT requirements, permissions model
+- [x] **DEVT-01**: Produce vetted assessment of GitHub MCP — GitHub activity, stars, self-management capability, PAT requirements, permissions model
 - [x] **DEVT-02**: Produce vetted assessment of Playwright MCP — GitHub activity, stars, self-management capability, install method, context cost
 - [x] **DEVT-03**: Produce vetted assessment of Sequential Thinking MCP — GitHub activity, stars, self-management capability, install method, context cost
 
@@ -28,9 +28,9 @@
 
 ### Memory System Enhancements
 
-- [ ] **MEMO-01**: Research approaches for a memory browsing interface — view all nodes, facts, episodes across scopes (web UI, CLI tool, CC skill, or MCP-based)
-- [ ] **MEMO-02**: Research approaches for session management visibility — list sessions, select/review past sessions, session timeline
-- [ ] **MEMO-03**: Identify potential enhancements to current Graphiti hook system — gaps in capture, curation quality, performance, missing lifecycle hooks
+- [x] **MEMO-01**: Research approaches for a memory browsing interface — view all nodes, facts, episodes across scopes (web UI, CLI tool, CC skill, or MCP-based)
+- [x] **MEMO-02**: Research approaches for session management visibility — list sessions, select/review past sessions, session timeline
+- [x] **MEMO-03**: Identify potential enhancements to current Graphiti hook system — gaps in capture, curation quality, performance, missing lifecycle hooks
 
 ### Infrastructure
 
@@ -74,18 +74,18 @@
 |-------------|-------|--------|
 | INFR-01 | Phase 1 | Complete |
 | INFR-02 | Phase 1 | Complete |
-| DOCS-01 | Phase 2 | Pending |
-| DOCS-02 | Phase 2 | Pending |
-| DEVT-01 | Phase 2 | Pending |
+| DOCS-01 | Phase 2 | Complete |
+| DOCS-02 | Phase 2 | Complete |
+| DEVT-01 | Phase 2 | Complete |
 | DEVT-02 | Phase 2 | Complete |
 | DEVT-03 | Phase 2 | Complete |
 | WRIT-01 | Phase 2 | Pending |
 | WRIT-02 | Phase 2 | Pending |
 | GMGR-01 | Phase 2 | Complete |
 | GMGR-02 | Phase 2 | Complete |
-| MEMO-01 | Phase 2 | Pending |
-| MEMO-02 | Phase 2 | Pending |
-| MEMO-03 | Phase 2 | Pending |
+| MEMO-01 | Phase 2 | Complete |
+| MEMO-02 | Phase 2 | Complete |
+| MEMO-03 | Phase 2 | Complete |
 | INFR-03 | Phase 3 | Pending |
 | DLVR-01 | Phase 3 | Pending |
 | DLVR-02 | Phase 3 | Pending |

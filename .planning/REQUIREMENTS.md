@@ -18,8 +18,8 @@
 
 ### Writing Tools
 
-- [ ] **WRIT-01**: Research and vet tools/MCPs that enhance creative writing capabilities (storytelling, content creation, copywriting)
-- [ ] **WRIT-02**: Research and vet tools/MCPs that enhance technical writing capabilities (documentation, API docs, READMEs)
+- [x] **WRIT-01**: Research and vet tools/MCPs that enhance creative writing capabilities (storytelling, content creation, copywriting)
+- [x] **WRIT-02**: Research and vet tools/MCPs that enhance technical writing capabilities (documentation, API docs, READMEs)
 
 ### Global Tool Management
 
@@ -79,8 +79,8 @@
 | DEVT-01 | Phase 2 | Complete |
 | DEVT-02 | Phase 2 | Complete |
 | DEVT-03 | Phase 2 | Complete |
-| WRIT-01 | Phase 2 | Pending |
-| WRIT-02 | Phase 2 | Pending |
+| WRIT-01 | Phase 2 | Complete |
+| WRIT-02 | Phase 2 | Complete |
 | GMGR-01 | Phase 2 | Complete |
 | GMGR-02 | Phase 2 | Complete |
 | MEMO-01 | Phase 2 | Complete |

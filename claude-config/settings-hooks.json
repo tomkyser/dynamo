@@ -1,0 +1,92 @@
+{
+  "_comment": "Merge these into your ~/.claude/settings.json. This file shows ONLY the Graphiti-specific additions.",
+
+  "permissions": {
+    "allow": [
+      "mcp__graphiti__add_memory",
+      "mcp__graphiti__search_nodes",
+      "mcp__graphiti__search_memory_facts",
+      "mcp__graphiti__get_episodes",
+      "mcp__graphiti__delete_episode",
+      "mcp__graphiti__get_entity_edge",
+      "mcp__graphiti__get_status"
+    ],
+    "ask": [
+      "mcp__graphiti__clear_graph",
+      "mcp__graphiti__delete_entity_edge"
+    ]
+  },
+
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/graphiti/hooks/session-start.sh",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/graphiti/hooks/session-start.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/graphiti/hooks/prompt-augment.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/graphiti/hooks/capture-change.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/graphiti/hooks/preserve-knowledge.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/graphiti/hooks/session-summary.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

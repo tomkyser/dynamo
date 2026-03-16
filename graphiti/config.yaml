@@ -1,0 +1,61 @@
+server:
+  transport: "http"
+  host: "0.0.0.0"
+  port: 8000
+
+llm:
+  provider: "openai"
+  model: "anthropic/claude-haiku-4.5"
+  temperature: 1.0
+  max_tokens: 4096
+  providers:
+    openai:
+      api_key: ${OPENAI_API_KEY}
+      api_url: ${OPENAI_API_URL:https://openrouter.ai/api/v1}
+
+embedder:
+  provider: "openai"
+  model: "openai/text-embedding-3-small"
+  dimensions: 1536
+  providers:
+    openai:
+      api_key: ${OPENAI_API_KEY}
+      api_url: ${OPENAI_API_URL:https://openrouter.ai/api/v1}
+
+database:
+  provider: "neo4j"
+  providers:
+    neo4j:
+      uri: ${NEO4J_URI:bolt://neo4j:7687}
+      username: ${NEO4J_USER:neo4j}
+      password: ${NEO4J_PASSWORD:graphiti-memory-2026}
+      database: ${NEO4J_DATABASE:neo4j}
+
+graphiti:
+  group_id: ${GRAPHITI_GROUP_ID:global}
+  user_id: "claude-code"
+  entity_types:
+    - name: "Preference"
+      description: "User preferences, coding style, workflow choices, tool configurations"
+    - name: "ArchitecturalDecision"
+      description: "Design choices, tech stack decisions, pattern selections with rationale"
+    - name: "ProjectConvention"
+      description: "Naming conventions, file organization, coding standards for a project"
+    - name: "Requirement"
+      description: "Project requirements, constraints, specifications"
+    - name: "Procedure"
+      description: "Step-by-step processes, deployment procedures, setup instructions"
+    - name: "CodePattern"
+      description: "Recurring code patterns, abstractions, idioms in codebases"
+    - name: "BugPattern"
+      description: "Recurring issues, their root causes, and proven solutions"
+    - name: "TechDebt"
+      description: "Known issues, workarounds, technical debt items to address"
+    - name: "WorkflowPreference"
+      description: "How the user prefers to work: commit style, review process, testing approach"
+    - name: "Organization"
+      description: "Companies, teams, groups, or formal entities"
+    - name: "Document"
+      description: "Key files, documentation, configuration files worth remembering"
+    - name: "Topic"
+      description: "Subject of conversation or knowledge domain (use as last resort)"

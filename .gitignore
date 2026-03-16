@@ -1,0 +1,14 @@
+# Environment files with secrets
+graphiti/.env
+
+# Python
+graphiti/.venv/
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/

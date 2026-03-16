@@ -1,0 +1,64 @@
+# ===================================================
+# Memory System: Graphiti Temporal Knowledge Graph
+# ===================================================
+
+## Graphiti MCP Server
+- Registered in `~/.claude.json` (user scope) as `graphiti` with `type: "http"`
+- All tools are prefixed `mcp__graphiti__`
+- If Graphiti MCP tools are unavailable, inform the user but continue working normally
+- Hooks provide passive memory access even if MCP tools aren't connected
+
+## Available MCP Tools
+| Tool | Description | Use When |
+|------|-------------|----------|
+| `mcp__graphiti__add_memory` | Add an episode to the knowledge graph | User says "remember this", storing decisions/patterns/prefs |
+| `mcp__graphiti__search_memory_facts` | Search for facts (relationships between entities) | Looking up what you know about a topic, recalling decisions |
+| `mcp__graphiti__search_nodes` | Search for entity nodes in the graph | Finding specific entities, people, tools, concepts |
+| `mcp__graphiti__get_episodes` | Retrieve episodes by group_id | Reviewing what was stored in a scope |
+| `mcp__graphiti__get_entity_edge` | Get a specific relationship by UUID | Inspecting a particular fact's details |
+| `mcp__graphiti__delete_episode` | Delete an episode by UUID | User says "forget this", removing incorrect info |
+| `mcp__graphiti__delete_entity_edge` | Delete a relationship by UUID | Removing a specific incorrect fact |
+| `mcp__graphiti__clear_graph` | Clear all data for specified group_ids | DESTRUCTIVE — only on explicit user request |
+| `mcp__graphiti__get_status` | Check server and database health | Diagnosing connection issues |
+
+## CRITICAL: Flat-File Memory is DISABLED
+- Do NOT use the auto memory directory (~/.claude/projects/*/memory/)
+- Do NOT create or update MEMORY.md files
+- ALL memory operations go through Graphiti MCP tools or are handled by hooks
+
+## How Memory Works (Automatic — Zero User Intervention)
+Hooks inject context automatically at key lifecycle points:
+- **SessionStart**: Global preferences + project context + recent sessions
+- **UserPromptSubmit**: Semantic search augments every prompt with relevant memories
+- **PostToolUse (Write/Edit)**: File changes captured to knowledge graph
+- **PreCompact**: Key knowledge preserved before context window compression
+- **Stop**: Session summarized and stored
+
+## Using Injected Context
+When you see `[GRAPHITI MEMORY CONTEXT]` or `[RELEVANT MEMORY]`:
+- This is curated context from the knowledge graph — use it
+- Don't re-query Graphiti for information already injected
+- If context seems stale or insufficient, query Graphiti directly
+
+## Scoping (group_id)
+| Scope | Format | Contents |
+|-------|--------|----------|
+| Global | `global` | User prefs, workflow patterns, coding style |
+| Project | `project:{name}` | Architecture, decisions, conventions |
+| Session | `session:{timestamp}` | Conversation summaries |
+| Task | `task:{descriptor}` | Task requirements, progress |
+
+## Explicit Memory Operations (Active — via MCP tools)
+- **"Remember this"**: Use `mcp__graphiti__add_memory` with appropriate group_id scope
+- **"What do you know about X"**: Use `mcp__graphiti__search_memory_facts` + `mcp__graphiti__search_nodes`
+- **"Forget this"**: Use `mcp__graphiti__delete_episode` or `mcp__graphiti__delete_entity_edge`
+- **Architectural decisions**: Proactively store via `mcp__graphiti__add_memory` in project scope
+- **Discovered patterns**: Store as episodes in project scope
+
+## Graphiti Infrastructure
+- Docker stack: `~/.claude/graphiti/docker-compose.yml`
+- Start: `~/.claude/graphiti/start-graphiti.sh`
+- Stop: `~/.claude/graphiti/stop-graphiti.sh`
+- Health: `curl http://localhost:8100/health`
+- Neo4j browser: `http://localhost:7475`
+- MCP registration: `~/.claude.json` → `mcpServers.graphiti`

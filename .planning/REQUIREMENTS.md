@@ -13,8 +13,8 @@
 ### Dev Tools
 
 - [ ] **DEVT-01**: Produce vetted assessment of GitHub MCP — GitHub activity, stars, self-management capability, PAT requirements, permissions model
-- [ ] **DEVT-02**: Produce vetted assessment of Playwright MCP — GitHub activity, stars, self-management capability, install method, context cost
-- [ ] **DEVT-03**: Produce vetted assessment of Sequential Thinking MCP — GitHub activity, stars, self-management capability, install method, context cost
+- [x] **DEVT-02**: Produce vetted assessment of Playwright MCP — GitHub activity, stars, self-management capability, install method, context cost
+- [x] **DEVT-03**: Produce vetted assessment of Sequential Thinking MCP — GitHub activity, stars, self-management capability, install method, context cost
 
 ### Writing Tools
 
@@ -77,8 +77,8 @@
 | DOCS-01 | Phase 2 | Pending |
 | DOCS-02 | Phase 2 | Pending |
 | DEVT-01 | Phase 2 | Pending |
-| DEVT-02 | Phase 2 | Pending |
-| DEVT-03 | Phase 2 | Pending |
+| DEVT-02 | Phase 2 | Complete |
+| DEVT-03 | Phase 2 | Complete |
 | WRIT-01 | Phase 2 | Pending |
 | WRIT-02 | Phase 2 | Pending |
 | GMGR-01 | Phase 2 | Complete |

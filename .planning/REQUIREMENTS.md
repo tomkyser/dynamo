@@ -23,8 +23,8 @@
 
 ### Global Tool Management
 
-- [ ] **GMGR-01**: Document GSD framework self-management lifecycle — install, update (git pull + version check), troubleshoot, how CC manages it globally
-- [ ] **GMGR-02**: Document harmonious coexistence strategy — how all tools (MCPs + GSD + Graphiti + plugins) share global scope without conflicts
+- [x] **GMGR-01**: Document GSD framework self-management lifecycle — install, update (git pull + version check), troubleshoot, how CC manages it globally
+- [x] **GMGR-02**: Document harmonious coexistence strategy — how all tools (MCPs + GSD + Graphiti + plugins) share global scope without conflicts
 
 ### Memory System Enhancements
 
@@ -81,8 +81,8 @@
 | DEVT-03 | Phase 2 | Pending |
 | WRIT-01 | Phase 2 | Pending |
 | WRIT-02 | Phase 2 | Pending |
-| GMGR-01 | Phase 2 | Pending |
-| GMGR-02 | Phase 2 | Pending |
+| GMGR-01 | Phase 2 | Complete |
+| GMGR-02 | Phase 2 | Complete |
 | MEMO-01 | Phase 2 | Pending |
 | MEMO-02 | Phase 2 | Pending |
 | MEMO-03 | Phase 2 | Pending |

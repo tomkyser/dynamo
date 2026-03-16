@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 context gathered
-last_updated: "2026-03-16T19:52:48.224Z"
+stopped_at: Completed 02-05-PLAN.md — GSD-LIFECYCLE.md and COEXISTENCE.md authored
+last_updated: "2026-03-16T20:30:48.864Z"
 last_activity: 2026-03-16 — Plan 01-01 complete — VETTING-PROTOCOL.md and ANTI-FEATURES.md authored
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  total_plans: 7
+  completed_plans: 2
   percent: 10
 ---
 
@@ -50,6 +50,7 @@ Progress: [█░░░░░░░░░] 10%
 - Trend: baseline
 
 *Updated after each plan completion*
+| Phase 02-research P05 | 10 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -65,6 +66,9 @@ Recent decisions affecting current work:
 - [01-01]: Pre-defined INCLUDE/CONSIDER/DEFER tier criteria in Phase 1 — Phase 2 assessors assign tiers at assessment time, making Phase 3 a tabulation not a deliberation
 - [01-01]: Separate "Not Evaluated" section from anti-features list — out-of-scope tools are not anti-features; distinction prevents misclassification
 - [01-01]: Security findings informational only, not a hard gate — mcp-scan results documented for user decision at Phase 3
+- [Phase 02-research]: GSD update is a 6-step staged process (detect version, npm check, changelog preview, user confirm, install, clear cache) — not a simple reinstall
+- [Phase 02-research]: PATH absent from settings.json env block — critical prerequisite before adding any stdio MCP; recommended value /usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin
+- [Phase 02-research]: Coexistence doc scoped to risk flagging only, no recovery procedures — per locked 02-CONTEXT.md decision
 
 ### Pending Todos
 
@@ -78,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-16T19:52:48.221Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-research/02-CONTEXT.md
+Last session: 2026-03-16T20:30:48.862Z
+Stopped at: Completed 02-05-PLAN.md — GSD-LIFECYCLE.md and COEXISTENCE.md authored
+Resume file: None

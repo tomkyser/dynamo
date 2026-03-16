@@ -26,7 +26,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. A documented vetting protocol exists with programmatic criteria: GitHub stars threshold, commit recency window (30 days), security check procedure, self-management capability test
   2. An anti-features list exists naming every disqualified tool category with explicit reasoning for each exclusion
   3. Any tool assessment produced in Phase 2 can be evaluated by applying only Phase 1 criteria, with no judgment calls required
-**Plans**: TBD
+**Plans:** 1 plan
+
+Plans:
+- [ ] 01-01-PLAN.md — Write vetting protocol (decision-tree gates, scorecard template, tier criteria) and anti-features list (named exclusions, category rules)
 
 ### Phase 2: Research
 **Goal**: Individual assessments of all candidate tools exist, plus documentation of the existing setup (GSD, Graphiti, memory system)
@@ -57,6 +60,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Methodology | 0/TBD | Not started | - |
+| 1. Methodology | 0/1 | Planning complete | - |
 | 2. Research | 0/TBD | Not started | - |
 | 3. Synthesis | 0/TBD | Not started | - |

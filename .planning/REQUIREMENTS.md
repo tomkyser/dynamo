@@ -15,7 +15,7 @@ Requirements for the CJS architectural rewrite with complete feature parity.
 - [x] **FND-04**: Error logging with 1MB rotation, ISO timestamps, hook name prefix
 - [x] **FND-05**: Health guard (once-per-session flag using process.ppid)
 - [x] **FND-06**: Shared HTTP utility with explicit timeouts (fetchWithTimeout)
-- [ ] **FND-07**: Regression test suite covering all 12 v1.1 fixes
+- [x] **FND-07**: Regression test suite covering all 12 v1.1 fixes
 
 ### Ledger
 
@@ -109,7 +109,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FND-04 | Phase 8 | Complete |
 | FND-05 | Phase 8 | Complete |
 | FND-06 | Phase 8 | Complete |
-| FND-07 | Phase 8 | Pending |
+| FND-07 | Phase 8 | Complete |
 | LDG-01 | Phase 9 | Pending |
 | LDG-02 | Phase 9 | Pending |
 | LDG-03 | Phase 9 | Pending |

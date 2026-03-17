@@ -29,7 +29,7 @@
 
 ### v1.2 Dynamo Foundation
 
-- [ ] **Phase 8: Foundation and Branding** - CJS shared substrate, directory restructure, regression tests
+- [x] **Phase 8: Foundation and Branding** - CJS shared substrate, directory restructure, regression tests (completed 2026-03-17)
 - [ ] **Phase 9: Hook Migration** - All 5 hooks, curation pipeline, session management on CJS
 - [ ] **Phase 10: Operations and Cutover** - Health check, diagnostics, verify, CLI, installer, sync, stack commands
 - [ ] **Phase 11: Master Roadmap** - Backlog prioritized and assigned to v1.3-v2.0
@@ -112,7 +112,7 @@ Plans:
 | 5. Hook Reliability | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 6. Session Management | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 7. Verification and Sync | v1.1 | 2/2 | Complete | 2026-03-17 |
-| 8. Foundation and Branding | v1.2 | 0/3 | Planned | - |
+| 8. Foundation and Branding | 3/3 | Complete   | 2026-03-17 | - |
 | 9. Hook Migration | v1.2 | 0/? | Not started | - |
 | 10. Operations and Cutover | v1.2 | 0/? | Not started | - |
 | 11. Master Roadmap | v1.2 | 0/? | Not started | - |

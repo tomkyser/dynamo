@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Dynamo Foundation
 status: executing
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-03-17T18:22:17.963Z"
-last_activity: 2026-03-17 -- Completed 08-01 foundation scaffolding and core modules
+stopped_at: Completed 08-02-PLAN.md
+last_updated: "2026-03-17T18:27:21.000Z"
+last_activity: 2026-03-17 -- Completed 08-02 MCP client and unit tests
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
-  percent: 33
+  completed_plans: 2
+  percent: 67
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-17)
 ## Current Position
 
 Phase: 8 of 11 (Foundation and Branding)
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Executing
-Last activity: 2026-03-17 -- Completed 08-01 foundation scaffolding and core modules
+Last activity: 2026-03-17 -- Completed 08-02 MCP client and unit tests
 
-Progress: [███░░░░░░░] 33%
+Progress: [██████░░░░] 67%
 
 ## Performance Metrics
 
@@ -46,6 +46,7 @@ Progress: [███░░░░░░░] 33%
 | v1.0 Phases 1-3 | 8 | -- | -- |
 | v1.1 Phases 4-7 | 8 | -- | -- |
 | 08-01 Foundation | 3 tasks | 5min | ~2min |
+| 08-02 MCP Client + Tests | 2 tasks | 4min | ~2min |
 
 *Updated after each plan completion*
 
@@ -63,6 +64,9 @@ Progress: [███░░░░░░░] 33%
 - Dynamo files tracked in both repo dynamo/ and deployed to ~/.claude/dynamo/ (following graphiti sync model)
 - core.cjs is single shared substrate with 11 exports (10 functions + DYNAMO_DIR)
 - scope.cjs is standalone with zero internal dependencies
+- MCPClient constructor reads config via loadConfig() for URL/timeout defaults
+- parseSSE is a standalone exported function for direct unit testing
+- URL resolution priority: env var > options > config > defaults
 
 ### Pending Todos
 
@@ -76,6 +80,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-17T18:22:17.961Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-03-17T18:27:21.000Z
+Stopped at: Completed 08-02-PLAN.md
 Resume file: None

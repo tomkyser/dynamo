@@ -10,7 +10,7 @@ Requirements for the CJS architectural rewrite with complete feature parity.
 ### Foundation
 
 - [x] **FND-01**: CJS shared substrate (core.cjs) with config loading, .env parsing, project detection, output formatting
-- [ ] **FND-02**: MCP client with SSE parsing for Graphiti JSON-RPC communication
+- [x] **FND-02**: MCP client with SSE parsing for Graphiti JSON-RPC communication
 - [x] **FND-03**: Scope constants and validation function rejecting invalid characters (colon constraint)
 - [x] **FND-04**: Error logging with 1MB rotation, ISO timestamps, hook name prefix
 - [x] **FND-05**: Health guard (once-per-session flag using process.ppid)
@@ -104,7 +104,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | FND-01 | Phase 8 | Complete |
-| FND-02 | Phase 8 | Pending |
+| FND-02 | Phase 8 | Complete |
 | FND-03 | Phase 8 | Complete |
 | FND-04 | Phase 8 | Complete |
 | FND-05 | Phase 8 | Complete |

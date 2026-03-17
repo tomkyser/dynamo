@@ -72,7 +72,7 @@ Plans:
 
 **Milestone Goal:** The Graphiti memory system works end-to-end — hooks persist data, failures surface visibly, sessions are navigable, and fixes are reflected in the publishable repo.
 
-- [ ] **Phase 4: Diagnostics** - Map the exact failure point where hooks appear to work but data never reaches Graphiti
+- [x] **Phase 4: Diagnostics** - Map the exact failure point where hooks appear to work but data never reaches Graphiti (completed 2026-03-17)
 - [ ] **Phase 5: Hook Reliability** - Fix hooks so data persists or failures surface visibly — no more silent phantom writes
 - [ ] **Phase 6: Session Management** - Make sessions navigable: list, view, label, and auto-name
 - [ ] **Phase 7: Verification and Sync** - Prove the system works end-to-end and publish fixes back to this repo
@@ -87,7 +87,7 @@ Plans:
   1. User can run a single health check command and see the status of every component in the memory pipeline (hook execution, graphiti-helper.py response, Graphiti API reachability, Neo4j connectivity)
   2. The specific step where hook output disappears — between hook invocation and Neo4j write — is documented with evidence (log output, error messages, or traced call)
   3. The reason project-scoped memories are not stored (wrong group_id format, missing parameter, API error swallowed) is identified and documented
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 04-01-PLAN.md — Build diagnostic probe script testing 10 pipeline stages independently; run probes and document root causes for silent write failures (DIAG-01) and missing project-scoped memories (DIAG-02)
@@ -145,7 +145,7 @@ Phases execute in numeric order: 4 → 5 → 6 → 7
 | 1. Methodology | v1.0 | 1/1 | Complete | 2026-03-16 |
 | 2. Research | v1.0 | 6/6 | Complete | 2026-03-16 |
 | 3. Synthesis | v1.0 | 1/1 | Complete | 2026-03-17 |
-| 4. Diagnostics | 1/2 | In Progress|  | - |
+| 4. Diagnostics | 2/2 | Complete   | 2026-03-17 | - |
 | 5. Hook Reliability | v1.1 | 0/1 | Not started | - |
 | 6. Session Management | v1.1 | 0/1 | Not started | - |
 | 7. Verification and Sync | v1.1 | 0/2 | Not started | - |

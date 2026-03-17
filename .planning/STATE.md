@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Fix Memory System
 status: in-progress
-stopped_at: "Completed 04-01-PLAN.md"
-last_updated: "2026-03-17T02:28:00Z"
-last_activity: 2026-03-17 — Phase 4 Plan 1 complete: pipeline diagnostic identified DIAG-01/DIAG-02 root causes
+stopped_at: "Checkpoint — 04-02 Task 2 awaiting user verification"
+last_updated: "2026-03-17T02:35:00Z"
+last_activity: 2026-03-17 — Phase 4 Plan 2 Task 1 complete: health-check.py + health-check.sh built; awaiting user verification at checkpoint
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 2
   completed_plans: 1
-  percent: 25
+  percent: 38
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 4 of 7 (Diagnostics)
-Plan: 1 of 2 in current phase
-Status: In progress — Plan 1 of 2 complete
-Last activity: 2026-03-17 — Pipeline diagnostic complete, root causes for DIAG-01 and DIAG-02 confirmed
+Plan: 2 of 2 in current phase (Task 1 complete, awaiting checkpoint:human-verify)
+Status: In progress — Plan 2 of 2 at checkpoint
+Last activity: 2026-03-17 — Health check script built; 6-stage pipeline check with canary round-trip; awaiting user verification
 
-Progress: [██░░░░░░░░] 25%
+Progress: [███░░░░░░░] 38%
 
 ## Performance Metrics
 
@@ -66,6 +66,8 @@ Recent decisions affecting current work:
 - [04-01-diag]: DIAG-02 confirmed: GRAPHITI_GROUP_ID=global in docker-compose.yml overrides per-request group_id; API v1.21.0 echoes requested group_id in response but stores as global
 - [04-01-diag]: Project detection is correct — detect-project returns 'my-cc-setup' from git remote, iCloud path is not the issue
 - [04-01-diag]: Fix direction for DIAG-02: remove GRAPHITI_GROUP_ID from docker-compose.yml and test server respects per-request group_id
+- [04-02-health]: Canary uses group_id='global' until Phase 5 fix — project scope writes land in global per DIAG-02; canary read-empty is WARN not FAIL
+- [04-02-health]: health-check.py WARN status = write succeeded + read empty (DIAG-02 behavior); FAIL = connection refused / API down
 
 ### Pending Todos
 
@@ -79,6 +81,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T02:28:00Z
-Stopped at: Completed 04-01-PLAN.md
-Resume file: .planning/phases/04-diagnostics/04-01-SUMMARY.md
+Last session: 2026-03-17T02:35:00Z
+Stopped at: Checkpoint — 04-02 Task 2 human-verify
+Resume file: .planning/phases/04-diagnostics/04-02-SUMMARY.md

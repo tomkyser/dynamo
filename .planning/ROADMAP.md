@@ -101,10 +101,11 @@ Plans:
   1. User can trigger a hook and observe either a confirmation that data was written or an explicit error message in the Claude Code session
   2. A log file captures hook errors with enough detail (timestamp, hook name, error type) to diagnose failures after the fact
   3. Running the Phase 4 health check after a hook fires shows data actually present in Neo4j, not just a success status message
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [x] 05-01: Apply fixes to hook scripts — add error propagation, visible failure output, and file-based logging; validate against Phase 4 failure points (completed 2026-03-17)
+- [ ] 05-01-PLAN.md — Fix scope isolation root cause (remove GRAPHITI_GROUP_ID from docker-compose.yml), harden graphiti-helper.py with 5s timeout, verify with diagnose.py
+- [ ] 05-02-PLAN.md — Rewrite all three write hooks with error propagation, file logging, verbose mode; migrate Frostgale data; user verification of live hooks
 
 ### Phase 6: Session Management
 **Goal**: The user can browse, view, label, and auto-name sessions through Claude Code without touching raw Neo4j or config files
@@ -145,7 +146,7 @@ Phases execute in numeric order: 4 → 5 → 6 → 7
 | 1. Methodology | v1.0 | 1/1 | Complete | 2026-03-16 |
 | 2. Research | v1.0 | 6/6 | Complete | 2026-03-16 |
 | 3. Synthesis | v1.0 | 1/1 | Complete | 2026-03-17 |
-| 4. Diagnostics | 2/2 | Complete   | 2026-03-17 | - |
-| 5. Hook Reliability | v1.1 | 0/1 | Not started | - |
+| 4. Diagnostics | v1.1 | 2/2 | Complete | 2026-03-17 |
+| 5. Hook Reliability | v1.1 | 0/2 | Not started | - |
 | 6. Session Management | v1.1 | 0/1 | Not started | - |
 | 7. Verification and Sync | v1.1 | 0/2 | Not started | - |

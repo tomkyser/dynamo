@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 Research and Ranked Report** - Phases 1-3 (shipped 2026-03-17)
-- 🚧 **v1.1 Fix Memory System** - Phases 4-7 (in progress)
+- **v1.1 Fix Memory System** - Phases 4-7 (shipped 2026-03-17)
 
 ## Phases
 
@@ -68,14 +68,14 @@ Plans:
 
 </details>
 
-### 🚧 v1.1 Fix Memory System (In Progress)
+### v1.1 Fix Memory System (Complete)
 
 **Milestone Goal:** The Graphiti memory system works end-to-end — hooks persist data, failures surface visibly, sessions are navigable, and fixes are reflected in the publishable repo.
 
 - [x] **Phase 4: Diagnostics** - Map the exact failure point where hooks appear to work but data never reaches Graphiti (completed 2026-03-17)
 - [x] **Phase 5: Hook Reliability** - Fix hooks so data persists or failures surface visibly — no more silent phantom writes (completed 2026-03-17)
 - [x] **Phase 6: Session Management** - Make sessions navigable: list, view, label, and auto-name (completed 2026-03-17)
-- [ ] **Phase 7: Verification and Sync** - Prove the system works end-to-end and publish fixes back to this repo
+- [x] **Phase 7: Verification and Sync** - Prove the system works end-to-end and publish fixes back to this repo (completed 2026-03-17)
 
 ## Phase Details
 
@@ -131,11 +131,11 @@ Plans:
   2. User can run the verification mechanism on demand and receive a clear pass/fail result for the full memory system
   3. All hook scripts, helper files, and configuration changes from Phases 4-6 are present in this repo and match the live ~/.claude implementation
   4. A sync procedure exists so future changes to ~/.claude/graphiti/ can be reflected in this repo without manual file-by-file copying
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 07-01-PLAN.md — Add verify-memory subcommand to graphiti-helper.py, extend diagnose.py with session stages, run end-to-end verification with evidence
-- [ ] 07-02-PLAN.md — Create sync-graphiti.sh, sync live files to repo, update install.sh, write graphiti/README.md setup guide
+- [x] 07-01-PLAN.md — Add verify-memory subcommand to graphiti-helper.py, extend diagnose.py with session stages, run end-to-end verification with evidence
+- [x] 07-02-PLAN.md — Create sync-graphiti.sh, sync live files to repo, update install.sh, write graphiti/README.md setup guide
 
 ## Progress
 
@@ -150,4 +150,4 @@ Phases execute in numeric order: 4 → 5 → 6 → 7
 | 4. Diagnostics | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 5. Hook Reliability | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 6. Session Management | v1.1 | 2/2 | Complete | 2026-03-17 |
-| 7. Verification and Sync | v1.1 | 0/2 | Not started | - |
+| 7. Verification and Sync | v1.1 | 2/2 | Complete | 2026-03-17 |

@@ -56,8 +56,8 @@ Requirements for Fix Memory System milestone. Each maps to roadmap phases.
 
 ### Sync
 
-- [ ] **SYNC-01**: All memory system fixes reflected in this repo's publishable artifacts
-- [ ] **SYNC-02**: Automated or semi-automated mechanism to sync between live ~/.claude implementation and this repo
+- [x] **SYNC-01**: All memory system fixes reflected in this repo's publishable artifacts
+- [x] **SYNC-02**: Automated or semi-automated mechanism to sync between live ~/.claude implementation and this repo
 
 ## Future Requirements
 
@@ -114,8 +114,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SESS-04 | Phase 6 | Complete |
 | VRFY-01 | Phase 7 | Complete |
 | VRFY-02 | Phase 7 | Complete |
-| SYNC-01 | Phase 7 | Pending |
-| SYNC-02 | Phase 7 | Pending |
+| SYNC-01 | Phase 7 | Complete |
+| SYNC-02 | Phase 7 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 14 total

@@ -46,11 +46,12 @@
   3. Scope validation rejects any group_id containing a colon and accepts the dash-separated format (e.g., project-myproject)
   4. The regression test suite passes, covering all 12 v1.1 fixes including GRAPHITI_GROUP_ID override detection, silent fire-and-forget prevention, and scope format enforcement
   5. The directory tree ~/.claude/dynamo/lib/ledger/ and ~/.claude/dynamo/lib/switchboard/ exists with the Dynamo/Ledger/Switchboard naming applied to all new modules
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 08-01: TBD
-- [ ] 08-02: TBD
+- [ ] 08-01-PLAN.md -- Foundation substrate: directory tree, config, core.cjs, scope.cjs
+- [ ] 08-02-PLAN.md -- MCP client and unit tests for all foundation modules
+- [ ] 08-03-PLAN.md -- Regression test suite covering all 12 v1.1 fixes
 
 ### Phase 9: Hook Migration
 **Goal**: All 5 Claude Code hook events are handled by the CJS dispatcher with full behavioral parity to the Python/Bash system, including curation, session naming, and sessions.json compatibility
@@ -111,7 +112,7 @@ Plans:
 | 5. Hook Reliability | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 6. Session Management | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 7. Verification and Sync | v1.1 | 2/2 | Complete | 2026-03-17 |
-| 8. Foundation and Branding | v1.2 | 0/? | Not started | - |
+| 8. Foundation and Branding | v1.2 | 0/3 | Planned | - |
 | 9. Hook Migration | v1.2 | 0/? | Not started | - |
 | 10. Operations and Cutover | v1.2 | 0/? | Not started | - |
 | 11. Master Roadmap | v1.2 | 0/? | Not started | - |

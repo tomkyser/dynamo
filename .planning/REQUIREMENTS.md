@@ -25,10 +25,10 @@ Requirements for the CJS architectural rewrite with complete feature parity.
 - [ ] **LDG-04**: PostToolUse (capture-change) hook ported to CJS with full parity
 - [ ] **LDG-05**: PreCompact (preserve-knowledge) hook ported to CJS with full parity
 - [ ] **LDG-06**: Stop (session-summary) hook ported to CJS with full parity
-- [ ] **LDG-07**: Haiku curation pipeline via OpenRouter with graceful degradation
-- [ ] **LDG-08**: Session management: list, view, label, backfill, index commands
-- [ ] **LDG-09**: Two-phase session auto-naming via Haiku
-- [ ] **LDG-10**: sessions.json format compatibility (read existing, write compatible)
+- [x] **LDG-07**: Haiku curation pipeline via OpenRouter with graceful degradation
+- [x] **LDG-08**: Session management: list, view, label, backfill, index commands
+- [x] **LDG-09**: Two-phase session auto-naming via Haiku
+- [x] **LDG-10**: sessions.json format compatibility (read existing, write compatible)
 
 ### Switchboard
 
@@ -116,10 +116,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LDG-04 | Phase 9 | Pending |
 | LDG-05 | Phase 9 | Pending |
 | LDG-06 | Phase 9 | Pending |
-| LDG-07 | Phase 9 | Pending |
-| LDG-08 | Phase 9 | Pending |
-| LDG-09 | Phase 9 | Pending |
-| LDG-10 | Phase 9 | Pending |
+| LDG-07 | Phase 9 | Complete |
+| LDG-08 | Phase 9 (09-02) | Complete |
+| LDG-09 | Phase 9 (09-02) | Complete |
+| LDG-10 | Phase 9 (09-02) | Complete |
 | SWB-01 | Phase 10 | Pending |
 | SWB-02 | Phase 10 | Pending |
 | SWB-03 | Phase 10 | Pending |

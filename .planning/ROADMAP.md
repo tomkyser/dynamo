@@ -114,6 +114,6 @@ Plans:
 | 6. Session Management | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 7. Verification and Sync | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 8. Foundation and Branding | v1.2 | 3/3 | Complete | 2026-03-17 |
-| 9. Hook Migration | v1.2 | 0/4 | Not started | - |
+| 9. Hook Migration | v1.2 | 2/4 | In Progress | - |
 | 10. Operations and Cutover | v1.2 | 0/? | Not started | - |
 | 11. Master Roadmap | v1.2 | 0/? | Not started | - |

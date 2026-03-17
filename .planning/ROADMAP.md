@@ -131,11 +131,11 @@ Plans:
   2. User can run the verification mechanism on demand and receive a clear pass/fail result for the full memory system
   3. All hook scripts, helper files, and configuration changes from Phases 4-6 are present in this repo and match the live ~/.claude implementation
   4. A sync procedure exists so future changes to ~/.claude/graphiti/ can be reflected in this repo without manual file-by-file copying
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 07-01: End-to-end verification across sessions and projects; create reusable verification mechanism
-- [ ] 07-02: Sync live ~/.claude implementation to repo; document or automate future sync procedure
+- [ ] 07-01-PLAN.md — Add verify-memory subcommand to graphiti-helper.py, extend diagnose.py with session stages, run end-to-end verification with evidence
+- [ ] 07-02-PLAN.md — Create sync-graphiti.sh, sync live files to repo, update install.sh, write graphiti/README.md setup guide
 
 ## Progress
 

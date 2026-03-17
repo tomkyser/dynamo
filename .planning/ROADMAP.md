@@ -66,9 +66,9 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 09-01-PLAN.md -- Library modules: curation, episodes, search + unit tests
-- [ ] 09-02-PLAN.md -- Session management module + unit tests
-- [ ] 09-03-PLAN.md -- Dispatcher + 5 hook handlers + integration tests
+- [x] 09-01-PLAN.md -- Library modules: curation, episodes, search + unit tests
+- [x] 09-02-PLAN.md -- Session management module + unit tests
+- [x] 09-03-PLAN.md -- Dispatcher + 5 hook handlers + integration tests
 - [ ] 09-04-PLAN.md -- Settings switchover + smoke test verification
 
 ### Phase 10: Operations and Cutover
@@ -114,6 +114,6 @@ Plans:
 | 6. Session Management | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 7. Verification and Sync | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 8. Foundation and Branding | v1.2 | 3/3 | Complete | 2026-03-17 |
-| 9. Hook Migration | v1.2 | 2/4 | In Progress | - |
+| 9. Hook Migration | v1.2 | 3/4 | In Progress | - |
 | 10. Operations and Cutover | v1.2 | 0/? | Not started | - |
 | 11. Master Roadmap | v1.2 | 0/? | Not started | - |

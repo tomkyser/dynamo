@@ -19,12 +19,12 @@ Requirements for the CJS architectural rewrite with complete feature parity.
 
 ### Ledger
 
-- [ ] **LDG-01**: Single hook dispatcher (dynamo-hooks.cjs) routing all 5 hook events
-- [ ] **LDG-02**: SessionStart hook ported to CJS with full parity
-- [ ] **LDG-03**: UserPromptSubmit hook ported to CJS with full parity
-- [ ] **LDG-04**: PostToolUse (capture-change) hook ported to CJS with full parity
-- [ ] **LDG-05**: PreCompact (preserve-knowledge) hook ported to CJS with full parity
-- [ ] **LDG-06**: Stop (session-summary) hook ported to CJS with full parity
+- [x] **LDG-01**: Single hook dispatcher (dynamo-hooks.cjs) routing all 5 hook events
+- [x] **LDG-02**: SessionStart hook ported to CJS with full parity
+- [x] **LDG-03**: UserPromptSubmit hook ported to CJS with full parity
+- [x] **LDG-04**: PostToolUse (capture-change) hook ported to CJS with full parity
+- [x] **LDG-05**: PreCompact (preserve-knowledge) hook ported to CJS with full parity
+- [x] **LDG-06**: Stop (session-summary) hook ported to CJS with full parity
 - [x] **LDG-07**: Haiku curation pipeline via OpenRouter with graceful degradation
 - [x] **LDG-08**: Session management: list, view, label, backfill, index commands
 - [x] **LDG-09**: Two-phase session auto-naming via Haiku
@@ -110,12 +110,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FND-05 | Phase 8 | Complete |
 | FND-06 | Phase 8 | Complete |
 | FND-07 | Phase 8 | Complete |
-| LDG-01 | Phase 9 | Pending |
-| LDG-02 | Phase 9 | Pending |
-| LDG-03 | Phase 9 | Pending |
-| LDG-04 | Phase 9 | Pending |
-| LDG-05 | Phase 9 | Pending |
-| LDG-06 | Phase 9 | Pending |
+| LDG-01 | Phase 9 | Complete |
+| LDG-02 | Phase 9 | Complete |
+| LDG-03 | Phase 9 | Complete |
+| LDG-04 | Phase 9 | Complete |
+| LDG-05 | Phase 9 | Complete |
+| LDG-06 | Phase 9 | Complete |
 | LDG-07 | Phase 9 | Complete |
 | LDG-08 | Phase 9 (09-02) | Complete |
 | LDG-09 | Phase 9 (09-02) | Complete |

@@ -51,8 +51,8 @@ Requirements for Fix Memory System milestone. Each maps to roadmap phases.
 
 ### Verification
 
-- [ ] **VRFY-01**: Memory system proven working end-to-end across sessions and projects
-- [ ] **VRFY-02**: Reusable verification mechanism confirms the system is healthy on demand
+- [x] **VRFY-01**: Memory system proven working end-to-end across sessions and projects
+- [x] **VRFY-02**: Reusable verification mechanism confirms the system is healthy on demand
 
 ### Sync
 
@@ -112,8 +112,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SESS-02 | Phase 6 | Complete |
 | SESS-03 | Phase 6 | Complete |
 | SESS-04 | Phase 6 | Complete |
-| VRFY-01 | Phase 7 | Pending |
-| VRFY-02 | Phase 7 | Pending |
+| VRFY-01 | Phase 7 | Complete |
+| VRFY-02 | Phase 7 | Complete |
 | SYNC-01 | Phase 7 | Pending |
 | SYNC-02 | Phase 7 | Pending |
 

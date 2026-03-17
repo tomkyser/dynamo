@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Fix Memory System
 status: executing
-stopped_at: Phase 5 context gathered
-last_updated: "2026-03-17T02:57:43.804Z"
+stopped_at: Completed 05-hook-reliability/05-01-PLAN.md
+last_updated: "2026-03-17T03:18:48.192Z"
 last_activity: 2026-03-17 — Health check script built; 6-stage pipeline check with canary round-trip; awaiting user verification
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
   percent: 38
 ---
 
@@ -51,6 +51,7 @@ Progress: [███░░░░░░░] 38%
 
 *Updated after each plan completion*
 | Phase 04-diagnostics P02 | 15 | 2 tasks | 2 files |
+| Phase 05-hook-reliability P01 | 6 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -72,6 +73,9 @@ Recent decisions affecting current work:
 - [Phase 04-02]: Canary uses group_id='global' until Phase 5 fix — project scope writes land in global per DIAG-02; canary read-empty is WARN not FAIL
 - [Phase 04-02]: health-check.py WARN status = write succeeded + read empty (DIAG-02 behavior); FAIL = connection refused / API down
 - [Phase 04-02]: 6-stage health check reuses probe patterns from diagnose.py but is a quick status tool, not a full diagnostic; diagnose.py remains for deep analysis
+- [Phase 05-01]: Removed GRAPHITI_GROUP_ID from both docker-compose.yml AND .env — both sources must be cleared since env_file directive loads .env into container
+- [Phase 05-01]: Fallback triggered: group_id format project:my-cc-setup rejected by Graphiti v1.21.0 server (colon not allowed in group_id) — Plan 02 uses global scope + [project-name] content prefix
+- [Phase 05-01]: MCPClient default timeout changed from 30s to 5s — hooks must fail fast to avoid blocking Claude Code sessions
 
 ### Pending Todos
 
@@ -85,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T02:57:43.802Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-hook-reliability/05-CONTEXT.md
+Last session: 2026-03-17T03:18:48.190Z
+Stopped at: Completed 05-hook-reliability/05-01-PLAN.md
+Resume file: None

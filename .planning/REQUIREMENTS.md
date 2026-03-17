@@ -38,7 +38,7 @@ Requirements for Fix Memory System milestone. Each maps to roadmap phases.
 
 ### Hook Reliability
 
-- [ ] **HOOK-01**: Hooks persist data to Graphiti or visibly fail — no silent phantom writes
+- [x] **HOOK-01**: Hooks persist data to Graphiti or visibly fail — no silent phantom writes
 - [ ] **HOOK-02**: Hook failures produce visible error output the user can see
 - [ ] **HOOK-03**: Hook-level logging captures errors for post-mortem debugging
 
@@ -105,7 +105,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DIAG-01 | Phase 4 | Complete |
 | DIAG-02 | Phase 4 | Complete |
 | DIAG-03 | Phase 4 | Complete |
-| HOOK-01 | Phase 5 | Pending |
+| HOOK-01 | Phase 5 | Complete |
 | HOOK-02 | Phase 5 | Pending |
 | HOOK-03 | Phase 5 | Pending |
 | SESS-01 | Phase 6 | Pending |

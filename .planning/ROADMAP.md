@@ -87,10 +87,11 @@ Plans:
   1. User can run a single health check command and see the status of every component in the memory pipeline (hook execution, graphiti-helper.py response, Graphiti API reachability, Neo4j connectivity)
   2. The specific step where hook output disappears — between hook invocation and Neo4j write — is documented with evidence (log output, error messages, or traced call)
   3. The reason project-scoped memories are not stored (wrong group_id format, missing parameter, API error swallowed) is identified and documented
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 04-01: Trace hook execution pipeline and identify failure points for both silent writes and missing project-scoped memories; produce health check command
+- [ ] 04-01-PLAN.md — Build diagnostic probe script testing 10 pipeline stages independently; run probes and document root causes for silent write failures (DIAG-01) and missing project-scoped memories (DIAG-02)
+- [ ] 04-02-PLAN.md — Build reusable health check command with stage-by-stage pipeline status and canary write/read round-trip (DIAG-03); user verification of all findings
 
 ### Phase 5: Hook Reliability
 **Goal**: Hooks either persist data to Graphiti successfully or produce visible error output — no operation can silently fail
@@ -144,7 +145,7 @@ Phases execute in numeric order: 4 → 5 → 6 → 7
 | 1. Methodology | v1.0 | 1/1 | Complete | 2026-03-16 |
 | 2. Research | v1.0 | 6/6 | Complete | 2026-03-16 |
 | 3. Synthesis | v1.0 | 1/1 | Complete | 2026-03-17 |
-| 4. Diagnostics | v1.1 | 0/1 | Not started | - |
+| 4. Diagnostics | v1.1 | 0/2 | Not started | - |
 | 5. Hook Reliability | v1.1 | 0/1 | Not started | - |
 | 6. Session Management | v1.1 | 0/1 | Not started | - |
 | 7. Verification and Sync | v1.1 | 0/2 | Not started | - |

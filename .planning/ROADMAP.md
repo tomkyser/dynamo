@@ -69,7 +69,7 @@ Plans:
 - [x] 09-01-PLAN.md -- Library modules: curation, episodes, search + unit tests
 - [x] 09-02-PLAN.md -- Session management module + unit tests
 - [x] 09-03-PLAN.md -- Dispatcher + 5 hook handlers + integration tests
-- [ ] 09-04-PLAN.md -- Settings switchover + smoke test verification
+- [x] 09-04-PLAN.md -- Settings switchover + smoke test verification
 
 ### Phase 10: Operations and Cutover
 **Goal**: The CJS system is fully operational with health checking, diagnostics, verification, bidirectional sync, stack management, and a unified CLI -- and the Python/Bash system is retired
@@ -81,12 +81,13 @@ Plans:
   3. Running `dynamo diagnose` executes all 13 diagnostic stages with parity to the Python diagnose.py output
   4. The installer deploys CJS files to ~/.claude/dynamo/, generates settings-hooks.json pointing to .cjs files, and eliminates the Python venv dependency entirely
   5. Running `dynamo sync`, `dynamo start`, and `dynamo stop` work with full parity to the Bash originals (bidirectional sync, Docker compose up/down)
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 10-01: TBD
-- [ ] 10-02: TBD
-- [ ] 10-03: TBD
+- [ ] 10-01-PLAN.md -- Shared diagnostic stages module (13 stages) and pretty formatter
+- [ ] 10-02-PLAN.md -- Health check, diagnose, and verify-memory orchestrators
+- [ ] 10-03-PLAN.md -- Bidirectional sync and Docker stack start/stop
+- [ ] 10-04-PLAN.md -- CLI router, installer, cutover, and end-to-end verification
 
 ### Phase 11: Master Roadmap
 **Goal**: The backlog of deferred features is prioritized, assigned to future milestones (v1.3-v2.0), and documented as a living roadmap for the Dynamo project
@@ -114,6 +115,6 @@ Plans:
 | 6. Session Management | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 7. Verification and Sync | v1.1 | 2/2 | Complete | 2026-03-17 |
 | 8. Foundation and Branding | v1.2 | 3/3 | Complete | 2026-03-17 |
-| 9. Hook Migration | v1.2 | Complete    | 2026-03-17 | - |
-| 10. Operations and Cutover | v1.2 | 0/? | Not started | - |
+| 9. Hook Migration | v1.2 | 4/4 | Complete | 2026-03-17 |
+| 10. Operations and Cutover | v1.2 | 0/4 | Planning complete | - |
 | 11. Master Roadmap | v1.2 | 0/? | Not started | - |

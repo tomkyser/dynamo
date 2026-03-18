@@ -47,14 +47,14 @@ Every capability must be self-manageable by Claude Code (install, configure, upd
 - ✓ STAB-10: Global on/off and dev mode toggles — v1.2.1 Phase 12
 - ✓ STAB-02: Archive legacy Python/Bash system — Validated in Phase 13: Cleanup and Fixes
 - ✓ STAB-07: Neo4j admin browser fix — Validated in Phase 13: Cleanup and Fixes
+- ✓ STAB-01: README and rebranding pass — Validated in Phase 14: Documentation and Branding
+- ✓ STAB-03: Exhaustive documentation — Validated in Phase 14: Documentation and Branding
+- ✓ STAB-04: Dynamo CLI integration in CLAUDE.md — Validated in Phase 14: Documentation and Branding
+- ✓ STAB-06: Architecture and design decision capture — Validated in Phase 14: Documentation and Branding
 
 ### Active (v1.2.1)
 
-- STAB-01: README and rebranding pass
-- STAB-03: Exhaustive documentation
-- STAB-04: Dynamo CLI integration in CLAUDE.md
 - STAB-05: Update/upgrade system
-- STAB-06: Architecture and design decision capture
 
 ### Out of Scope
 
@@ -67,7 +67,7 @@ Every capability must be self-manageable by Claude Code (install, configure, upd
 Shipped v1.0 (research), v1.1 (memory fixes), and v1.2 (CJS rewrite) across 11 phases and 28 plans.
 Phase 12 complete — repo restructured into 3 root directories (`dynamo/`, `ledger/`, `switchboard/`), boundary enforcement added, global toggle with blackout capability, all MCP tools wrapped as CLI commands.
 Phase 13 complete — legacy Python/Bash system tagged (`v1.2-legacy-archive`), archived, and fully removed. Neo4j admin browser accessible at localhost:7475 with working Bolt connection.
-Phase 14 in progress — documentation and branding.
+Phase 14 complete — README rewritten (537 lines, Mermaid diagram, 25 CLI commands), CLAUDE.md template expanded with 20+ commands and troubleshooting, PROJECT.md expanded with 19 structured decision records, all 7 codebase maps rewritten for CJS architecture.
 Tech stack: Node/CJS (dynamo/), Docker (Graphiti stack), Claude Haiku (session naming via OpenRouter).
 Total project: ~7,000 LOC CJS (3,585 production + 3,382 test) plus prompts.
 Python/Bash legacy retired to `~/.claude/graphiti-legacy/`.

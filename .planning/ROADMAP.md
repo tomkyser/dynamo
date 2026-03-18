@@ -59,7 +59,7 @@
   3. A global toggle disables all Dynamo hooks and MCP functionality across all Claude threads
   4. A dev mode toggle overrides global-off for the current development thread, allowing selective Dynamo usage during development
   5. All existing tests pass against the restructured codebase
-**Plans:** 2/4 plans executed
+**Plans:** 3/4 plans executed
 
 Plans:
 - [ ] 12-01-PLAN.md -- Directory restructure + require path fixes + boundary enforcement
@@ -117,7 +117,7 @@ Phases execute in numeric order: 12 -> 12.1 -> 13 -> 13.1 -> 14 -> 15
 | 9. Hook Migration | v1.2 | 4/4 | Complete | 2026-03-17 |
 | 10. Operations and Cutover | v1.2 | 4/4 | Complete | 2026-03-18 |
 | 11. Master Roadmap | v1.2 | 1/1 | Complete | 2026-03-18 |
-| 12. Structural Refactor | 2/4 | In Progress|  | - |
+| 12. Structural Refactor | 3/4 | In Progress|  | - |
 | 13. Cleanup and Fixes | v1.2.1 | 0/TBD | Not started | - |
 | 14. Documentation and Branding | v1.2.1 | 0/TBD | Not started | - |
 | 15. Update System | v1.2.1 | 0/TBD | Not started | - |

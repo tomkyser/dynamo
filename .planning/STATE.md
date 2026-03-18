@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-02-PLAN.md
-last_updated: "2026-03-18T18:49:49Z"
+stopped_at: Completed 12-03-PLAN.md
+last_updated: "2026-03-18T18:55:49Z"
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 ## Current Position
 
 Phase: 12 (structural-refactor) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 
 ### Prior Milestones
 
@@ -54,6 +54,9 @@ Recent decisions affecting current work:
 - [12-02 isEnabled]: configPath param for test isolation, reads deployed config by default
 - [12-02 REPO_ROOT]: Renamed REPO_DIR to REPO_ROOT in switchboard modules for clarity
 - [12-02 SYNC_PAIRS]: Sync uses per-pair excludes array for clean 3-dir iteration
+- [12-03 requireEnabled]: Toggle gate respects DYNAMO_CONFIG_PATH env var for test isolation
+- [12-03 lazy require]: Memory commands use lazy require() inside switch cases to avoid loading ledger at startup
+- [12-03 formatOutput]: stderr for human text, stdout for json/raw -- matches existing output() pattern
 
 ### Blockers/Concerns
 
@@ -61,6 +64,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T18:49:49Z
-Stopped at: Completed 12-02-PLAN.md
-Resume file: .planning/phases/12-structural-refactor/12-02-SUMMARY.md
+Last session: 2026-03-18T18:55:49Z
+Stopped at: Completed 12-03-PLAN.md
+Resume file: .planning/phases/12-structural-refactor/12-03-SUMMARY.md

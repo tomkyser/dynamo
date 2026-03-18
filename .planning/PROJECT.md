@@ -45,11 +45,12 @@ Every capability must be self-manageable by Claude Code (install, configure, upd
 - ✓ STAB-08: Directory structure refactor — v1.2.1 Phase 12
 - ✓ STAB-09: Component scope refactor — v1.2.1 Phase 12
 - ✓ STAB-10: Global on/off and dev mode toggles — v1.2.1 Phase 12
+- ✓ STAB-02: Archive legacy Python/Bash system — Validated in Phase 13: Cleanup and Fixes
+- ✓ STAB-07: Neo4j admin browser fix — Validated in Phase 13: Cleanup and Fixes
 
 ### Active (v1.2.1)
 
 - STAB-01: README and rebranding pass
-- STAB-02: Archive legacy Python/Bash system
 - STAB-03: Exhaustive documentation
 - STAB-04: Dynamo CLI integration in CLAUDE.md
 - STAB-05: Update/upgrade system
@@ -65,6 +66,7 @@ Every capability must be self-manageable by Claude Code (install, configure, upd
 
 Shipped v1.0 (research), v1.1 (memory fixes), and v1.2 (CJS rewrite) across 11 phases and 24 plans.
 Phase 12 complete — repo restructured into 3 root directories (`dynamo/`, `ledger/`, `switchboard/`), boundary enforcement added, global toggle with blackout capability, all MCP tools wrapped as CLI commands.
+Phase 13 complete — legacy Python/Bash system tagged (`v1.2-legacy-archive`), archived, and fully removed. Neo4j admin browser accessible at localhost:7475 with working Bolt connection.
 Tech stack: Node/CJS (dynamo/), Docker (Graphiti stack), Claude Haiku (session naming via OpenRouter).
 Total project: ~7,000 LOC CJS (3,585 production + 3,382 test) plus prompts.
 Python/Bash legacy retired to `~/.claude/graphiti-legacy/`.
@@ -115,4 +117,4 @@ These items must be assessed during every phase's planning and execution. Not al
 - [ ] **Dynamo toggle awareness**: If a global on/off or dev mode toggle exists, ensure phase work respects it and updates toggle behavior if scope changes.
 
 ---
-*Last updated: 2026-03-18 after Phase 12 (Structural Refactor) completed*
+*Last updated: 2026-03-18 after Phase 13 (Cleanup and Fixes) completed*

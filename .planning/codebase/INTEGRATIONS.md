@@ -1,197 +1,79 @@
-# External Integrations
+# Integrations Analysis: Dynamo
 
-**Analysis Date:** 2026-03-16
+**Analysis date:** 2026-03-18
 
-## APIs & External Services
+## Claude Code Integration
 
-**LLM Provider:**
-- OpenRouter (https://openrouter.ai/api/v1)
-  - Service: Unified API gateway for multiple LLM and embedding providers
-  - What it's used for:
-    - Entity extraction and conversation understanding in Graphiti
-    - Context curation via Claude Haiku (filtering search results before injection)
-    - Session summarization for memory preservation
-  - SDK/Client: `httpx` (Python HTTP client)
-  - Auth: `OPENROUTER_API_KEY` environment variable
-  - Model specs:
-    - LLM: `anthropic/claude-haiku-4.5` (configured in `graphiti/config.yaml`)
-    - Embeddings: `openai/text-embedding-3-small` (configured in `graphiti/config.yaml`)
-  - Temperature: 1.0 (required for Anthropic models via OpenRouter)
+### Hook System
+- 5 hooks registered in `~/.claude/settings.json` via `claude-config/settings-hooks.json`
+- All hooks point to `~/.claude/dynamo/hooks/dynamo-hooks.cjs`
+- Hook events: SessionStart, UserPromptSubmit, PostToolUse, PreCompact, Stop
+- Claude Code sends JSON on stdin with `hook_event_name` field
+- Single dispatcher (`dynamo-hooks.cjs`) routes to appropriate `ledger/hooks/` handler
 
-**Curation Endpoint:**
-- API: `https://openrouter.ai/api/v1/chat/completions` (OpenAI-compatible)
-  - What it's used for: Pre-filtering knowledge graph search results through Haiku before context injection
-  - Files: `graphiti/graphiti-helper.py` (functions: `curate_results()`, `summarize_text()`)
-  - Response time: 10-15 second timeout per request
-  - Max tokens: 500 per request
+### CLAUDE.md Integration
+- Template at `claude-config/CLAUDE.md.template`
+- User manually incorporates into `~/.claude/CLAUDE.md`
+- Provides operational instructions for Claude Code to use Dynamo CLI
+- NOT auto-deployed by installer (users have custom CLAUDE.md content)
 
-## Data Storage
+### Settings.json Integration
+- `switchboard/install.cjs` merges hook definitions into `~/.claude/settings.json`
+- Backup created at `settings.json.bak` before modification
+- Rollback command restores backup
 
-**Databases:**
+## Graphiti MCP Server Integration
 
-**Primary - Graph Database:**
-- Neo4j 5.26.0
-  - Provider: Self-hosted Docker container
-  - Purpose: Stores temporal knowledge graph, entity relationships, episodes, and memories
-  - Connection: Bolt protocol `bolt://neo4j:7687`
-  - Auth: `NEO4J_USER` / `NEO4J_PASSWORD` environment variables
-  - Client: Graphiti MCP server (manages Neo4j connections)
-  - Credentials: Default user `neo4j`, password `graphiti-memory-2026` (override in `.env`)
-  - Memory allocation:
-    - Heap initial: 256m
-    - Heap max: 512m
-    - Page cache: 256m
-  - Data persistence: Docker volumes `neo4j_data` and `neo4j_logs`
-  - Configuration file: `graphiti/config.yaml` (database section)
+### Connection
+- `ledger/mcp-client.cjs` provides `MCPClient` class
+- JSON-RPC 2.0 over HTTP with SSE (Server-Sent Events) response parsing
+- Endpoint: `http://localhost:8100/mcp` (configurable in config.json)
+- Health endpoint: `http://localhost:8100/health`
 
-**Episodic Storage:**
-- Episodes stored in Neo4j as graph nodes
-  - Types: SessionSummary, FileChange, PromptAugmentation, etc.
-  - Group IDs organize data by scope: `global`, `project:{name}`, `session:{timestamp}`, `task:{descriptor}`
-  - Source tracking: Each episode tagged with source (hook, user command, etc.)
+### Operations
+- `add_memory`: Store episodes with group_id scoping
+- `search_memory_facts`: Semantic fact search
+- `search_memory_nodes`: Entity node search
+- `get_episodes`: List episodes by scope
+- `get_entity_edge`: Inspect specific relationship
+- `delete_episode`: Remove episode by UUID
+- `delete_entity_edge`: Remove relationship by UUID
+- `clear_graph`: Wipe all data for a scope
 
-**File Storage:**
-- Local filesystem only
-  - Configuration: `graphiti/config.yaml`, `graphiti/curation/prompts.yaml`
-  - Install location: `~/.claude/graphiti/` (user home directory)
-  - Hook scripts: `~/.claude/graphiti/hooks/`
-  - No cloud storage integration
+### Docker Stack
+- Managed by `switchboard/stack.cjs` (wraps docker compose)
+- Config at `ledger/graphiti/docker-compose.yml`
+- Deployed to `~/.claude/graphiti/` (separate from dynamo/)
+- Neo4j data persists in Docker volumes (`neo4j_data`, `neo4j_logs`)
 
-**Caching:**
-- None explicitly configured
-- Neo4j page cache: 256m
+## OpenRouter Integration
 
-## Authentication & Identity
+### Curation Pipeline
+- `ledger/curation.cjs` calls OpenRouter API
+- Model: `anthropic/claude-haiku-4.5`
+- API URL: `https://openrouter.ai/api/v1/chat/completions`
+- Used for: memory curation, session summarization, knowledge extraction
+- 5 prompt templates in `dynamo/prompts/` directory
+- `temperature: 1.0` required for Anthropic models via OpenRouter
 
-**Auth Provider:**
-- Custom token-based (OpenRouter API key)
-  - Implementation: Bearer token in HTTP Authorization header
-  - Scope: All external API calls (LLM, embeddings) authenticated with single `OPENROUTER_API_KEY`
-  - Files: `graphiti/graphiti-helper.py` (line 168, headers for OpenRouter calls)
+### Authentication
+- `OPENROUTER_API_KEY` environment variable
+- Loaded from `~/.claude/graphiti/.env` by config loading in core.cjs
 
-**MCP Server Authentication:**
-- Session-based HTTP protocol (MCP 2.0)
-  - Implementation: Session ID via HTTP headers after initialization
-  - Files: `graphiti/graphiti-helper.py` (class `MCPClient`, methods `_initialize()`, `call_tool()`)
-  - Session tracking: `mcp-session-id` header maintained across requests
+## File System Integration
 
-**Claude Code Integration:**
-- MCP tool permissions defined in `claude-config/settings-hooks.json`
-  - Allowed tools: `add_memory`, `search_nodes`, `search_memory_facts`, `get_episodes`, `delete_episode`, `get_entity_edge`, `get_status`
-  - Approval-required tools: `clear_graph`, `delete_entity_edge`
+### Sync Pairs (repo -> deployed)
+- `dynamo/` -> `~/.claude/dynamo/` (excludes: tests)
+- `ledger/` -> `~/.claude/dynamo/ledger/`
+- `switchboard/` -> `~/.claude/dynamo/switchboard/`
+- Content-based comparison using Buffer.compare (not mtime)
+- Bidirectional: detects which side is newer
 
-## Monitoring & Observability
-
-**Error Tracking:**
-- None detected - errors logged to stderr but not tracked externally
-- Graceful degradation: All hooks and scripts fail silently, Claude Code continues normally
-
-**Logs:**
-- Approach: File-based logging via Docker volumes
-  - Neo4j logs: `/logs` volume mounted in Docker
-  - Docker compose logs: Accessible via `docker logs` commands
-  - Hook execution: Minimal logging, errors written to stderr (not captured to file)
-  - Script output: Follows Unix convention (stdout for results, stderr for errors)
-
-**Health Checks:**
-- Neo4j container: HTTP health check on port 7474 (10s interval, 5s timeout, 5 retries, 30s start period)
-- Graphiti MCP: Health endpoint at `http://localhost:8100/health`
-- Helper health check: `graphiti-helper.py health-check` command
-- Files: `graphiti/docker-compose.yml` (healthcheck section), `graphiti/graphiti-helper.py` (cmd_health_check)
-
-## CI/CD & Deployment
-
-**Hosting:**
-- Local development environment (Docker)
-- No cloud deployment configured
-- Multi-node support: None (single-machine setup)
-
-**CI Pipeline:**
-- None detected
-- Manual installation via `install.sh`
-- No automated tests or deployment pipeline
-
-**Docker Infrastructure:**
-- Orchestration: Docker Compose
-- File: `graphiti/docker-compose.yml`
-- Services:
-  - `neo4j` - Graph database
-  - `graphiti-mcp` - Knowledge graph MCP server
-- Network: Default bridge network (services communicate via service names)
-- Restart policy: `unless-stopped`
-
-**Installation & Setup:**
-- Primary entry point: `./install.sh`
-- Startup: `~/.claude/graphiti/start-graphiti.sh`
-- Shutdown: `~/.claude/graphiti/stop-graphiti.sh`
-- Health verification: Pre-startup checks and wait-for-healthy loops
-
-## Environment Configuration
-
-**Required env vars (from .env):**
-- `OPENROUTER_API_KEY` - OpenRouter API authentication (critical)
-- `OPENAI_API_KEY` - Alias for OPENROUTER_API_KEY in Docker Compose
-- `NEO4J_USER` - Neo4j username (default: `neo4j`)
-- `NEO4J_PASSWORD` - Neo4j password (default: `graphiti-memory-2026`)
-- `NEO4J_DATABASE` - Neo4j database name (default: `neo4j`)
-- `GRAPHITI_GROUP_ID` - Default group ID for episodes (default: `global`)
-- `SEMAPHORE_LIMIT` - Connection limit for MCP server (default: 8)
-
-**Optional env vars:**
-- `GRAPHITI_MCP_URL` - MCP server endpoint (default: `http://localhost:8100/mcp`)
-- `GRAPHITI_HEALTH_URL` - Health check endpoint (default: `http://localhost:8100/health`)
-- `ANTHROPIC_API_KEY` - Fallback for Haiku curation (optional if using OpenRouter)
-
-**Secrets location:**
-- `.env` file in `graphiti/` directory (not committed to git)
-- Template: `graphiti/.env.example` (contains placeholder values)
-- Installation copies `.env` to `~/.claude/graphiti/.env`
-
-**Configuration files:**
-- `graphiti/config.yaml` - Graphiti server config (LLM, embeddings, database, entity types)
-- `graphiti/curation/prompts.yaml` - Haiku curation prompt templates
-- `claude-config/settings-hooks.json` - Claude Code hook definitions and MCP permissions
-- `claude-config/CLAUDE.md.template` - System instructions for Claude
-
-## Webhooks & Callbacks
-
-**Incoming:**
-- None detected - system is read-only from external services' perspective
-
-**Outgoing:**
-- Claude Code hooks (passive callbacks)
-  - `SessionStart` - Fires on session startup/resume and context compaction
-  - `UserPromptSubmit` - Fires on every user prompt (prompt augmentation)
-  - `PostToolUse` - Fires after file writes (change tracking)
-  - `PreCompact` - Fires before context window compression (knowledge preservation)
-  - `Stop` - Fires on session end (session summarization)
-  - Configuration: `claude-config/settings-hooks.json`
-  - Implementation: Shell scripts in `graphiti/hooks/`
-
-**Event Flow:**
-1. Claude Code triggers hook → Executes shell script
-2. Shell script calls `graphiti-helper.py` with arguments
-3. Python script communicates with Graphiti MCP server via HTTP
-4. Results passed back to Claude Code context via stdout
-
-## Third-Party Service Dependencies
-
-**OpenRouter:**
-- Provider: Third-party API gateway
-- Risk: API outages impact all LLM and embedding calls
-- Fallback: None (system degrades gracefully but has no local fallback)
-- Workaround: Can use local models if configuration updated, but requires Neo4j entity extraction to fail
-
-**Neo4j:**
-- Provider: Local Docker (self-hosted)
-- Risk: Data loss if volumes not backed up
-- Backup: Manual volume backups required (not automated)
-
-**Docker:**
-- Provider: Container runtime dependency
-- Risk: Docker daemon downtime stops all services
-- Mitigation: `restart: unless-stopped` policy
+### Config Generation
+- `dynamo/config.json` is the template
+- `install.cjs` generates deployed config at `~/.claude/dynamo/config.json`
+- `.env` values merged into config during install
 
 ---
 
-*Integration audit: 2026-03-16*
+*Integration analysis: 2026-03-18*

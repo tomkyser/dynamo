@@ -30,9 +30,18 @@ Every capability must be self-manageable by Claude Code (install, configure, upd
 - ✓ Feature parity: existing hooks, session mgmt, health checks, sync on CJS — v1.2
 - ✓ Master Roadmap: prioritize and assign backlog to v1.3-v2.0 — v1.2
 
-### Active
+### Active (v1.2.1)
 
-(None — next milestone requirements defined via `/gsd:new-milestone`)
+- STAB-01: README and rebranding pass
+- STAB-02: Archive legacy Python/Bash system
+- STAB-03: Exhaustive documentation
+- STAB-04: Dynamo CLI integration in CLAUDE.md
+- STAB-05: Update/upgrade system
+- STAB-06: Architecture and design decision capture
+- STAB-07: Fix Neo4j admin browser connectivity
+- STAB-08: Directory structure refactor
+- STAB-09: Component scope refactor
+- STAB-10: Global on/off and dev mode toggles
 
 ### Out of Scope
 
@@ -46,7 +55,7 @@ Shipped v1.0 (research), v1.1 (memory fixes), and v1.2 (CJS rewrite) across 11 p
 Tech stack: Node/CJS (dynamo/), Docker (Graphiti stack), Claude Haiku (session naming via OpenRouter).
 Total project: ~7,000 LOC CJS (3,585 production + 3,382 test) plus prompts.
 Python/Bash legacy retired to `~/.claude/graphiti-legacy/`.
-Future backlog (26 items across memory enhancement, management, UI) documented in MASTER-ROADMAP.md.
+v1.2.1 has 10 stabilization requirements (STAB-01 through STAB-10). Future backlog beyond v1.2.1: 26 items across memory enhancement, management, UI documented in MASTER-ROADMAP.md.
 
 ## Key Decisions
 
@@ -66,6 +75,9 @@ Future backlog (26 items across memory enhancement, management, UI) documented i
 | Content-based sync (Buffer.compare) | More accurate than mtime-only conflict detection | ✓ Good |
 | Options-based test isolation | Stage/module functions accept overrides for test isolation | ✓ Good — all tests use tmpdir |
 | Settings.json backup before modification | Atomic write (tmp+rename) with .bak for rollback | ✓ Good — safe cutover |
+| Repo renamed to "dynamo" on GitHub | Reflect Dynamo identity in repo name, not just internal naming | Pending |
+| Branch renamed from main to master | Team convention preference; aligns with project terminology | Done |
+| Insert v1.2.1 before v1.3 | Close stabilization gaps (docs, branding, legacy cleanup, toggles) before building intelligence layer | Done -- 10 STAB requirements scoped |
 
 ## Constraints
 
@@ -89,4 +101,4 @@ These items must be assessed during every phase's planning and execution. Not al
 - [ ] **Dynamo toggle awareness**: If a global on/off or dev mode toggle exists, ensure phase work respects it and updates toggle behavior if scope changes.
 
 ---
-*Last updated: 2026-03-18 after v1.2.1 milestone scoping*
+*Last updated: 2026-03-18 after v1.2.1 scoping -- planning docs updated with 10 STAB requirements and 4 new future items*

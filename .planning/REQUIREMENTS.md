@@ -1,6 +1,7 @@
 # Requirements: Dynamo
 
 **Defined:** 2026-03-17
+**Last updated:** 2026-03-18
 **Core Value:** Every capability must be self-manageable by Claude Code without manual user config file edits
 
 ## v1.2 Requirements
@@ -51,6 +52,23 @@ Requirements for the CJS architectural rewrite with complete feature parity.
 - [x] **MRP-01**: Backlog items prioritized and assigned to v1.3-v2.0 milestones
 - [x] **MRP-02**: Master Roadmap document created in project root
 
+## v1.2.1 Requirements
+
+Requirements for stabilization and polish of the v1.2 CJS foundation.
+
+### Stabilization
+
+- [ ] **STAB-01**: README and rebranding pass -- README reflects Dynamo identity, repo renamed on GitHub
+- [ ] **STAB-02**: Archive legacy Python/Bash system -- tag, branch, and remove from dev/master
+- [ ] **STAB-03**: Exhaustive documentation -- architecture, usage, CLI, hooks, config, dev guide
+- [ ] **STAB-04**: Dynamo CLI integration in CLAUDE.md -- complete operational instructions for Claude Code
+- [ ] **STAB-05**: Update/upgrade system -- version checks, migration, rollback
+- [ ] **STAB-06**: Architecture and design decision capture -- deep analysis of v1.0-v1.2 decisions
+- [ ] **STAB-07**: Fix Neo4j admin browser connectivity -- port 7475 not accessible
+- [ ] **STAB-08**: Directory structure refactor -- dynamo/, ledger/, switchboard/ as root-level directories
+- [ ] **STAB-09**: Component scope refactor -- honor Dynamo/Ledger/Switchboard boundaries in code
+- [ ] **STAB-10**: Global on/off and dev mode toggles -- disable hooks globally, dev override per-thread
+
 ## Future Requirements
 
 Deferred to v1.3+. Tracked but not in current roadmap.
@@ -65,6 +83,8 @@ Deferred to v1.3+. Tracked but not in current roadmap.
 - **MENH-07**: Support other model choices for curation
 - **MENH-08**: Support native or local text embedding model
 - **MENH-09**: Council-style AI agent deliberation
+- **MENH-10**: Dynamic curation depth -- adjust raw memory vs synthesized/summarized based on inferred user intent
+- **MENH-11**: Proactive intelligent ingestion -- intelligently decide what to store, why it matters, and how it relates to scope
 
 ### Management Enhancement
 - **MGMT-01**: Self-contained dependency management (Codeman, GSD, Memory System)
@@ -77,6 +97,7 @@ Deferred to v1.3+. Tracked but not in current roadmap.
 - **MGMT-08**: Jailbreak/hijacking protection patterns
 - **MGMT-09**: Human cognition patterns applied as prompt engineering
 - **MGMT-10**: Modular injection with better control through CJS
+- **MGMT-11**: Session index refactor to SQLite -- replace flat-file session index with proper DB for depth and breadth over time
 
 ### UI
 - **UI-01**: Global, Session, Project, Task views
@@ -86,6 +107,7 @@ Deferred to v1.3+. Tracked but not in current roadmap.
 - **UI-05**: Asset management and browser
 - **UI-06**: Memory CRUD operations
 - **UI-07**: Memory with desktop app and mobile
+- **UI-08**: Inline Dynamo visibility in Claude thread -- status indicators, memory actions, system state surfaced contextually
 
 ## Out of Scope
 
@@ -133,11 +155,31 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MRP-01 | Phase 11 | Complete |
 | MRP-02 | Phase 11 | Complete |
 
-**Coverage:**
+**v1.2 Coverage:**
 - v1.2 requirements: 29 total
 - Mapped to phases: 29
 - Unmapped: 0
 
+### v1.2.1
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| STAB-01 | TBD | Pending |
+| STAB-02 | TBD | Pending |
+| STAB-03 | TBD | Pending |
+| STAB-04 | TBD | Pending |
+| STAB-05 | TBD | Pending |
+| STAB-06 | TBD | Pending |
+| STAB-07 | TBD | Pending |
+| STAB-08 | TBD | Pending |
+| STAB-09 | TBD | Pending |
+| STAB-10 | TBD | Pending |
+
+**v1.2.1 Coverage:**
+- v1.2.1 requirements: 10 total
+- Mapped to phases: 0
+- Unmapped: 10 (awaiting milestone start)
+
 ---
 *Requirements defined: 2026-03-17*
-*Last updated: 2026-03-17 after roadmap creation*
+*Last updated: 2026-03-18 after v1.2.1 scoping*

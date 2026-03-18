@@ -5,7 +5,56 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const { output, error, safeReadFile } = require(path.join(__dirname, 'core.cjs'));
+const { output, error, safeReadFile, isEnabled } = require(path.join(__dirname, 'core.cjs'));
+
+// --- Flag/arg helpers for memory commands ---
+
+/**
+ * Extract a flag value from args array. Returns the value after the flag, or null.
+ * Example: extractFlag(['--scope', 'global', '--format', 'json'], '--scope') -> 'global'
+ */
+function extractFlag(args, flag) {
+  const idx = args.indexOf(flag);
+  if (idx === -1 || idx + 1 >= args.length) return null;
+  return args[idx + 1];
+}
+
+/**
+ * Get non-flag arguments (arguments that don't start with --)
+ */
+function getPositionalArgs(args) {
+  const result = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i].startsWith('--')) { i++; continue; }  // Skip flag + value
+    result.push(args[i]);
+  }
+  return result;
+}
+
+/**
+ * Format output based on --format flag
+ */
+function formatOutput(data, format, humanText) {
+  if (format === 'json') {
+    output(data);
+  } else if (format === 'raw') {
+    // Raw: dump the full content as-is
+    const raw = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    process.stdout.write(raw + '\n');
+  } else {
+    // Default: human-readable to stderr
+    process.stderr.write(humanText + '\n');
+  }
+}
+
+/**
+ * Toggle gate for memory commands
+ */
+function requireEnabled() {
+  if (!isEnabled()) {
+    error('Dynamo is disabled. Use "dynamo toggle on" or set DYNAMO_DEV=1');
+  }
+}
 
 // --- Help ---
 
@@ -24,6 +73,12 @@ Commands:
   stop           Stop the Graphiti Docker stack (preserves data)
   install        Deploy CJS system to ~/.claude/dynamo/ and retire Python
   rollback       Restore settings.json.bak and undo retirement
+  search         Search knowledge graph for facts and entities
+  remember       Store a memory in the knowledge graph
+  recall         Retrieve episodes from a scope
+  edge           Inspect a specific entity relationship
+  forget         Delete an episode or edge by UUID
+  clear          Clear all data for a scope (destructive)
   toggle         Enable or disable Dynamo globally (on/off)
   status         Show Dynamo enabled/disabled state
   session        Session management (list, view, label, backfill)
@@ -32,7 +87,9 @@ Commands:
   help           Show this help message
 
 Options:
-  --pretty       Human-readable output (default: JSON)
+  --pretty       Human-readable output (default: JSON for operational commands)
+  --format       Output format: text (human), json (structured), raw (full source)
+  --scope        Memory scope: global, project-<name>, session-<ts>, task-<desc>
   --verbose      Show detailed stage output
   --help         Show command-specific help
 
@@ -55,6 +112,12 @@ const COMMAND_HELP = {
   'stop':         'Usage: dynamo stop [--pretty]\n  Stop Graphiti Docker stack.',
   'install':      'Usage: dynamo install [--pretty]\n  Deploy CJS system and retire Python.',
   'rollback':     'Usage: dynamo rollback [--pretty]\n  Restore settings.json.bak and undo retirement.',
+  'search':       'Usage: dynamo search <query> [--facts|--nodes] [--scope <scope>] [--format json|raw]\n  Search knowledge graph.',
+  'remember':     'Usage: dynamo remember <content> [--scope <scope>] [--format json|raw]\n  Store a memory.',
+  'recall':       'Usage: dynamo recall [--scope <scope>] [--format json|raw]\n  Retrieve episodes from a scope.',
+  'edge':         'Usage: dynamo edge <uuid> [--format json|raw]\n  Inspect a specific entity relationship.',
+  'forget':       'Usage: dynamo forget <uuid> [--edge] [--format json|raw]\n  Delete an episode or edge.',
+  'clear':        'Usage: dynamo clear --scope <scope> --confirm [--format json|raw]\n  Clear all data for a scope (DESTRUCTIVE).',
   'toggle':       'Usage: dynamo toggle <on|off>\n  Enable or disable Dynamo globally.',
   'status':       'Usage: dynamo status [--pretty]\n  Show Dynamo enabled/disabled state.',
   'session':      'Usage: dynamo session <list|view|label|backfill> [args] [--pretty]\n  Session management.',
@@ -127,6 +190,124 @@ async function main() {
     case 'rollback':
       await require(path.join(__dirname, '..', 'switchboard', 'install.cjs')).rollback(restArgs, pretty);
       break;
+
+    // --- Memory Commands ---
+
+    case 'search': {
+      requireEnabled();
+      const query = getPositionalArgs(restArgs).join(' ');
+      if (!query) { error('Usage: dynamo search <query> [--facts|--nodes] [--scope <scope>] [--format json|raw]'); return; }
+      const scopeArg = extractFlag(restArgs, '--scope') || 'global';
+      const format = extractFlag(restArgs, '--format') || 'text';
+      const search = require(path.join(__dirname, '..', 'ledger', 'search.cjs'));
+      let result;
+      if (restArgs.includes('--nodes')) {
+        result = await search.searchNodes(query, scopeArg);
+      } else if (restArgs.includes('--facts')) {
+        result = await search.searchFacts(query, scopeArg);
+      } else {
+        result = await search.combinedSearch(query, scopeArg);
+      }
+      formatOutput(
+        { command: 'search', query, scope: scopeArg, result },
+        format,
+        result || 'No results found.'
+      );
+      break;
+    }
+
+    case 'remember': {
+      requireEnabled();
+      const content = getPositionalArgs(restArgs).join(' ');
+      if (!content) { error('Usage: dynamo remember <content> [--scope <scope>] [--format json|raw]'); return; }
+      const scopeArg = extractFlag(restArgs, '--scope') || 'global';
+      const format = extractFlag(restArgs, '--format') || 'text';
+      const { addEpisode } = require(path.join(__dirname, '..', 'ledger', 'episodes.cjs'));
+      const result = await addEpisode(content, scopeArg);
+      formatOutput(
+        { command: 'remember', content, scope: scopeArg, success: !!result },
+        format,
+        result ? 'Memory stored.' : 'Failed to store memory.'
+      );
+      break;
+    }
+
+    case 'recall': {
+      requireEnabled();
+      const scopeArg = extractFlag(restArgs, '--scope') || 'global';
+      const format = extractFlag(restArgs, '--format') || 'text';
+      const { MCPClient } = require(path.join(__dirname, 'core.cjs'));
+      const { extractContent } = require(path.join(__dirname, '..', 'ledger', 'episodes.cjs'));
+      const client = new MCPClient();
+      const response = await client.callTool('get_episodes', { group_ids: [scopeArg] });
+      const content = extractContent(response);
+      formatOutput(
+        { command: 'recall', scope: scopeArg, episodes: content },
+        format,
+        content || 'No episodes found.'
+      );
+      break;
+    }
+
+    case 'edge': {
+      requireEnabled();
+      const uuid = restArgs.find(a => !a.startsWith('--'));
+      if (!uuid) { error('Usage: dynamo edge <uuid> [--format json|raw]'); return; }
+      const format = extractFlag(restArgs, '--format') || 'text';
+      const { MCPClient } = require(path.join(__dirname, 'core.cjs'));
+      const { extractContent } = require(path.join(__dirname, '..', 'ledger', 'episodes.cjs'));
+      const client = new MCPClient();
+      const response = await client.callTool('get_entity_edge', { uuid });
+      const content = extractContent(response);
+      formatOutput(
+        { command: 'edge', uuid, result: content },
+        format,
+        content || 'Edge not found.'
+      );
+      break;
+    }
+
+    case 'forget': {
+      requireEnabled();
+      const isEdge = restArgs.includes('--edge');
+      const uuid = restArgs.find(a => !a.startsWith('--'));
+      if (!uuid) { error('Usage: dynamo forget <uuid> [--edge] [--format json|raw]'); return; }
+      const format = extractFlag(restArgs, '--format') || 'text';
+      const { MCPClient } = require(path.join(__dirname, 'core.cjs'));
+      const { extractContent } = require(path.join(__dirname, '..', 'ledger', 'episodes.cjs'));
+      const client = new MCPClient();
+      const toolName = isEdge ? 'delete_entity_edge' : 'delete_episode';
+      const response = await client.callTool(toolName, { uuid });
+      const content = extractContent(response);
+      formatOutput(
+        { command: 'forget', uuid, type: isEdge ? 'edge' : 'episode', result: content },
+        format,
+        `Deleted ${isEdge ? 'edge' : 'episode'}: ${uuid}`
+      );
+      break;
+    }
+
+    case 'clear': {
+      requireEnabled();
+      if (!restArgs.includes('--confirm')) {
+        error('DESTRUCTIVE: This will clear all data for the specified scope.\nUsage: dynamo clear --scope <scope> --confirm');
+        return;
+      }
+      const scopeArg = extractFlag(restArgs, '--scope');
+      if (!scopeArg) { error('Usage: dynamo clear --scope <scope> --confirm'); return; }
+      const format = extractFlag(restArgs, '--format') || 'text';
+      const { MCPClient } = require(path.join(__dirname, 'core.cjs'));
+      const { extractContent } = require(path.join(__dirname, '..', 'ledger', 'episodes.cjs'));
+      const client = new MCPClient();
+      const response = await client.callTool('clear_graph', { group_ids: [scopeArg] });
+      const content = extractContent(response);
+      formatOutput(
+        { command: 'clear', scope: scopeArg, result: content },
+        format,
+        `Cleared scope: ${scopeArg}`
+      );
+      break;
+    }
 
     case 'toggle': {
       const action = restArgs[0];

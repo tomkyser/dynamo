@@ -65,7 +65,7 @@ Each task was committed atomically:
 1. **Task 1: Verify legacy archive and create git tag** - no file commit (git tag `v1.2-legacy-archive` is the artifact)
 2. **Task 2: Remove all legacy files from repository** - `8a0c185` (remove)
 
-**Plan metadata:** (pending final commit)
+**Plan metadata:** `d7da8a1` (docs: complete plan)
 
 ## Files Created/Modified
 - `graphiti/` - Entire directory removed (18 files: .env.example, README.md, SCOPE_FALLBACK.md, config.yaml, curation/prompts.yaml, diagnose.py, docker-compose.yml, graphiti-helper.py, health-check.py, hooks/capture-change.sh, hooks/health-check.sh, hooks/preserve-knowledge.sh, hooks/prompt-augment.sh, hooks/session-start.sh, hooks/session-summary.sh, requirements.txt, start-graphiti.sh, stop-graphiti.sh)

@@ -1,3 +1,5 @@
+> **Note:** This README describes the original Python/Bash memory system which has been fully replaced by [Dynamo](./dynamo/), a CJS-based rewrite. The information below is outdated. For current usage, run `dynamo --help` after installation. A complete README rewrite is planned for Phase 14.
+
 # Claude Code + Graphiti Memory System
 
 A self-managed memory and context engineering system for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) powered by [Graphiti](https://github.com/getzep/graphiti) — a temporal knowledge graph built on Neo4j.

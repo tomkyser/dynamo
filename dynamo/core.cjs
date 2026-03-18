@@ -79,7 +79,7 @@ function loadConfig() {
   }
 }
 
-// --- .env loading (port from Python graphiti-helper.py lines 42-52) ---
+// --- .env loading (originally ported from Python graphiti-helper.py) ---
 
 function loadEnv(envPath) {
   if (!envPath) {
@@ -109,7 +109,7 @@ function loadEnv(envPath) {
   }
 }
 
-// --- Project detection (port from Python graphiti-helper.py lines 293-359) ---
+// --- Project detection (originally ported from Python graphiti-helper.py) ---
 
 function detectProject(cwd) {
   cwd = cwd || process.cwd();

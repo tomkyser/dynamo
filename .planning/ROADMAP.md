@@ -78,8 +78,8 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 13-01-PLAN.md -- Tag legacy archive + git rm all Python/Bash files
-- [ ] 13-02-PLAN.md -- Neo4j port fix + stale reference cleanup + README deprecation notice
+- [x] 13-01-PLAN.md -- Tag legacy archive + git rm all Python/Bash files
+- [x] 13-02-PLAN.md -- Neo4j port fix + stale reference cleanup + README deprecation notice
 
 ### Phase 14: Documentation and Branding
 **Goal**: Dynamo is fully documented for both users and future Claude sessions, with complete branding and architectural knowledge captured for development continuity
@@ -91,7 +91,12 @@ Plans:
   3. CLAUDE.md contains complete operational instructions for using the Dynamo CLI and system -- Claude Code can self-manage Dynamo without user guidance
   4. Architectural decisions from v1.0-v1.2 are captured in a structured format that new Claude sessions can read for development continuity
   5. GitHub repo is renamed to reflect Dynamo identity
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 14-01-PLAN.md -- Complete README.md rewrite with all 10 sections and Mermaid architecture diagram
+- [ ] 14-02-PLAN.md -- CLAUDE.md template expansion + PROJECT.md architecture decision records
+- [ ] 14-03-PLAN.md -- Full rewrite of all 7 codebase map files for CJS architecture
 
 ### Phase 15: Update System
 **Goal**: Dynamo can check for updates, apply upgrades, and roll back if something goes wrong -- without manual user intervention
@@ -122,6 +127,6 @@ Phases execute in numeric order: 12 -> 12.1 -> 13 -> 13.1 -> 14 -> 15
 | 10. Operations and Cutover | v1.2 | 4/4 | Complete | 2026-03-18 |
 | 11. Master Roadmap | v1.2 | 1/1 | Complete | 2026-03-18 |
 | 12. Structural Refactor | v1.2.1 | 4/4 | Complete | 2026-03-18 |
-| 13. Cleanup and Fixes | 2/2 | Complete    | 2026-03-18 | - |
-| 14. Documentation and Branding | v1.2.1 | 0/TBD | Not started | - |
+| 13. Cleanup and Fixes | v1.2.1 | 2/2 | Complete | 2026-03-18 |
+| 14. Documentation and Branding | v1.2.1 | 0/3 | Planning | - |
 | 15. Update System | v1.2.1 | 0/TBD | Not started | - |

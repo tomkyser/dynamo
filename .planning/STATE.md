@@ -37,6 +37,7 @@ Total prior: 11 phases, 28 plans completed.
 |---|-------------|------|--------|-----------|
 | 260318-gcj | Update GSD planning docs to reflect current project state | 2026-03-18 | 3281ecb | [260318-gcj](./quick/260318-gcj-update-gsd-planning-docs-to-reflect-curr/) |
 | 260318-mcy | Research Ledger Cortex brief and produce analysis + draft roadmap | 2026-03-18 | 62dab20 | [260318-mcy](./quick/260318-mcy-research-ledger-cortex-brief-and-produce/) |
+| 260318-nbm | Synthesize Inner Voice cognitive architecture specification | 2026-03-18 | 24f3801 | [260318-nbm](./quick/260318-nbm-inner-voice-cognitive-architecture-synth/) |
 
 ## Accumulated Context
 

@@ -48,10 +48,12 @@ function formatOutput(data, format, humanText) {
 }
 
 /**
- * Toggle gate for memory commands
+ * Toggle gate for memory commands.
+ * Respects DYNAMO_CONFIG_PATH env var for test isolation.
  */
 function requireEnabled() {
-  if (!isEnabled()) {
+  const configPath = process.env.DYNAMO_CONFIG_PATH || undefined;
+  if (!isEnabled(configPath)) {
     error('Dynamo is disabled. Use "dynamo toggle on" or set DYNAMO_DEV=1');
   }
 }

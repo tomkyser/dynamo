@@ -5,7 +5,7 @@
 - ✅ **v1.0 Research and Ranked Report** -- Phases 1-3 (shipped 2026-03-17)
 - ✅ **v1.1 Fix Memory System** -- Phases 4-7 (shipped 2026-03-17)
 - ✅ **v1.2 Dynamo Foundation** -- Phases 8-11 (shipped 2026-03-18)
-- **v1.2.1 Stabilization and Polish** -- (next)
+- **v1.2.1 Stabilization and Polish** -- 10 requirements (next)
 
 ## Phases
 
@@ -38,6 +38,24 @@
 
 </details>
 
+### v1.2.1 Stabilization and Polish
+
+**Status:** Scoping -- phases and plans to be defined via `/gsd:new-milestone`
+
+**Goal:** Close the gaps between v1.2's CJS rewrite and v1.3's intelligence work. Ensure Dynamo is properly branded, fully documented, easy to update, and that architectural decisions are captured for continuity.
+
+**Requirements:**
+- STAB-01: README and rebranding pass
+- STAB-02: Archive legacy Python/Bash system
+- STAB-03: Exhaustive documentation
+- STAB-04: Dynamo CLI integration in CLAUDE.md
+- STAB-05: Update/upgrade system
+- STAB-06: Architecture and design decision capture
+- STAB-07: Fix Neo4j admin browser connectivity
+- STAB-08: Directory structure refactor
+- STAB-09: Component scope refactor
+- STAB-10: Global on/off and dev mode toggles
+
 ## Progress
 
 | Phase | Milestone | Plans | Status | Completed |
@@ -53,3 +71,4 @@
 | 9. Hook Migration | v1.2 | 4/4 | Complete | 2026-03-17 |
 | 10. Operations and Cutover | v1.2 | 4/4 | Complete | 2026-03-18 |
 | 11. Master Roadmap | v1.2 | 1/1 | Complete | 2026-03-18 |
+| v1.2.1 | v1.2.1 | TBD | Scoping | - |

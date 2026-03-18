@@ -1,5 +1,27 @@
 # Milestones
 
+## v1.2.1 Stabilization and Polish (Scoping)
+
+**Status:** Scoped, not yet started
+**Requirements:** 10 (STAB-01 through STAB-10)
+**Dependencies:** v1.2 (CJS substrate complete, feature parity achieved)
+
+**Goal:** Close the gaps between v1.2's CJS rewrite and v1.3's intelligence work. The foundation is solid but public-facing artifacts (README, repo identity, docs) and operational concerns (update system, legacy cleanup, CLAUDE.md integration, toggles) were not addressed in v1.2. This milestone ensures Dynamo is properly branded, fully documented, easy to update, that the architecture is captured for continuity, and that dev toggles exist for safe development.
+
+**Requirements:**
+- STAB-01: README and rebranding pass
+- STAB-02: Archive legacy Python/Bash system
+- STAB-03: Exhaustive documentation
+- STAB-04: Dynamo CLI integration in CLAUDE.md
+- STAB-05: Update/upgrade system
+- STAB-06: Architecture and design decision capture
+- STAB-07: Fix Neo4j admin browser connectivity
+- STAB-08: Directory structure refactor
+- STAB-09: Component scope refactor
+- STAB-10: Global on/off and dev mode toggles
+
+---
+
 ## v1.2 Dynamo Foundation (Shipped: 2026-03-18)
 
 **Phases completed:** 4 phases, 12 plans

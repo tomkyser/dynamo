@@ -1,225 +1,121 @@
-# Codebase Structure
+# Structure Analysis: Dynamo
 
-**Analysis Date:** 2026-03-16
+**Analysis date:** 2026-03-18
 
-## Directory Layout
+## Repo Layout (Development)
 
 ```
-my-cc-setup/                       # Repository root
-├── .planning/
-│   └── codebase/                  # GSD codebase analysis documents
-│       ├── ARCHITECTURE.md
-│       └── STRUCTURE.md
-├── graphiti/                       # Core memory system
-│   ├── docker-compose.yml         # Docker services (Neo4j + Graphiti MCP)
-│   ├── config.yaml                # Graphiti server configuration
-│   ├── graphiti-helper.py         # CLI bridge: hooks ↔ MCP server + Haiku curation
-│   ├── requirements.txt           # Python dependencies (httpx, pyyaml, anthropic)
-│   ├── start-graphiti.sh          # Docker stack startup script
-│   ├── stop-graphiti.sh           # Docker stack shutdown script
-│   ├── .env                       # API keys (never committed; created from .env.example)
-│   ├── .env.example               # Template for API keys
-│   ├── hooks/                     # Claude Code event capture scripts
-│   │   ├── session-start.sh       # SessionStart hook: inject global + project context
-│   │   ├── prompt-augment.sh      # UserPromptSubmit hook: augment prompts with relevant memories
-│   │   ├── capture-change.sh      # PostToolUse hook: async file change tracking
-│   │   ├── preserve-knowledge.sh  # PreCompact hook: extract + re-inject critical knowledge
-│   │   └── session-summary.sh     # Stop hook: summarize + store session
-│   └── curation/
-│       └── prompts.yaml           # Haiku curation prompt templates
-├── claude-config/                  # Claude Code integration files
-│   ├── CLAUDE.md.template         # Memory system rules for ~/.claude/CLAUDE.md
-│   └── settings-hooks.json        # Hook definitions + MCP permissions for ~/.claude/settings.json
-├── install.sh                      # Installation script: deploys to ~/.claude/graphiti/
-├── README.md                       # Project documentation
-└── .gitignore                      # Excludes: .env, .venv, node_modules, __pycache__
+dynamo/                 # Orchestration layer
+  dynamo.cjs            # CLI router (25 commands)
+  core.cjs              # Shared substrate (config, output, toggle, MCPClient re-exports)
+  config.json           # Runtime config (version, URLs, timeouts, logging)
+  VERSION               # Semantic version (0.1.0)
+  hooks/
+    dynamo-hooks.cjs    # Single hook dispatcher (5 events)
+  prompts/              # Curation prompt templates (5 .md files)
+  tests/                # All tests (272+)
+
+ledger/                 # Memory subsystem
+  mcp-client.cjs        # MCPClient + SSE parsing
+  scope.cjs             # Scope constants, validation, sanitization
+  search.cjs            # Combined/fact/node search
+  episodes.cjs          # Episode add/extract
+  curation.cjs          # Haiku curation pipeline
+  sessions.cjs          # Session management (list, view, label, backfill, auto-name)
+  hooks/                # 5 hook handlers (session-start, prompt-augment, capture-change, preserve-knowledge, session-summary)
+  graphiti/             # Docker infrastructure
+    docker-compose.yml  # Neo4j + Graphiti MCP containers
+    config.yaml         # Graphiti server config
+    start-graphiti.sh   # Stack startup script
+    stop-graphiti.sh    # Stack shutdown script
+
+switchboard/            # Operations subsystem
+  install.cjs           # CJS installer (6 steps)
+  sync.cjs              # Bidirectional repo<->live sync
+  health-check.cjs      # 6-stage health check
+  diagnose.cjs          # 13-stage deep diagnostics
+  verify-memory.cjs     # 6-check pipeline verification
+  stack.cjs             # Docker start/stop wrappers
+  stages.cjs            # Shared diagnostic stage logic
+  pretty.cjs            # Human-readable formatters
+
+claude-config/          # Integration templates
+  CLAUDE.md.template    # Memory system rules for ~/.claude/CLAUDE.md
+  settings-hooks.json   # Hook definitions for ~/.claude/settings.json
 ```
 
-## Directory Purposes
+## Deployed Layout (Production)
 
-**graphiti/:**
-- Purpose: Core memory system implementation
-- Contains: Docker orchestration, server config, Python helper tool, hook scripts, curation templates
-- Key files: `docker-compose.yml` (service definitions), `config.yaml` (Graphiti config), `graphiti-helper.py` (CLI bridge), hooks/* (event capture)
+```
+~/.claude/dynamo/             # Deployed by install.cjs
+  dynamo.cjs                  # CLI entry point
+  core.cjs                    # Shared substrate
+  config.json                 # Generated from .env values
+  VERSION                     # Current version
+  hooks/
+    dynamo-hooks.cjs          # Single dispatcher for all hooks
+  prompts/                    # Curation templates
+  ledger/                     # Memory modules (flat)
+    mcp-client.cjs
+    scope.cjs
+    search.cjs
+    episodes.cjs
+    curation.cjs
+    sessions.cjs
+    hooks/                    # Hook handlers
+  switchboard/                # Operations modules (flat)
+    install.cjs
+    sync.cjs
+    health-check.cjs
+    ...
 
-**graphiti/hooks/:**
-- Purpose: Shell scripts executed by Claude Code at lifecycle events
-- Contains: Five shell scripts, each handling a specific hook type
-- Key files: One script per hook type (SessionStart, UserPromptSubmit, PostToolUse, PreCompact, Stop)
-- Invocation: Called by Claude Code with JSON input on stdin; each exits with status code 0-1
-- Output: Context blocks (e.g., `[GRAPHITI MEMORY CONTEXT]`) written to stdout; other output to stderr
+~/.claude/graphiti/           # Graphiti infrastructure (NOT moved)
+  docker-compose.yml
+  config.yaml
+  .env                        # API keys (never committed)
+  start-graphiti.sh
+  stop-graphiti.sh
+  sessions.json               # Session index
 
-**graphiti/curation/:**
-- Purpose: Haiku prompt templates for context filtering
-- Contains: Single YAML file with 4 prompt templates
-- Key files: `prompts.yaml` (curate_session_context, curate_prompt_context, summarize_session, curate_precompact)
-- Usage: Loaded by `graphiti-helper.py` at startup; template variables substituted at runtime
+~/.claude/CLAUDE.md           # Deployed from template
+~/.claude/settings.json       # Hooks merged into this
+```
 
-**claude-config/:**
-- Purpose: Configuration templates for integrating with Claude Code
-- Contains: CLAUDE.md template (memory system rules) and settings-hooks.json (hook definitions + permissions)
-- Key files: `CLAUDE.md.template` → merge into `~/.claude/CLAUDE.md`, `settings-hooks.json` → merge into `~/.claude/settings.json`
-- Not installed directly; user manually merges these into their Claude Code settings after running install.sh
+## Key Files
 
-**.planning/codebase/:**
-- Purpose: GSD codebase analysis documents
-- Contains: ARCHITECTURE.md (patterns, layers, data flow), STRUCTURE.md (this file)
-- Generated by: `/gsd:map-codebase` command
-- Read by: `/gsd:plan-phase` and `/gsd:execute-phase` for implementation guidance
+| File | Purpose |
+|------|---------|
+| `dynamo/dynamo.cjs` | CLI router -- switch/case on process.argv[2], delegates to Ledger or Switchboard |
+| `dynamo/core.cjs` | Shared substrate -- config loading, output formatting, toggle gate, project detection, error logging |
+| `dynamo/hooks/dynamo-hooks.cjs` | Single hook dispatcher -- reads stdin JSON, routes by event name to ledger/hooks/ handlers |
+| `dynamo/config.json` | Runtime config template -- version, MCP URLs, curation model, timeouts, logging |
+| `dynamo/VERSION` | Semantic version file (currently 0.1.0) |
+| `ledger/mcp-client.cjs` | MCPClient class -- JSON-RPC 2.0 over HTTP with SSE response parsing |
+| `ledger/scope.cjs` | SCOPE constants and validation -- global, project-{name}, session-{ts}, task-{desc} |
+| `ledger/search.cjs` | Combined/fact/node search against Graphiti via MCPClient |
+| `ledger/episodes.cjs` | Episode add and extract operations |
+| `ledger/curation.cjs` | Haiku curation pipeline -- OpenRouter API calls with prompt templates |
+| `ledger/sessions.cjs` | Session management -- list, view, label, backfill, auto-name via Haiku |
+| `switchboard/install.cjs` | CJS installer -- 6-step deployment to ~/.claude/dynamo/ |
+| `switchboard/sync.cjs` | Bidirectional sync -- content-based comparison using Buffer.compare |
+| `switchboard/health-check.cjs` | 6-stage health check -- Docker, Neo4j, API, MCP, env, canary |
+| `switchboard/diagnose.cjs` | 13-stage deep diagnostics -- comprehensive system inspection |
+| `switchboard/verify-memory.cjs` | 6-check pipeline verification -- write, read, scope isolation, sessions |
+| `switchboard/stack.cjs` | Docker start/stop wrappers -- wraps docker compose commands |
+| `switchboard/stages.cjs` | Shared stage runner logic for health-check and diagnose |
+| `switchboard/pretty.cjs` | Human-readable formatters for diagnostic output |
 
-## Key File Locations
+## Configuration Files
 
-**Entry Points:**
-
-- `install.sh`: Copies files to ~/.claude/graphiti/, creates venv, registers MCP server, prints next steps
-- `graphiti/start-graphiti.sh`: Starts Docker Compose stack; waits for health checks
-- `graphiti/stop-graphiti.sh`: Stops Docker Compose stack; preserves data in Docker volumes
-- `graphiti/hooks/session-start.sh`: Triggered on Claude Code startup/resume/compact; outputs context block
-- `graphiti/hooks/prompt-augment.sh`: Triggered on each user prompt; outputs context block if relevant memories found
-- `graphiti/hooks/capture-change.sh`: Triggered on file writes; async background operation
-- `graphiti/hooks/preserve-knowledge.sh`: Triggered before context compaction; extracts and re-injects knowledge
-- `graphiti/hooks/session-summary.sh`: Triggered on session end; async background operation
-
-**Configuration:**
-
-- `graphiti/config.yaml`: Graphiti server config — LLM provider (Haiku via OpenRouter), embeddings (text-embedding-3-small), Neo4j credentials, entity types
-- `graphiti/docker-compose.yml`: Docker services definition — Neo4j container, Graphiti MCP container, networking, volumes
-- `graphiti/.env`: API keys (OPENROUTER_API_KEY, ANTHROPIC_API_KEY, NEO4J_USER, NEO4J_PASSWORD) — created from .env.example
-- `graphiti/requirements.txt`: Python dependencies — httpx, pyyaml, anthropic
-- `claude-config/CLAUDE.md.template`: Memory system rules and usage instructions for Claude
-- `claude-config/settings-hooks.json`: Hook definitions and MCP tool permissions
-
-**Core Logic:**
-
-- `graphiti/graphiti-helper.py`: Main CLI tool — 6 commands (health-check, detect-project, search, add-episode, summarize-session), MCPClient class, curation functions
-- `graphiti/hooks/*.sh`: Event handlers — each reads JSON input, calls graphiti-helper.py with subcommands, outputs context or async operations
-- `graphiti/curation/prompts.yaml`: Haiku prompt templates for context filtering and summarization
-
-**Testing & Documentation:**
-
-- `README.md`: Project overview, architecture diagram, prerequisites, quick start, file structure, troubleshooting
-- `.gitignore`: Excludes sensitive files and build artifacts
-
-## Naming Conventions
-
-**Files:**
-
-- Hook scripts: `{lifecycle-event}.sh` (e.g., `session-start.sh`, `prompt-augment.sh`)
-- Configuration: YAML (`.yaml`) for structured config; JSON (`.json`) for data and settings
-- Scripts: Shell scripts (`.sh`) for system integration; Python (`.py`) for logic
-- Documentation: Markdown (`.md`) for user docs; YAML for prompts and config
-
-**Directories:**
-
-- Functional grouping: `graphiti/` contains all memory system code; `claude-config/` contains integration templates; `.planning/` contains GSD analysis
-- Hierarchy: Top-level hooks in `graphiti/hooks/`, curation in `graphiti/curation/`, orchestration (docker-compose, start/stop scripts) at `graphiti/` root
-
-**Functions (Python):**
-
-- Commands: `cmd_{name}(args)` (e.g., `cmd_health_check()`, `cmd_detect_project()`)
-- Helper utilities: `_{name}()` with underscore prefix (e.g., `_extract_content()`, `_parse_sse()`)
-- Classes: PascalCase (e.g., `MCPClient`)
-
-**Variables:**
-
-- Environment: UPPERCASE with underscores (e.g., `OPENROUTER_API_KEY`, `NEO4J_USER`)
-- Shell scripts: UPPERCASE for configuration/input, lowercase for local (e.g., `$HELPER`, `$INPUT`, `$project`)
-- Python: lowercase with underscores (e.g., `api_key`, `session_id`)
-
-## Where to Add New Code
-
-**New Hook (Event Capture):**
-- File location: `graphiti/hooks/{event-name}.sh`
-- Pattern: Read JSON input with `$(cat)`, extract fields with `jq`, health-check, detect project, call graphiti-helper subcommands, output context blocks or async background operations
-- Register: Add hook definition to `claude-config/settings-hooks.json` under appropriate `"hooks"` key (SessionStart, UserPromptSubmit, PostToolUse, PreCompact, Stop)
-- Example: See `graphiti/hooks/prompt-augment.sh` for basic structure
-
-**New graphiti-helper Command:**
-- File location: Add function `cmd_{name}()` in `graphiti/graphiti-helper.py`
-- Pattern: Accept argparse arguments; use MCPClient to call MCP tools or OpenRouter API; return results or call helper functions
-- Register: Add subparser in `main()` function's argparse setup
-- Usage: Call from hooks as `$HELPER {command} --arg value`
-
-**New Curation Prompt:**
-- File location: `graphiti/curation/prompts.yaml`
-- Pattern: Add new key under `curation/prompts.yaml` with `system:` and `user:` template strings; use {variable} placeholders
-- Usage: Reference in Python via `PROMPTS.get("{prompt_key}")`, pass to `curate_results()` or `summarize_text()`
-- Example: See existing prompts (curate_session_context, curate_prompt_context, summarize_session, curate_precompact)
-
-**New Entity Type (Knowledge Graph):**
-- File location: `graphiti/config.yaml` under `graphiti.entity_types`
-- Pattern: Add `- name: "EntityTypeName"` with `description: "..."` field
-- Usage: Graphiti server reads on startup; entities can be created with `add_memory` MCP tool
-- Example: See existing types (Preference, ArchitecturalDecision, ProjectConvention, etc.)
-
-**New Docker Service:**
-- File location: `graphiti/docker-compose.yml`
-- Pattern: Add service definition; reference in `depends_on` from existing services if needed
-- Networking: Services communicate via container names (e.g., `neo4j:7687` from graphiti-mcp)
-- Persistence: Mount volumes for data that should survive container restarts
-- Example: Current stack includes neo4j and graphiti-mcp; Redis/PostgreSQL could be added similarly
-
-**Installation Steps (register new files):**
-- If creating new hooks/scripts: Update `install.sh` to copy files to `$DEST/hooks/` or appropriate subdirectory
-- If creating new config: Update `install.sh` to copy to `$DEST/`
-- If adding MCP permissions: Update `claude-config/settings-hooks.json` permissions section
-
-## Special Directories
-
-**graphiti/ (installed to ~/.claude/graphiti/):**
-- Purpose: User's installed memory system
-- Generated: No; user-controlled via install.sh
-- Committed: Yes (in source repo); .env excluded from git
-- Modification: User edits .env with API keys; runs start-graphiti.sh to launch; stop-graphiti.sh to shutdown
-- Data persistence: Docker volumes (neo4j_data, neo4j_logs) persist between restarts
-
-**.planning/codebase/ (GSD analysis):**
-- Purpose: Codebase documentation for `/gsd` commands
-- Generated: Yes; created by `/gsd:map-codebase` command
-- Committed: Yes; tracked in git
-- Modification: Regenerated when codebase structure changes significantly
-- Read by: `/gsd:plan-phase` (loads docs when planning), `/gsd:execute-phase` (follows conventions)
-
-**.git/ (git metadata):**
-- Purpose: Version control
-- Generated: Yes; created by `git init`
-- Committed: Not applicable (git internal)
-- Modification: Updated by git commands (commit, push, etc.)
-
-**node_modules/, __pycache__/ (build artifacts):**
-- Purpose: Package/build artifacts
-- Generated: Yes; created by `pip install`, `npm install`, etc.
-- Committed: No; excluded via .gitignore
-- Modification: Auto-generated; user should not edit
-
-## Installation & Deployment Flow
-
-1. **Initial Setup:**
-   - User clones repo: `git clone {repo} ~/my-cc-setup`
-   - Copies .env: `cp graphiti/.env.example graphiti/.env`
-   - Edits .env with API keys
-   - Runs installer: `./install.sh`
-
-2. **Installer (install.sh) Actions:**
-   - Pre-flight: Checks docker, jq, python3 availability
-   - File copy: Copies `graphiti/`, `curation/`, `hooks/`, requirements.txt to `~/.claude/graphiti/`
-   - Python setup: Creates venv at `~/.claude/graphiti/.venv`, installs requirements.txt
-   - MCP register: Runs `claude mcp add` to register Graphiti at http://localhost:8100/mcp
-   - Manual steps: Prints instructions for merging hooks into ~/.claude/settings.json and rules into ~/.claude/CLAUDE.md
-
-3. **Activation:**
-   - User merges hook definitions from `claude-config/settings-hooks.json` into `~/.claude/settings.json`
-   - User merges memory rules from `claude-config/CLAUDE.md.template` into `~/.claude/CLAUDE.md`
-   - User starts stack: `~/.claude/graphiti/start-graphiti.sh`
-   - User restarts Claude Code for MCP tools and hooks to activate
-
-4. **Ongoing Operation:**
-   - Hooks fire automatically on Claude Code lifecycle events
-   - MCP tools available via Claude Code UI ("Remember this", "Search for...", etc.)
-   - Data persists in Docker volumes; survives container/machine restarts
-   - User can inspect server logs: `docker logs graphiti-mcp --tail 50`
-   - User can query Neo4j directly: `docker logs graphiti-neo4j` or Neo4j browser at http://localhost:7475
+| File | Location | Purpose |
+|------|----------|---------|
+| `config.json` | `dynamo/config.json` (repo), `~/.claude/dynamo/config.json` (deployed) | Runtime config -- version, URLs, timeouts, logging settings |
+| `.env` | `~/.claude/graphiti/.env` (deployed only, never committed) | API keys -- OPENROUTER_API_KEY, NEO4J credentials |
+| `settings-hooks.json` | `claude-config/settings-hooks.json` | Hook definitions merged into `~/.claude/settings.json` by installer |
+| `CLAUDE.md.template` | `claude-config/CLAUDE.md.template` | Memory system rules -- user manually incorporates into `~/.claude/CLAUDE.md` |
+| `docker-compose.yml` | `ledger/graphiti/docker-compose.yml` | Docker service definitions -- Neo4j + Graphiti MCP containers |
+| `config.yaml` | `ledger/graphiti/config.yaml` | Graphiti server config -- LLM provider, embeddings, entity types |
 
 ---
 
-*Structure analysis: 2026-03-16*
+*Structure analysis: 2026-03-18*

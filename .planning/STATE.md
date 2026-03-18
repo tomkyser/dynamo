@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-01-PLAN.md
-last_updated: "2026-03-18T18:42:00Z"
+stopped_at: Completed 12-02-PLAN.md
+last_updated: "2026-03-18T18:49:49Z"
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 ## Current Position
 
 Phase: 12 (structural-refactor) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 
 ### Prior Milestones
 
@@ -51,6 +51,9 @@ Recent decisions affecting current work:
 - [12-01 circular deps]: Used Object.assign(module.exports) pattern to break core.cjs <-> ledger circular dependency
 - [12-01 resolveCore]: Dual-path resolution checks deployed layout first, falls back to repo layout
 - [12-01 re-exports]: loadSessions/listSessions re-exported through core.cjs for boundary compliance
+- [12-02 isEnabled]: configPath param for test isolation, reads deployed config by default
+- [12-02 REPO_ROOT]: Renamed REPO_DIR to REPO_ROOT in switchboard modules for clarity
+- [12-02 SYNC_PAIRS]: Sync uses per-pair excludes array for clean 3-dir iteration
 
 ### Blockers/Concerns
 
@@ -58,6 +61,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T18:42:00Z
-Stopped at: Completed 12-01-PLAN.md
-Resume file: .planning/phases/12-structural-refactor/12-01-SUMMARY.md
+Last session: 2026-03-18T18:49:49Z
+Stopped at: Completed 12-02-PLAN.md
+Resume file: .planning/phases/12-structural-refactor/12-02-SUMMARY.md

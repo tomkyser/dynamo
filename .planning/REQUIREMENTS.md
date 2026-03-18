@@ -67,7 +67,7 @@ Requirements for stabilization and polish of the v1.2 CJS foundation.
 - [ ] **STAB-07**: Fix Neo4j admin browser connectivity -- port 7475 not accessible
 - [x] **STAB-08**: Directory structure refactor -- dynamo/, ledger/, switchboard/ as root-level directories
 - [x] **STAB-09**: Component scope refactor -- honor Dynamo/Ledger/Switchboard boundaries in code
-- [ ] **STAB-10**: Global on/off and dev mode toggles -- disable hooks globally, dev override per-thread
+- [x] **STAB-10**: Global on/off and dev mode toggles -- disable hooks globally, dev override per-thread
 
 ## Future Requirements
 
@@ -173,7 +173,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STAB-07 | Phase 13 | Pending |
 | STAB-08 | Phase 12 | Complete |
 | STAB-09 | Phase 12 | Complete |
-| STAB-10 | Phase 12 | Pending |
+| STAB-10 | Phase 12 | Complete |
 
 **v1.2.1 Coverage:**
 - v1.2.1 requirements: 10 total

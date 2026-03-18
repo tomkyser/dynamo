@@ -42,7 +42,7 @@
 
 **Milestone Goal:** Close the gaps between v1.2's CJS rewrite and v1.3's intelligence work. Ensure Dynamo is properly branded, fully documented, easy to update, and that architectural decisions are captured for continuity.
 
-- [ ] **Phase 12: Structural Refactor** - Reorganize directories and code boundaries, add dev toggles
+- [x] **Phase 12: Structural Refactor** - Reorganize directories and code boundaries, add dev toggles (completed 2026-03-18)
 - [ ] **Phase 13: Cleanup and Fixes** - Archive legacy system, fix Neo4j browser
 - [ ] **Phase 14: Documentation and Branding** - README, exhaustive docs, CLAUDE.md, architecture capture
 - [ ] **Phase 15: Update System** - Version checks, migration, and rollback
@@ -59,13 +59,13 @@
   3. A global toggle disables all Dynamo hooks and MCP functionality across all Claude threads
   4. A dev mode toggle overrides global-off for the current development thread, allowing selective Dynamo usage during development
   5. All existing tests pass against the restructured codebase
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
-- [ ] 12-01-PLAN.md -- Directory restructure + require path fixes + boundary enforcement
-- [ ] 12-02-PLAN.md -- Toggle mechanism + installer/sync update for 3-dir layout
-- [ ] 12-03-PLAN.md -- CLI memory commands (9 MCP tool equivalents)
-- [ ] 12-04-PLAN.md -- MCP deregistration + CLAUDE.md update + user verification
+- [x] 12-01-PLAN.md -- Directory restructure + require path fixes + boundary enforcement
+- [x] 12-02-PLAN.md -- Toggle mechanism + installer/sync update for 3-dir layout
+- [x] 12-03-PLAN.md -- CLI memory commands (9 MCP tool equivalents)
+- [x] 12-04-PLAN.md -- MCP deregistration + CLAUDE.md update + user verification
 
 ### Phase 13: Cleanup and Fixes
 **Goal**: Legacy artifacts are removed and the Neo4j admin browser is accessible for knowledge graph visibility
@@ -117,7 +117,7 @@ Phases execute in numeric order: 12 -> 12.1 -> 13 -> 13.1 -> 14 -> 15
 | 9. Hook Migration | v1.2 | 4/4 | Complete | 2026-03-17 |
 | 10. Operations and Cutover | v1.2 | 4/4 | Complete | 2026-03-18 |
 | 11. Master Roadmap | v1.2 | 1/1 | Complete | 2026-03-18 |
-| 12. Structural Refactor | 3/4 | In Progress|  | - |
+| 12. Structural Refactor | 4/4 | Complete   | 2026-03-18 | - |
 | 13. Cleanup and Fixes | v1.2.1 | 0/TBD | Not started | - |
 | 14. Documentation and Branding | v1.2.1 | 0/TBD | Not started | - |
 | 15. Update System | v1.2.1 | 0/TBD | Not started | - |

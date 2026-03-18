@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 12-03-PLAN.md
-last_updated: "2026-03-18T18:55:49Z"
+status: phase-complete
+stopped_at: Completed 12-04-PLAN.md (Phase 12 complete)
+last_updated: "2026-03-18T19:18:17.395Z"
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 
 ## Current Position
 
-Phase: 12 (structural-refactor) — EXECUTING
-Plan: 4 of 4
+Phase: 12 (structural-refactor) — COMPLETE
+Plan: 4 of 4 (all complete)
 
 ### Prior Milestones
 
@@ -57,6 +57,8 @@ Recent decisions affecting current work:
 - [12-03 requireEnabled]: Toggle gate respects DYNAMO_CONFIG_PATH env var for test isolation
 - [12-03 lazy require]: Memory commands use lazy require() inside switch cases to avoid loading ledger at startup
 - [12-03 formatOutput]: stderr for human text, stdout for json/raw -- matches existing output() pattern
+- [Phase 12]: [12-04 deregistration]: Used claude mcp remove CLI for Graphiti deregistration (preferred over manual JSON editing)
+- [Phase 12]: [12-04 CLAUDE.md]: Preserved all non-memory sections, replaced only the Graphiti MCP block with Dynamo CLI instructions
 
 ### Blockers/Concerns
 
@@ -64,6 +66,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T18:55:49Z
-Stopped at: Completed 12-03-PLAN.md
-Resume file: .planning/phases/12-structural-refactor/12-03-SUMMARY.md
+Last session: 2026-03-18T19:18:17.393Z
+Stopped at: Completed 12-04-PLAN.md (Phase 12 complete)
+Resume file: None

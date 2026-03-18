@@ -5,6 +5,7 @@
 - ✅ **v1.0 Research and Ranked Report** -- Phases 1-3 (shipped 2026-03-17)
 - ✅ **v1.1 Fix Memory System** -- Phases 4-7 (shipped 2026-03-17)
 - ✅ **v1.2 Dynamo Foundation** -- Phases 8-11 (shipped 2026-03-18)
+- **v1.2.1 Stabilization and Polish** -- (next)
 
 ## Phases
 

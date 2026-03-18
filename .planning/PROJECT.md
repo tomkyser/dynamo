@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A Claude Code power-user platform comprising two systems: **Ledger** (memory — knowledge storage, retrieval, inference via Graphiti) and **Switchboard** (management — hooks, diagnostics, sync, stack, CLI). Built on a Node/CJS shared substrate at `~/.claude/dynamo/` with 272 passing tests. v1.0 researched and ranked tools. v1.1 diagnosed and fixed the memory system. v1.2 rewrote the entire foundation from Python/Bash to CJS with full feature parity.
+A Claude Code power-user platform, Dynamo, comprising two systems: **Ledger** (memory — knowledge storage, retrieval, inference via Graphiti) and **Switchboard** (management — hooks, diagnostics, sync, stack, CLI). Built on a Node/CJS shared substrate at `~/.claude/dynamo/` with 272 passing tests. v1.0 researched and ranked tools. v1.1 diagnosed and fixed the memory system. v1.2 rewrote the entire foundation from Python/Bash to CJS with full feature parity.
 
 ## Core Value
 
@@ -74,6 +74,19 @@ Future backlog (26 items across memory enhancement, management, UI) documented i
 - **Platform**: macOS (Darwin), zsh, Homebrew available
 - **Architecture**: Node/CJS, zero npm dependencies beyond js-yaml
 - **Testing**: node:test built-in, 100% test isolation via tmpdir
+- **Component scope**: Dynamo (orchestration/CLI), Ledger (memory/knowledge), Switchboard (management/ops) — boundaries must be honored in design, code, and naming
+- **Branch workflow**: Development on `dev` branch. Push to origin after commits. Merge dev → master and push on milestone completion only.
+- **Disruption awareness**: Notify the user when testing or development will interrupt current usage of any part of Dynamo in the active thread or any other active Claude threads.
+
+## Per-Phase Checklist
+
+These items must be assessed during every phase's planning and execution. Not all will apply every phase — but each must be explicitly evaluated and addressed if affected.
+
+- [ ] **User-facing docs and README**: Deep pass to assess what needs to be modified or added. Update as changes are made within the phase, not deferred.
+- [ ] **Sync, install, and update scripts**: Deep pass to assess if affected by this phase's changes. Update if so.
+- [ ] **Component scope adherence**: Verify that Dynamo/Ledger/Switchboard scope boundaries are honored in both design and naming. Flag violations and address in phase discussion.
+- [ ] **CLAUDE.md and injectable templates**: Update to reflect current usage and rules of Dynamo and its systems (both passive and active). Include self-management instructions to keep Dynamo up to date.
+- [ ] **Dynamo toggle awareness**: If a global on/off or dev mode toggle exists, ensure phase work respects it and updates toggle behavior if scope changes.
 
 ---
-*Last updated: 2026-03-18 after v1.2 milestone complete*
+*Last updated: 2026-03-18 after v1.2.1 milestone scoping*

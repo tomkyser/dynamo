@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Every capability must be self-manageable by Claude Code without manual user config file edits
-**Current focus:** Planning next milestone (v1.3)
+**Current focus:** v1.2.1 Stabilization and Polish — close gaps before v1.3
 
 ## Current Position
 
@@ -32,6 +32,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-03-18T04:45:00Z
-Stopped at: v1.2 milestone archived
+Last session: 2026-03-18
+Stopped at: Session resumed, reviewing project state
 Resume file: None

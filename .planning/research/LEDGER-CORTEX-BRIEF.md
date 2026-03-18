@@ -53,17 +53,53 @@ The Ledger Cortex vision treats these as **complementary layers that need intell
 
 ### The Inner Voice
 
-A dedicated agent that acts as the "consciousness" of the Ledger system. This is not a memory retrieval tool — it is a personality and cognition layer. In Dynamo scope, it is the Ledger's voice. In Claudia scope, it becomes Claudia herself.
+**NOTE: This component demands its own full academic-level treatment to define properly. What follows is the architectural framing; a dedicated specification document should be produced before implementation.**
 
-**Responsibilities:**
-- **Preconscious loading** (session start): Assess user, intent, emotional/relational context. Generate a narrative briefing that primes Claude to behave as if it remembers — not a fact dump.
-- **Subconscious intuitions** (ongoing): Monitor conversation flow. Surface relevant memories when contextually triggered — mimicking how thoughts "pop into your head" mid-conversation. Include the memory map (where the information lives) so Claude can do targeted active recall.
-- **Active recall direction** (on-demand): When Claude explicitly needs deep retrieval, the Inner Voice knows WHERE to look and which layer agents to involve.
-- **Relational modeling**: Maintains a model of its relationship with the user — understands their patterns, frustrations, communication style, current emotional state.
-- **Short-term recollection**: Awareness of recent conversations, in-flight work, what was discussed yesterday.
-- **Long-term recollection**: Deep patterns, career trajectory, recurring themes, personality understanding.
+The Inner Voice is NOT an enhanced retrieval agent or smarter curation layer. It is a **continuous parallel cognitive process** — a dissociated mental process that runs simultaneously alongside the active conversation, processing at a fundamentally different level of abstraction than the main session.
 
-**Key design principle:** The Inner Voice speaks TO the Claude session. It is the sole interface between the Ledger team and the parent thread. Claude never sees raw database results — it sees curated, contextual, personality-driven injections.
+**The Dual-Process Model:**
+
+A human engaged in conversation has two cognitive processes running in parallel:
+1. **Active cognition** — the actual words being said, the task being performed, the sequential logic of the exchange
+2. **Experiential processing** — the mind processing the *situation being experienced*, framed by passive and active associations spanning emotion and circumstance. This process defines both how information is contextualized AND what sublimates through into the train of thought or gets tagged for later relation via cascading memory associations.
+
+The Inner Voice IS process #2. The main Claude session IS process #1. They run in parallel.
+
+| | Main Session | Inner Voice |
+|---|---|---|
+| **Processes** | Words, tasks, code, instructions | The *experience* — emotional context, relational state, associative resonance |
+| **Frame** | What is being said/done | What is being *felt*, what this *means* relationally, what associations are firing |
+| **Output** | Responses, tool calls, code | Selective sublimation — only what crosses an activation threshold enters the main thread |
+| **Temporal** | Sequential, turn-by-turn | Continuous, parallel, maintaining its own evolving state |
+| **Memory access** | Active recall (directed queries) | Cascading associations — one memory triggers another triggers another, tagged for relevance |
+
+**The Sublimation Model:**
+
+The Inner Voice processes *everything* in the conversation continuously. Most of that processing stays internal to the Inner Voice's own state. Only products that cross a relevance/activation threshold **sublimate** into the main thread's context. This mirrors how human subconscious memory works:
+
+- A human doesn't consciously decide "I should recall that my friend lost their job" — that association *fires* because the emotional/relational context activated it, and it sublimates into conscious thought only if the activation threshold is met
+- What sublimates isn't raw facts — it's contextually shaped, emotionally weighted, relationally framed
+- Some things don't sublimate now but get **tagged for later** — cascading associations that might fire later when the conversation shifts
+- The Inner Voice maintains awareness of what it has surfaced, what it is holding, and what it has deprioritized
+
+**Operational Modes:**
+
+- **Preconscious loading** (session start): Assess user, intent, emotional/relational context. Generate a narrative briefing that primes the main session to behave as if it remembers — not a fact dump, but an experiential frame.
+- **Continuous experiential processing** (throughout session): Maintain parallel awareness of the conversation. Process each exchange not for its literal content but for its emotional, relational, and associative dimensions. Update internal state continuously.
+- **Selective sublimation** (threshold-driven): When associative activation crosses threshold, inject contextually shaped intuitions into the main thread. Include the memory map (where the information lives) so the main session can do targeted active recall if needed.
+- **Cascading association tagging** (background): Tag associations that haven't reached sublimation threshold but are building activation. These may fire later as conversation context shifts.
+- **Active recall direction** (on-demand): When the main session explicitly needs deep retrieval, the Inner Voice knows WHERE to look and which layer agents to involve.
+- **Relational modeling** (continuous): Maintains a model of its relationship with the user — patterns, frustrations, communication style, current emotional state. This model shapes HOW sublimated content is framed.
+
+**Key design principle:** The Inner Voice speaks TO the Claude session. It is the sole interface between the Ledger team and the parent thread. The main session never sees raw database results — it sees contextually shaped, experientially framed, selectively sublimated injections. Most of what the Inner Voice processes remains below the surface.
+
+**Relevant theoretical frameworks for the specification document:**
+- Dual-process theory (Kahneman's System 1/System 2)
+- Global Workspace Theory (Baars) — consciousness as selective spotlight over subconscious processing
+- Spreading activation networks — associative memory where one node activates neighbors
+- Predictive processing — the brain as a prediction engine that surfaces only prediction errors
+
+In Dynamo scope, the Inner Voice is the Ledger's cognitive layer. In Claudia scope, it becomes Claudia herself.
 
 ### Layer Agents
 
@@ -119,7 +155,7 @@ Most interactions stay on the hot path. Layer agents only spin up for ingestion,
 - **Switchboard** — Management/ops. Untouched. Still owns hook registration, diagnostics, sync, stack, CLI. (Claudia-aware: Switchboard eventually expands to manage domain agents, but that's Claudia-scope.)
 - **Core substrate** — Shared foundation. Extends to support agent lifecycle management.
 - **Hook system** — Still the integration mechanism with Claude Code. But hooks now feed the Inner Voice rather than directly calling search/curate functions.
-- **Graphiti/Neo4j** — Stays as the knowledge graph backend. Becomes one tool in the Construction Agent's toolbox.
+- **Graphiti/Neo4j** — Stays as the knowledge graph backend. Becomes one tool in the Construction Agent's toolbox. **Near-term improvement:** Enable dual-model selection (Sonnet or Haiku) so Graphiti can choose the appropriate model based on task complexity (e.g., Haiku for simple entity extraction, Sonnet for complex relationship inference).
 - **Dynamo CLI** — Still the user-facing interface. Routes to Switchboard for management, to Inner Voice for memory operations.
 
 ### What transforms
@@ -157,7 +193,7 @@ Most interactions stay on the hot path. Layer agents only spin up for ingestion,
 |-------------|-------------------|-----------------|
 | MENH-03 (Synthesis/export) | v1.4 | Output format, not architecture |
 | MENH-05 (Flat file support) | v1.4 | Infrastructure Agent could support this |
-| MENH-06/07 (Transport/model flexibility) | v1.3 | Still needed for all agents |
+| MENH-06/07 (Transport/model flexibility) | v1.3 | Still needed for all agents. **Immediate action:** Enable Graphiti dual-model selection (Sonnet/Haiku based on task complexity) as part of MENH-06/07 work |
 | MENH-08 (Local embeddings) | v1.4 | Infrastructure concern |
 | MGMT-* (most) | v1.3-v1.4 | Switchboard-scoped, unaffected |
 | UI-* (all) | v1.5 | Visualization layer, orthogonal |

@@ -5,7 +5,7 @@ milestone_name: Stabilization and Polish
 status: scoping
 stopped_at: v1.2.1 milestone scoped, awaiting /gsd:new-milestone
 last_updated: "2026-03-18T16:49:00Z"
-last_activity: 2026-03-18 -- v1.2.1 scoped with 10 STAB requirements
+last_activity: 2026-03-18 -- Completed quick task 260318-gcj: Update GSD planning docs
 progress:
   total_phases: 0
   completed_phases: 0
@@ -31,6 +31,12 @@ v1.2.1 defines 10 stabilization requirements (STAB-01 through STAB-10).
 Next step: `/gsd:new-milestone` to formally start v1.2.1.
 
 Progress: [..........] 0%
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260318-gcj | Update GSD planning docs to reflect current project state | 2026-03-18 | 3281ecb | [260318-gcj](./quick/260318-gcj-update-gsd-planning-docs-to-reflect-curr/) |
 
 ## Session Continuity
 

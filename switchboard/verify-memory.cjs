@@ -5,14 +5,8 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 
-// Resolve core.cjs: deployed layout (../core.cjs) or repo layout (../dynamo/core.cjs)
-function resolveCore() {
-  const deployed = path.join(__dirname, '..', 'core.cjs');
-  if (fs.existsSync(deployed)) return deployed;
-  return path.join(__dirname, '..', 'dynamo', 'core.cjs');
-}
-
-const { output, error, loadConfig, fetchWithTimeout, DYNAMO_DIR, MCPClient, SCOPE, validateGroupId, loadSessions, listSessions } = require(resolveCore());
+const resolve = require('../lib/resolve.cjs');
+const { output, error, loadConfig, fetchWithTimeout, DYNAMO_DIR, MCPClient, SCOPE, validateGroupId, loadSessions, listSessions } = require(resolve('dynamo', 'core.cjs'));
 
 // --- Check implementations ---
 

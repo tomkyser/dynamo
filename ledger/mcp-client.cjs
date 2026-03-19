@@ -5,14 +5,8 @@ const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 
-// Resolve core.cjs: deployed layout (../core.cjs) or repo layout (../dynamo/core.cjs)
-function resolveCore() {
-  const deployed = path.join(__dirname, '..', 'core.cjs');
-  if (fs.existsSync(deployed)) return deployed;
-  return path.join(__dirname, '..', 'dynamo', 'core.cjs');
-}
-
-const { fetchWithTimeout, loadConfig } = require(resolveCore());
+const resolve = require('../lib/resolve.cjs');
+const { fetchWithTimeout, loadConfig } = require(resolve('dynamo', 'core.cjs'));
 
 const MCP_DEFAULTS = {
   url: 'http://localhost:8100/mcp',

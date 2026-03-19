@@ -5,14 +5,8 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-// Resolve core.cjs: deployed layout (../core.cjs) or repo layout (../dynamo/core.cjs)
-function resolveCore() {
-  const deployed = path.join(__dirname, '..', 'core.cjs');
-  if (fs.existsSync(deployed)) return deployed;
-  return path.join(__dirname, '..', 'dynamo', 'core.cjs');
-}
-
-const { DYNAMO_DIR, output, error } = require(resolveCore());
+const resolve = require('../lib/resolve.cjs');
+const { DYNAMO_DIR, output, error } = require(resolve('dynamo', 'core.cjs'));
 
 // --- Constants ---
 
@@ -33,6 +27,7 @@ const SYNC_PAIRS = [
   { repo: path.join(REPO_ROOT, 'dynamo'), live: LIVE_DIR, label: 'dynamo', excludes: [...SYNC_EXCLUDES, 'tests'] },
   { repo: path.join(REPO_ROOT, 'ledger'), live: path.join(LIVE_DIR, 'ledger'), label: 'ledger', excludes: SYNC_EXCLUDES },
   { repo: path.join(REPO_ROOT, 'switchboard'), live: path.join(LIVE_DIR, 'switchboard'), label: 'switchboard', excludes: SYNC_EXCLUDES },
+  { repo: path.join(REPO_ROOT, 'lib'), live: path.join(LIVE_DIR, 'lib'), label: 'lib', excludes: SYNC_EXCLUDES },
 ];
 
 // --- Helpers ---

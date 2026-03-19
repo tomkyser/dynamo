@@ -6,14 +6,8 @@ const fs = require('fs');
 const os = require('os');
 const { execSync } = require('child_process');
 
-// Resolve core.cjs: deployed layout (../core.cjs) or repo layout (../dynamo/core.cjs)
-function resolveCore() {
-  const deployed = path.join(__dirname, '..', 'core.cjs');
-  if (fs.existsSync(deployed)) return deployed;
-  return path.join(__dirname, '..', 'dynamo', 'core.cjs');
-}
-
-const { DYNAMO_DIR, output, error, loadEnv, safeReadFile } = require(resolveCore());
+const resolve = require('../lib/resolve.cjs');
+const { DYNAMO_DIR, output, error, loadEnv, safeReadFile } = require(resolve('dynamo', 'core.cjs'));
 const { formatInstallReport } = require(path.join(__dirname, 'pretty.cjs'));
 
 // --- Constants ---
@@ -299,6 +293,8 @@ async function run(args = [], pretty = false, _returnOnly = false) {
     fileCount += copyTree(path.join(REPO_ROOT, 'ledger'), path.join(LIVE_DIR, 'ledger'), INSTALL_EXCLUDES);
     // Copy switchboard/* -> LIVE_DIR/switchboard/*
     fileCount += copyTree(path.join(REPO_ROOT, 'switchboard'), path.join(LIVE_DIR, 'switchboard'), INSTALL_EXCLUDES);
+    // Copy lib/* -> LIVE_DIR/lib/*
+    fileCount += copyTree(path.join(REPO_ROOT, 'lib'), path.join(LIVE_DIR, 'lib'), INSTALL_EXCLUDES);
     steps.push({ name: 'Copy files', status: 'OK', detail: fileCount + ' files copied to ' + LIVE_DIR });
   } catch (e) {
     steps.push({ name: 'Copy files', status: 'FAIL', detail: e.message });
@@ -346,17 +342,16 @@ async function run(args = [], pretty = false, _returnOnly = false) {
     steps.push({ name: 'Deploy CLAUDE.md', status: 'WARN', detail: e.message });
   }
 
-  // Step 6: Clean stale lib/ directory (pre-Phase 12 artifact)
+  // Step 6: Verify lib/ shared substrate deployed
   try {
-    const staleLibDir = path.join(LIVE_DIR, 'lib');
-    if (fs.existsSync(staleLibDir)) {
-      fs.rmSync(staleLibDir, { recursive: true, force: true });
-      steps.push({ name: 'Clean stale lib/', status: 'OK', detail: 'Removed pre-Phase-12 lib/ directory' });
+    const libDir = path.join(LIVE_DIR, 'lib');
+    if (fs.existsSync(path.join(libDir, 'resolve.cjs'))) {
+      steps.push({ name: 'Verify lib/', status: 'OK', detail: 'lib/resolve.cjs deployed' });
     } else {
-      steps.push({ name: 'Clean stale lib/', status: 'OK', detail: 'No stale lib/ found' });
+      steps.push({ name: 'Verify lib/', status: 'WARN', detail: 'lib/resolve.cjs not found after copy' });
     }
   } catch (e) {
-    steps.push({ name: 'Clean stale lib/', status: 'WARN', detail: e.message });
+    steps.push({ name: 'Verify lib/', status: 'WARN', detail: e.message });
   }
 
   // Step 7: Retire Python

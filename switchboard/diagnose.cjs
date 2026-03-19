@@ -5,14 +5,8 @@ const path = require('path');
 const fs = require('fs');
 const stages = require(path.join(__dirname, 'stages.cjs'));
 
-// Resolve core.cjs: deployed layout (../core.cjs) or repo layout (../dynamo/core.cjs)
-function resolveCore() {
-  const deployed = path.join(__dirname, '..', 'core.cjs');
-  if (fs.existsSync(deployed)) return deployed;
-  return path.join(__dirname, '..', 'dynamo', 'core.cjs');
-}
-
-const { output, error, MCPClient } = require(resolveCore());
+const resolve = require('../lib/resolve.cjs');
+const { output, error, MCPClient } = require(resolve('dynamo', 'core.cjs'));
 const { formatDiagnoseReport } = require(path.join(__dirname, 'pretty.cjs'));
 
 const { STAGE_NAMES } = stages;

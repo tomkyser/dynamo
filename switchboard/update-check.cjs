@@ -4,14 +4,8 @@
 const path = require('path');
 const fs = require('fs');
 
-// Resolve core.cjs: deployed layout (../core.cjs) or repo layout (../dynamo/core.cjs)
-function resolveCore() {
-  const deployed = path.join(__dirname, '..', 'core.cjs');
-  if (fs.existsSync(deployed)) return deployed;
-  return path.join(__dirname, '..', 'dynamo', 'core.cjs');
-}
-
-const { fetchWithTimeout, safeReadFile } = require(resolveCore());
+const resolve = require('../lib/resolve.cjs');
+const { fetchWithTimeout, safeReadFile } = require(resolve('dynamo', 'core.cjs'));
 
 const GITHUB_API = 'https://api.github.com/repos/tomkyser/dynamo/releases/latest';
 const VERSION_PATH = path.join(__dirname, '..', 'dynamo', 'VERSION');

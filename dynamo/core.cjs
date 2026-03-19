@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const resolve = require('../lib/resolve.cjs');
 const { execSync } = require('child_process');
 
 const DYNAMO_DIR = path.join(os.homedir(), '.claude', 'dynamo');
@@ -332,21 +333,12 @@ module.exports = {
   isEnabled
 };
 
-// --- Dual-path resolution for Ledger modules ---
-// In repo: dynamo/core.cjs -> ../ledger/MODULE.cjs
-// In deployed (~/.claude/dynamo/): core.cjs -> ledger/MODULE.cjs
-function resolveLedger(moduleName) {
-  const deployed = path.join(__dirname, 'ledger', moduleName);
-  if (fs.existsSync(deployed)) return deployed;
-  return path.join(__dirname, '..', 'ledger', moduleName);
-}
-
 // Re-export shared utilities needed by both Ledger and Switchboard
 // These live in Ledger but are shared infrastructure accessed through Dynamo (the orchestrator)
 // Loaded AFTER base exports to break circular dependency (ledger modules require core.cjs)
-const { MCPClient, parseSSE } = require(resolveLedger('mcp-client.cjs'));
-const { SCOPE, SCOPE_PATTERN, validateGroupId, sanitize } = require(resolveLedger('scope.cjs'));
-const { loadSessions, listSessions } = require(resolveLedger('sessions.cjs'));
+const { MCPClient, parseSSE } = require(resolve('ledger', 'mcp-client.cjs'));
+const { SCOPE, SCOPE_PATTERN, validateGroupId, sanitize } = require(resolve('ledger', 'scope.cjs'));
+const { loadSessions, listSessions } = require(resolve('ledger', 'sessions.cjs'));
 
 // Extend module.exports with re-exported shared utilities
 Object.assign(module.exports, {

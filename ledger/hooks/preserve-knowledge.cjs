@@ -4,14 +4,8 @@
 const path = require('path');
 const fs = require('fs');
 
-// Resolve core.cjs: deployed layout (../../core.cjs) or repo layout (../../dynamo/core.cjs)
-function resolveCore() {
-  const deployed = path.join(__dirname, '..', '..', 'core.cjs');
-  if (fs.existsSync(deployed)) return deployed;
-  return path.join(__dirname, '..', '..', 'dynamo', 'core.cjs');
-}
-
-const { healthGuard, logError } = require(resolveCore());
+const resolve = require('../../lib/resolve.cjs');
+const { healthGuard, logError } = require(resolve('dynamo', 'core.cjs'));
 const { summarizeText } = require(path.join(__dirname, '..', 'curation.cjs'));
 const { addEpisode } = require(path.join(__dirname, '..', 'episodes.cjs'));
 

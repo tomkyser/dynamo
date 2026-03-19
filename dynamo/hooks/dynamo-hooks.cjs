@@ -3,19 +3,11 @@
 
 const path = require('path');
 const fs = require('fs');
-const { loadEnv, detectProject, logError, SCOPE } = require(path.join(__dirname, '..', 'core.cjs'));
+const resolve = require('../../lib/resolve.cjs');
+const { loadEnv, detectProject, logError, SCOPE } = require(resolve('dynamo', 'core.cjs'));
 
 // Load .env early (API keys needed by handlers)
 loadEnv();
-
-// Resolve handler directory for both repo and deployed layouts
-function resolveHandlers() {
-  // Repo layout: dynamo/hooks/ -> ../../ledger/hooks/
-  const repoPath = path.join(__dirname, '..', '..', 'ledger', 'hooks');
-  if (fs.existsSync(repoPath)) return repoPath;
-  // Deployed layout: ~/.claude/dynamo/hooks/ -> ../ledger/hooks/
-  return path.join(__dirname, '..', 'ledger', 'hooks');
-}
 
 let input = '';
 const stdinTimeout = setTimeout(() => process.exit(0), 5000); // 5s stdin guard
@@ -26,7 +18,7 @@ process.stdin.on('end', async () => {
   clearTimeout(stdinTimeout);
 
   // Toggle gate: exit silently if Dynamo is disabled
-  const { isEnabled } = require(path.join(__dirname, '..', 'core.cjs'));
+  const { isEnabled } = require(resolve('dynamo', 'core.cjs'));
   if (!isEnabled()) {
     process.exit(0);  // Silent exit -- no error, no output
   }
@@ -44,7 +36,7 @@ process.stdin.on('end', async () => {
     const ctx = { ...data, project, scope };
 
     // Route to handler
-    const HANDLERS = resolveHandlers();
+    const HANDLERS = resolve('ledger', 'hooks');
     switch (event) {
       case 'SessionStart':
         await require(path.join(HANDLERS, 'session-start.cjs'))(ctx);

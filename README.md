@@ -29,7 +29,7 @@ graph TB
     LM -->|curation| OR
 
     MC -->|HTTP| GM[Graphiti MCP Server<br/>:8100]
-    GM --> N4[Neo4j 5.26<br/>:7475/:7688]
+    GM --> N4[Neo4j 5.26<br/>:7475/:7687]
 
     subgraph Dynamo
         DH

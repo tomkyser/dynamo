@@ -598,7 +598,7 @@ MCP tools used: `add_memory`, `search_memory_facts`, `search_nodes`, `get_episod
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| Neo4j | 7475 (HTTP), 7688 (Bolt) | Knowledge graph database |
+| Neo4j | 7475 (HTTP), 7687 (Bolt) | Knowledge graph database |
 | Graphiti MCP | 8100 | MCP server for memory operations |
 
 ### GSD Framework (Read-Only)

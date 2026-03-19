@@ -32,7 +32,7 @@ Two entry points into Dynamo:
 ### External Dependencies
 
 - **Graphiti MCP Server** (Docker): JSON-RPC over HTTP via SSE, accessed through `ledger/mcp-client.cjs`
-- **Neo4j 5.26** (Docker): Graph database backend for Graphiti, ports 7475 (browser) / 7688 (Bolt)
+- **Neo4j 5.26** (Docker): Graph database backend for Graphiti, ports 7475 (browser) / 7687 (Bolt)
 - **OpenRouter API**: Haiku curation pipeline via `ledger/curation.cjs`, model `anthropic/claude-haiku-4.5`
 - **No npm dependencies** beyond js-yaml (zero-bloat philosophy)
 

@@ -15,7 +15,7 @@
 
 | Service | Image | Ports | Purpose |
 |---------|-------|-------|---------|
-| Neo4j | neo4j:5.26.0 | 7475 (browser), 7688 (Bolt) | Knowledge graph database |
+| Neo4j | neo4j:5.26.0 | 7475 (browser), 7687 (Bolt) | Knowledge graph database |
 | Graphiti MCP | zepai/knowledge-graph-mcp:standalone | 8100 | MCP server for graph operations |
 
 ## External APIs

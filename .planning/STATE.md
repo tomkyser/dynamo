@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 17-01-PLAN.md
-last_updated: "2026-03-19T04:07:23.399Z"
+stopped_at: Completed 17-02-PLAN.md
+last_updated: "2026-03-19T04:09:50.546Z"
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 17
-  completed_plans: 15
+  completed_plans: 16
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 ## Current Position
 
 Phase: 17 (deploy-pipeline-fixes) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ### Prior Milestones
 
@@ -79,6 +79,8 @@ Recent decisions affecting current work:
 - [Phase 16]: [16-01 permissions cleanup]: Removed entire permissions block from settings-hooks.json -- Graphiti MCP is deregistered, no permissions needed
 - [Phase 17]: [17-01 resolveHandlers]: Same dual-layout pattern as resolveSibling -- repo path first, deployed fallback
 - [Phase 17]: [17-01 defensive deregistration]: MCP deregistration is defensive -- OK status whether graphiti was registered or not
+- [Phase 17]: [17-02 collectAllCjsFiles]: Root-level non-recursive + explicit production subdir recursion to avoid scanning test files
+- [Phase 17]: [17-02 shebang branding]: Branding test allows shebang on line 1 with identity block on line 2 for CLI entry points
 
 ### Blockers/Concerns
 
@@ -86,6 +88,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T04:07:23.396Z
-Stopped at: Completed 17-01-PLAN.md
+Last session: 2026-03-19T04:09:50.542Z
+Stopped at: Completed 17-02-PLAN.md
 Resume file: None

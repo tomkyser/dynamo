@@ -144,7 +144,7 @@ Plans:
   5. `dynamo toggle off` fully disables all memory access (CLI gate + hook gate + no MCP bypass)
   6. README Mermaid diagram shows correct Neo4j ports (`:7475/:7687`)
   7. Regression tests reference correct paths (no `lib/` references)
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 17-01-PLAN.md -- Fix hook dispatcher dual-layout path resolution + installer MCP deregistration and CLAUDE.md deploy
@@ -174,4 +174,4 @@ Phases execute in numeric order: 12 -> 12.1 -> 13 -> 13.1 -> 14 -> 15 -> 16 -> 1
 | 14. Documentation and Branding | v1.2.1 | 3/3 | Complete | 2026-03-18 |
 | 15. Update System | v1.2.1 | 4/4 | Complete | 2026-03-19 |
 | 16. Tech Debt Cleanup | v1.2.1 | 1/1 | Complete | 2026-03-19 |
-| 17. Deploy Pipeline Fixes | 1/3 | In Progress|  | - |
+| 17. Deploy Pipeline Fixes | 2/3 | In Progress|  | - |

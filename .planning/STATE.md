@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: unknown
 stopped_at: Completed 17-03-PLAN.md (Phase 17 complete)
-last_updated: "2026-03-19T05:07:22Z"
+last_updated: "2026-03-19T06:20:37Z"
 progress:
   total_phases: 6
   completed_phases: 6
@@ -42,6 +42,7 @@ Total prior: 11 phases, 28 plans completed.
 | 260318-pt7 | Apply approved Cortex roadmap draft to MASTER-ROADMAP.md | 2026-03-18 | d55bf0c | | [260318-pt7](./quick/260318-pt7-apply-approved-cortex-roadmap-draft-to-m/) |
 | 260318-x55 | Update MASTER-ROADMAP.md to mark v1.2.1 as shipped | 2026-03-19 | 5869aff | | [260318-x55](./quick/260318-x55-update-the-master-roadmap-now-that-1-2-1/) |
 | 260318-x21 | Steel-man analysis and implementation planning for Synthesis v2 | 2026-03-19 | 5fe6a40 | Verified | [260318-x21](./quick/260318-x21-steel-man-analysis-and-implementation-pl/) |
+| 260319-17p | Re-evaluate subagent verdict and cascade corrections | 2026-03-19 | 06a60a2 | Verified | [260319-17p](./quick/260319-17p-re-evaluate-subagent-verdict-and-cascade/) |
 
 ## Accumulated Context
 
@@ -83,6 +84,9 @@ Recent decisions affecting current work:
 - [Phase 17]: [17-01 defensive deregistration]: MCP deregistration is defensive -- OK status whether graphiti was registered or not
 - [Phase 17]: [17-02 collectAllCjsFiles]: Root-level non-recursive + explicit production subdir recursion to avoid scanning test files
 - [Phase 17]: [17-02 shebang branding]: Branding test allows shebang on line 1 with identity block on line 2 for CLI entry points
+- [260319-17p]: Concept 7 verdict corrected from NO-GO to CONDITIONAL GO -- hybrid architecture (CJS hooks for hot path + custom subagent for deliberation)
+- [260319-17p]: Dual cost model: subscription users $0.37/day, API users $1.98/day for v1.3 Inner Voice
+- [260319-17p]: State file bridge pattern for SubagentStop-to-parent context gap
 
 ### Blockers/Concerns
 
@@ -90,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T05:07:22Z
-Stopped at: Completed 260318-x21 (Steel-man analysis and implementation planning)
+Last session: 2026-03-19T06:20:37Z
+Stopped at: Completed 260319-17p (Re-evaluate subagent verdict and cascade)
 Resume file: None

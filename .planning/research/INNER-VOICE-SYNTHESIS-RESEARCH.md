@@ -1,9 +1,9 @@
 # Inner Voice Synthesis v2: Steel-Man Analysis and Implementation Planning
 
-**Date:** 2026-03-18
-**Status:** Post-research adversarial analysis
-**Lineage:** INNER-VOICE-SYNTHESIS-v2.md -> 260318-x21-RESEARCH.md -> this document
-**Confidence:** MEDIUM-HIGH (7 concepts analyzed against empirical research and mechanistic constraints; 5 verdicts at HIGH confidence, 2 at MEDIUM)
+**Date:** 2026-03-18 (Corrected 2026-03-19: Concept 7 re-evaluated from NO-GO to CONDITIONAL GO based on corrected research)
+**Status:** Post-research adversarial analysis (revised)
+**Lineage:** INNER-VOICE-SYNTHESIS-v2.md -> 260318-x21-RESEARCH.md -> this document -> 260319-17p-RESEARCH.md (corrections)
+**Confidence:** MEDIUM-HIGH (7 concepts analyzed against empirical research and mechanistic constraints; 5 verdicts at HIGH confidence, 2 at MEDIUM. Concept 7 verdict corrected from NO-GO to CONDITIONAL GO after re-research of hook and subagent capabilities.)
 
 **Purpose:** Subject the seven theoretical concepts from the collaborative design session (Synthesis v2) to empirical rigor using research findings, kill what does not survive, and produce actionable integration plans for what does survive. This document is the authoritative reference for which Synthesis v2 ideas enter the implementation roadmap and how.
 
@@ -233,6 +233,8 @@ This is the architectural foundation for metacognitive self-correction. The self
 
 IV memory is architecturally sound and addresses the metacognitive gap in the current spec. However, it is a v1.4 feature that depends on REM consolidation being operational. In v1.3, the existing `inner-voice-state.json` schema (INNER-VOICE-SPEC.md Section 4.2) is sufficient. The v1.3 state already contains injection history and self-model -- these provide basic metacognitive data.
 
+**Note on subagent persistent memory (added 2026-03-19):** The custom subagent `memory: user` feature (260319-17p-RESEARCH.md, Q3) provides a native persistent memory directory at `~/.claude/agent-memory/inner-voice/` with a curated `MEMORY.md` file. This could supplement or partially replace the custom IV memory JSON schema for cross-session state that the subagent manages directly. The verdict (CONDITIONAL GO for v1.4) is unchanged, but the implementation gains an additional option: subagent-native memory for subagent-managed state, custom JSON schema for hook-managed state, with both persisting across sessions.
+
 **Conditions for GO:**
 1. REM consolidation (Concept 5) must be operational as the gate mechanism
 2. Storage growth must be bounded (retention policy with decay/pruning)
@@ -249,8 +251,8 @@ IV memory is architecturally sound and addresses the metacognitive gap in the cu
 - CORTEX-04 (Inner Voice advanced, v1.4): Add "metacognitive self-correction using IV memory sublimation outcome data"
 
 **v1.3/v1.4 boundary:**
-- v1.3: Operational state only (`inner-voice-state.json` per INNER-VOICE-SPEC.md Section 4.2). Injection history provides basic sublimation outcome tracking within the session.
-- v1.4: Full IV memory layer with cross-session accumulation, REM-gated writes, and retention policies.
+- v1.3: Operational state only (`inner-voice-state.json` per INNER-VOICE-SPEC.md Section 4.2). Injection history provides basic sublimation outcome tracking within the session. The subagent's native persistent memory (`memory: user`) is available but not formally part of the IV memory schema.
+- v1.4: Full IV memory layer with cross-session accumulation, REM-gated writes, and retention policies. Evaluate whether subagent-native memory can replace portions of the custom JSON schema.
 
 ---
 
@@ -311,7 +313,7 @@ Minor refinement needed: Tier 2 (provisional) and Tier 3 (full) may need to be m
 - CORTEX-05 (Enhanced Construction, v1.4): Add "observation synthesis triggered by REM consolidation"
 
 **v1.3/v1.4 boundary:**
-- v1.3: Tier 1 (PreCompact state preservation, no LLM call) + simplified Tier 3 (Stop hook synthesis -- session summary, self-model update, basic observation extraction). One Sonnet call per session end.
+- v1.3: Tier 1 (PreCompact state preservation, no LLM call) + simplified Tier 3 (Stop hook synthesis -- session summary, self-model update, basic observation extraction). One Sonnet call per session end. **Note (added 2026-03-19):** REM Tier 3 can optionally use the custom `inner-voice` subagent (Concept 7 hybrid architecture) for deep synthesis instead of a direct API call. For subscription users, this has zero additional marginal cost. For API users, direct API calls remain the default.
 - v1.4: Full REM operations (retroactive evaluation, definition refinement, cascade promotion, inter-session consolidation batch jobs). Multiple Sonnet calls per session end, offset by batch API pricing.
 
 ---
@@ -372,60 +374,74 @@ The scalar compute concept is valid as an architectural principle but is prematu
 ### Concept 7: Claude Code Native Subagent Implementation
 
 **Source:** Synthesis v2 Section 2
+**Corrected:** 2026-03-19 based on 260319-17p-RESEARCH.md (hook and subagent capabilities re-evaluated)
 
 #### Steel-Man Case
 
-The Synthesis v2 document makes a bold architectural claim: the Inner Voice should run as a Claude Code native subagent spawned by the hook system, NOT as a tandem API consumer. The rationale is compelling on paper:
+The Synthesis v2 document proposes the Inner Voice should run as a Claude Code native subagent. Corrected research (260319-17p-RESEARCH.md) reveals the actual subagent capabilities are significantly more capable than the previous analysis assumed:
 
-1. Claude Code hooks can spawn subagents with isolated context windows
-2. Subagents inherit the user's subscription cost model rather than requiring separate API billing
-3. Context isolation between the main session and the Inner Voice is provided natively
-4. The subagent model aligns with the dual-process architecture: the main session IS System 2, the Inner Voice IS System 1 (a spawned subagent with its own context, tools, and processing)
-5. Dramatically reduces implementation complexity versus managing separate API connections
+1. **Hooks CAN inject arbitrary content via `additionalContext`.** The `hookSpecificOutput.additionalContext` field in command hook responses injects content directly into Claude's conversational context. This works for `UserPromptSubmit`, `SessionStart`, and `SubagentStart` events. The previous analysis's claim that "the agent hook type cannot output injection text" was based on conflating `agent` hook type limitations with the general hook system's capabilities.
 
-The strongest argument: this eliminates the need for the Inner Voice to manage its own API authentication, model selection, and response handling. A native subagent has these capabilities built in. The implementation would be significantly simpler than the CJS-with-direct-API-calls approach.
+2. **Custom subagents can be defined in `.claude/agents/`** with full configuration: model selection (haiku/sonnet/opus), tool access (Read, Grep, Glob, Bash), disallowed tools (Write, Edit, Agent), filesystem access, isolated context windows, persistent memory (`memory: user` provides `~/.claude/agent-memory/inner-voice/`), MCP server access, background execution, and turn limits.
+
+3. **SubagentStart hook can inject state directly into subagent context at spawn time.** When the main session spawns the `inner-voice` subagent, a SubagentStart command hook fires and can inject the current inner voice state, recent memory context, and processing instructions directly into the subagent's context via `additionalContext`.
+
+4. **On Pro/Max subscription plans, subagent processing is included in the subscription** -- not per-token API billing. This is a material cost difference: the previous analysis's projected $1.97/day for v1.3 assumed direct API billing. For subscription users, the Inner Voice deliberation and REM consolidation paths via subagent cost $0 additional marginal cost (subject to rate limits).
+
+5. **The subagent model aligns with dual-process architecture.** The main session IS System 2 (deliberate, tool-using, user-facing). The Inner Voice subagent IS System 1 (a spawned subagent with its own context, tools, and processing, producing insights that feed back into the main session).
+
+6. **Eliminates ANTHROPIC_API_KEY dependency for subscription users.** No need for custom HTTP client code, error handling, retry logic, or API key management. The subagent is defined as a Markdown file with YAML frontmatter -- Claude Code manages all invocation mechanics.
 
 #### Stress-Test
 
-1. **Research finding is definitive and fatal.** Research (260318-x21-RESEARCH.md Section 1) delivers the killing blow: "Claude Code hooks CANNOT natively spawn subagents" for general-purpose processing. The `type: "agent"` hook spawns a limited verification subagent (60-second timeout, yes/no output only). It CANNOT output arbitrary text to stdout for injection into the main thread. It is designed for validation gates, not processing pipelines.
+1. **Hot path (<500ms) CANNOT be served by subagents.** Custom subagents have 5,000-15,000 token context bootstrapping overhead, resulting in 2-8 second latency even with Haiku. Command hooks with deterministic CJS processing and `additionalContext` injection remain mandatory for the hot path. This is a real constraint confirmed by community reports (260319-17p-RESEARCH.md, Q2).
 
-2. **The `claude -p` workaround fails on latency.** A `command` hook CAN spawn `claude -p` via `child_process.spawn()`. But the cold start latency is 5-15 seconds. The hot path target is <500ms. The deliberation path target is <2s. The cold start alone exceeds both budgets. Only the Stop hook (no latency constraint) could tolerate this -- but that is one hook out of five, and not the most important one.
+2. **SubagentStop CANNOT inject content directly back into parent context.** GitHub issue #5812 documents this gap: the `additionalParentContext` feature request was closed as NOT_PLANNED. Workaround: SubagentStop hook writes results to a state file, and the next UserPromptSubmit hook reads that file and injects via `additionalContext`. This is functional but indirect -- there is an inherent delay of one user turn between subagent completion and context injection.
 
-3. **The cost assumption is wrong.** The Synthesis v2 document claims subagents "inherit the user's subscription cost model rather than requiring separate API billing." But `claude -p` invocations use the standard API pricing, not a separate subscription model. The cost model does not change.
+3. **Subagents cannot spawn other subagents (no nested delegation).** From the docs: "Subagents cannot spawn other subagents." All Inner Voice processing must happen within a single subagent context. Complex multi-step analysis must be serialized within one subagent's turn budget.
 
-4. **The substrate assumption is invalid.** Synthesis v2 Section 2 states: "This component demands its own full academic-level treatment to define properly." The treatment has been done (in INNER-VOICE-SPEC.md) and the answer is clear: the Inner Voice is CJS modules making direct API calls, the same pattern already proven by `curation.cjs` and `sessions.cjs` in the existing Dynamo codebase.
+4. **Rate limit interaction on subscription plans.** The Inner Voice subagent competes for the same rate limits as the main session. Heavy Inner Voice processing (deliberation + REM consolidation in the same session) could cause rate limit errors for the user's primary work. This requires graceful degradation: if rate-limited, fall back to hot-path-only processing.
 
-5. **Cross-reference with LEDGER-CORTEX-ANALYSIS.md.** The analysis document identifies Risk #9: "Zero-dependency constraint conflicts with Agent SDK. Cannot use SDK without npm dependency. Use `claude -p` CLI headless mode (child_process.spawn) instead of SDK import." The research invalidates even this fallback for latency-critical paths.
+5. **Background subagent + UserPromptSubmit race condition.** If the Inner Voice subagent runs in background and writes results to disk, the next UserPromptSubmit hook might fire before the subagent completes. The state file needs a "processing" flag and the hook must handle the incomplete-results case gracefully.
 
-6. **The correct pattern already exists.** Dynamo's existing architecture proves the correct approach: `command` hooks running CJS code that makes direct HTTP API calls. `curation.cjs` calls Haiku via OpenRouter. `sessions.cjs` manages session naming via Haiku. The Inner Voice should follow the identical pattern with direct Anthropic API calls for model selection flexibility.
+6. **For API plan users, subagent bootstrap overhead makes the hot path MORE expensive** than direct API calls due to the 5,000-15,000 token bootstrapping cost per spawn. Direct API calls remain more efficient for these users.
 
-#### Verdict: NO-GO
+7. **The hybrid architecture adds complexity.** Two invocation paths (CJS command hooks for hot path + custom subagent definition for deliberation) versus a single path (CJS only). However, the complexity is bounded: the command hooks remain identical, and the subagent definition is a single Markdown file.
+
+#### Verdict: CONDITIONAL GO
 
 **Confidence: HIGH**
 
-The subagent implementation substrate is killed by empirical reality. The `agent` hook type cannot produce injection content (verification-only, yes/no output). The `claude -p` workaround has 5-15 second cold start latency that exceeds all hook timing budgets except Stop. The cost model does not change between subagent and direct API calls.
+The hybrid architecture -- command hooks for hot path, custom subagents for deliberation -- is architecturally sound. This is NOT the subagent-only approach from Synthesis v2 Section 2, nor the CJS-with-direct-API-only approach from the previous analysis. It is a hybrid that leverages the strengths of both patterns.
 
-The replacement is the pattern already proven in the Dynamo codebase: pure CJS modules making direct HTTP API calls to Anthropic's API, with JSON state file persistence.
+**Conditions:**
+- Hot path MUST remain as CJS command hooks with deterministic processing and `additionalContext` injection (latency demands it)
+- Deliberation path and REM consolidation CAN use custom subagent with Sonnet model selection (latency tolerant)
+- State file bridge pattern (SubagentStop writes, UserPromptSubmit reads) must be implemented for indirect context injection
+- For API plan users, direct API calls remain the fallback (subagent bootstrap overhead not justified for hot path)
+- Implementation must handle the SubagentStop-to-parent context gap gracefully
+- Rate limit degradation strategy required (fall back to hot-path-only when rate-limited)
 
 #### Integration Recommendation
 
-**Replacement: Pure CJS with direct API calls.**
+**Hybrid Architecture: CJS Command Hooks + Custom Subagent.**
 
 The Inner Voice invocation pattern is defined as:
-1. CJS modules (`ledger/inner-voice.cjs`, `ledger/dual-path.cjs`, `ledger/activation.cjs`) -- per INNER-VOICE-SPEC.md Section 6.1
-2. Direct HTTP API calls to Anthropic for Haiku/Sonnet (same pattern as `curation.cjs`)
-3. JSON state file for persistence (same pattern as `sessions.cjs`)
-4. All processing within the `command` hook's process
+1. **Hot path (v1.3):** CJS command hooks (`ledger/inner-voice.cjs`, `ledger/dual-path.cjs`, `ledger/activation.cjs`) with deterministic processing and `additionalContext` injection. Unchanged from existing spec.
+2. **Deliberation path (v1.3):** EITHER direct HTTP API calls to Anthropic (API plan users) OR trigger custom `inner-voice` subagent via main session (subscription users). Configurable based on billing model.
+3. **REM consolidation (v1.3):** Custom subagent with Sonnet model preferred for subscription users. Direct API call fallback for API plan users.
+4. **Custom subagent definition:** `~/.claude/agents/inner-voice.md` with model: sonnet, tools: Read/Grep/Glob/Bash, disallowedTools: Write/Edit/Agent, permissionMode: dontAsk, maxTurns: 10, memory: user
+5. **SubagentStart hook:** Injects current IV state into subagent context at spawn time
+6. **SubagentStop hook:** Writes results to state file for next UserPromptSubmit pickup
 
-**No MASTER-ROADMAP changes required.** CORTEX-01 and CORTEX-02 already specify the Inner Voice as CJS modules with dual-path routing. The subagent assumption in Synthesis v2 Section 2 was never incorporated into the roadmap.
+**MASTER-ROADMAP changes:**
+- CORTEX-01 (v1.3): Add "hybrid invocation pattern: CJS command hooks for hot path with `additionalContext` injection + custom subagent definition for deliberation path"
+- CORTEX-07 (Agent coordination, v1.5): Remains valid but v1.3 can now use native subagents for non-latency-critical paths, reducing the scope of v1.5 agent coordination work
 
-**INNER-VOICE-SPEC.md:** Already specifies the correct architecture (Section 4, Section 6.1). No modification needed. The spec's model selection table (Section 4.7) correctly specifies Haiku for hot path formatting and Sonnet for deliberation -- these are direct API calls, not subagent model selection.
-
-**CORTEX-07 (Agent coordination, v1.5):** Remains valid for deep recall operations where latency is not a constraint. Agent SDK integration for complex multi-step memory queries (not Inner Voice hot-path processing) is still a v1.5 capability.
-
-**The research finding that killed Synthesis v2 Section 2's substrate assumption:**
-> "The Inner Voice v1.3 MUST be implemented as pure CJS code with direct API calls (Haiku via OpenRouter or Anthropic API), NOT as a Claude Code subagent. The subagent path is a dead end for latency-critical hooks."
-> -- 260318-x21-RESEARCH.md, Primary recommendation
+**INNER-VOICE-SPEC.md modifications required:**
+- Section 4.3, UserPromptSubmit pipeline: Update deliberation path to show hybrid invocation (direct API or subagent)
+- Section 4.7, Model selection: Add subagent model selection alongside direct API model selection
+- Section 6.1, Module structure: Add `~/.claude/agents/inner-voice.md` custom subagent definition file
 
 ---
 
@@ -436,18 +452,20 @@ The Inner Voice invocation pattern is defined as:
 | 1 | Frame-First Pipeline | **CONDITIONAL GO** | HIGH | v1.3 (basic) / v1.4 (full) | v1.3: keyword classification, single frame. v1.4: embedding classification, multi-frame fan-out. |
 | 2 | User-Relative Definition Construction | **DEFER** | HIGH | v1.4 | Requires graph density >200 entities, >500 relationships. v1.3 uses direct graph context. |
 | 3 | Variable Substitution as Debiasing | **NO-GO** | HIGH | Never | Cosmetic debiasing only. Replaced by adversarial counter-prompting. |
-| 4 | IV Memory / Metacognitive Layer | **CONDITIONAL GO** | MEDIUM | v1.4 | Requires REM consolidation operational. v1.3 uses existing state schema. |
-| 5 | REM Consolidation Model | **GO** | HIGH | v1.3 (basic) / v1.4 (full) | Stop hook synthesis validated. PreCompact state preservation validated. |
+| 4 | IV Memory / Metacognitive Layer | **CONDITIONAL GO** | MEDIUM | v1.4 | Requires REM consolidation operational. v1.3 uses existing state schema. Subagent native persistent memory (`memory: user`) could supplement custom IV memory JSON schema. |
+| 5 | REM Consolidation Model | **GO** | HIGH | v1.3 (basic) / v1.4 (full) | Stop hook synthesis validated. PreCompact state preservation validated. REM Tier 3 can optionally use custom subagent for deep synthesis (subscription users). |
 | 6 | Scalar Compute / Brute-Force Parallel | **CONDITIONAL GO** | HIGH | v1.4 | Premature for v1.3 (1-hop only). Enables value at 2-hop with graph density threshold. |
-| 7 | Claude Code Native Subagent | **NO-GO** | HIGH | Never | Hooks cannot spawn subagents for processing. Replaced by pure CJS + direct API calls. |
+| 7 | Claude Code Native Subagent (Hybrid) | **CONDITIONAL GO** | HIGH | v1.3 (hybrid) | Hot path: CJS command hooks with `additionalContext` injection. Deliberation: custom subagent. Conditions: SubagentStop gap bridged via state file, rate limit degradation strategy. |
 
-**Summary counts:** 1 GO, 3 CONDITIONAL GO, 1 DEFER, 2 NO-GO.
+**Summary counts:** 1 GO, 4 CONDITIONAL GO, 1 DEFER, 1 NO-GO.
 
-**Surviving concepts for v1.3:** Frame-first pipeline (basic keyword classification), REM consolidation (basic stop hook synthesis + PreCompact state preservation).
+**Surviving concepts for v1.3:** Frame-first pipeline (basic keyword classification), REM consolidation (basic stop hook synthesis + PreCompact state preservation), Subagent hybrid architecture (CJS hooks for hot path + custom subagent for deliberation and REM).
 
 **Surviving concepts for v1.4:** Frame-first pipeline (full), User-relative definitions, IV memory, REM consolidation (full), Scalar compute fan-out.
 
-**Killed concepts:** Variable substitution debiasing, Claude Code native subagent implementation.
+**Killed concepts:** Variable substitution debiasing.
+
+**Note on Concept 7:** The verdict changed from NO-GO to CONDITIONAL GO (corrected 2026-03-19 per 260319-17p-RESEARCH.md). This is NOT the pure subagent approach from Synthesis v2 Section 2. It is a hybrid architecture that uses CJS command hooks for the latency-critical hot path and custom subagents for the latency-tolerant deliberation and REM consolidation paths.
 
 ---
 
@@ -481,17 +499,19 @@ The following pipelines integrate surviving Synthesis v2 concepts into the INNER
     - HOT PATH [<500ms]: Retrieve cached/indexed results for activated entities,
       format using template with adversarial counter-prompting [MODIFIED - Concept 3 replacement],
       apply cognitive load limits
-    - DELIBERATION PATH [1-3s]: Call Haiku/Sonnet via direct HTTP API [MODIFIED - Concept 7 replacement]
+    - DELIBERATION PATH [1-3s]: Call Haiku/Sonnet via EITHER direct HTTP API (API plan users)
+      OR trigger custom subagent (subscription users) [MODIFIED - Concept 7 hybrid]
       with context + activated entities + self-model + domain frame context [MODIFIED - Concept 1],
       use adversarial counter-prompting in generation prompt [MODIFIED - Concept 3 replacement],
-      generate contextually shaped injection
+      generate contextually shaped injection.
+      Subagent results available on next UserPromptSubmit via state file bridge.
 8.  UPDATE state                                                [<5ms]
     - Update activation_map, predictions, injection_history
     - Persist to inner-voice-state.json
 9.  RETURN injection or empty                                   [total: 100ms-3s]
 ```
 
-**Changes from spec:** Steps 3 (domain classification, Concept 1), 5 (frame weight bonus, Concept 1), 7 (adversarial counter-prompting replacing variable substitution, Concept 3 replacement; direct API calls replacing subagent, Concept 7 replacement).
+**Changes from spec:** Steps 3 (domain classification, Concept 1), 5 (frame weight bonus, Concept 1), 7 (adversarial counter-prompting replacing variable substitution, Concept 3 replacement; hybrid invocation -- direct API or custom subagent based on billing model, Concept 7 hybrid).
 
 #### SessionStart (once per session, higher latency budget)
 
@@ -503,20 +523,20 @@ The following pipelines integrate surviving Synthesis v2 concepts into the INNER
     - Load self-model, relationship model
     - Query top activated entities from previous session
     - Query entities relevant to detected intent, weighted by domain frame [MODIFIED - Concept 1]
-    - Generate factual briefing via direct Sonnet API call [MODIFIED - Concept 7 replacement]
+    - Generate factual briefing via Sonnet: direct API call OR custom subagent [MODIFIED - Concept 7 hybrid]
       (v1.3: factual; v1.4: narrative with relational framing)
 5.  UPDATE state for new session
 6.  RETURN briefing [total: 2-4s, acceptable for session start]
 ```
 
-**Changes from spec:** Steps 2 (domain classification, Concept 1), 4 (frame weighting and direct API, Concepts 1 and 7).
+**Changes from spec:** Steps 2 (domain classification, Concept 1), 4 (frame weighting and hybrid invocation -- direct API or custom subagent, Concepts 1 and 7 hybrid).
 
 #### Stop (once per session, no latency constraint)
 
 ```
 1.  LOAD state
 2.  REM TIER 3: Full consolidation                              [NEW - Concept 5]
-    a. SYNTHESIZE session observations (Sonnet via direct API)  [MODIFIED - Concept 7 replacement]
+    a. SYNTHESIZE session observations (Sonnet via direct API OR custom subagent) [MODIFIED - Concept 7 hybrid]
        - What happened this session?
        - What did the user work on? How did they react?
        - What patterns observed?
@@ -785,29 +805,92 @@ The two files are complementary. Operational state feeds REM consolidation, whic
 
 ### 4. Inner Voice Invocation Pattern
 
-**Definitive architecture per research findings (260318-x21-RESEARCH.md Section 1).**
+**Hybrid architecture per corrected research findings (260319-17p-RESEARCH.md).**
 
-The Inner Voice is implemented as pure CJS modules making direct HTTP API calls. This is NOT a compromise -- it is the correct architecture, proven by existing Dynamo patterns.
+The Inner Voice uses a hybrid invocation pattern: CJS command hooks with `additionalContext` injection for the latency-critical hot path, and custom subagents for the latency-tolerant deliberation and REM consolidation paths. This replaces the previous CJS-with-direct-API-only architecture with a dual-mode approach that serves both subscription and API plan users.
 
-#### Why Not Subagent
+#### Hybrid Architecture: Command Hooks + Custom Subagent
 
-The research finding that killed the Synthesis v2 Section 2 substrate assumption:
+The previous analysis concluded that the subagent approach was "architecturally dead." Corrected research (260319-17p-RESEARCH.md) reveals this was based on incorrect premises about hook capabilities. The actual architecture is:
 
-> "The `type: 'agent'` hook spawns a limited verification subagent (60s timeout, yes/no decision output), not a general-purpose processing agent."
-> "Cold start latency [for `claude -p`]: 5-15 seconds for Claude CLI initialization"
-> "NO-GO for hook-spawned subagents on the hot path."
+**Hot path (CJS command hooks, <500ms):**
+- Triggered by `UserPromptSubmit` command hook
+- CJS code: deterministic entity extraction, activation map update, threshold check
+- Injection via `additionalContext` field in `hookSpecificOutput` JSON response
+- No LLM call on hot path (cached/indexed data only)
+- This path is unchanged from the original spec -- latency demands deterministic CJS processing
 
-The `agent` hook type cannot output injection text. The `claude -p` workaround exceeds all timing budgets except Stop. The subagent approach is architecturally dead for latency-critical hooks.
+**Deliberation path (custom subagent, 2-10s budget):**
+- Main session spawns the `inner-voice` custom subagent (defined in `~/.claude/agents/inner-voice.md`)
+- SubagentStart hook injects current IV state + queue data into subagent context via `additionalContext`
+- Subagent (Sonnet model) performs deep analysis: graph traversal, multi-frame evaluation, narrative construction
+- SubagentStop hook writes results to state file (`inner-voice-deliberation-result.json`)
+- Next UserPromptSubmit hook reads the results and injects via `additionalContext`
+- For API plan users: falls back to direct HTTP API call (same pattern as `curation.cjs`)
+
+**REM consolidation (Stop hook, no time constraint):**
+- Custom subagent with Sonnet model preferred for subscription users (deep synthesis at zero marginal cost)
+- Direct API call fallback for API plan users
+- Results written to state files for next session
+
+**State bridge pattern (SubagentStop -> next UserPromptSubmit):**
+- SubagentStop CANNOT inject content directly back into parent context (GitHub issue #5812, `additionalParentContext` closed as NOT_PLANNED)
+- Workaround: SubagentStop hook writes results to `inner-voice-deliberation-result.json`
+- Next UserPromptSubmit hook checks for pending results, reads and injects via `additionalContext`
+- State file uses a "processing" flag to handle background subagent race conditions
+
+#### Custom Subagent Definition
+
+```yaml
+# ~/.claude/agents/inner-voice.md
+---
+name: inner-voice
+description: Cognitive processing engine for context-aware memory injection.
+  Use when deep analysis of user context is needed beyond hot-path processing.
+  Produces narrative briefings and contextual insights.
+model: sonnet
+tools: Read, Grep, Glob, Bash
+disallowedTools: Write, Edit, Agent
+permissionMode: dontAsk
+maxTurns: 10
+memory: user
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "~/.claude/dynamo/ledger/hooks/validate-iv-bash.sh"
+---
+
+You are the Inner Voice cognitive processing engine for the Dynamo system.
+
+Your role is to analyze the user's conversational context against their knowledge
+graph and produce contextually relevant insights for injection into the main session.
+
+[... detailed system prompt with processing instructions ...]
+```
+
+**Key configuration choices:**
+- `model: sonnet` -- capable enough for deep analysis, cheaper than Opus
+- `tools: Read, Grep, Glob, Bash` -- can read state files, query knowledge graph via CLI
+- `disallowedTools: Write, Edit, Agent` -- Inner Voice should not modify user code or spawn sub-subagents
+- `permissionMode: dontAsk` -- autonomous operation without user confirmation
+- `maxTurns: 10` -- bounded processing to prevent runaway
+- `memory: user` -- persistent memory at `~/.claude/agent-memory/inner-voice/` across sessions
 
 #### Module Structure
 
 ```
+~/.claude/agents/
+  inner-voice.md                <- Custom subagent definition (NEW)
+
 ~/.claude/dynamo/ledger/
   inner-voice.cjs              <- Core processing logic (pipeline orchestrator)
   dual-path.cjs                <- Hot/deliberation path routing and scoring
   activation.cjs               <- Activation map management and spreading activation
   inner-voice-state.json       <- Persistent state (per INNER-VOICE-SPEC.md Section 4.2)
   inner-voice-memory.json      <- IV memory (v1.4, per Track B Section 2)
+  inner-voice-deliberation-result.json  <- State bridge for subagent results (NEW)
 
   hooks/
     prompt-augment.cjs          <- UserPromptSubmit handler (existing, evolves to call inner-voice.cjs)
@@ -815,6 +898,8 @@ The `agent` hook type cannot output injection text. The `claude -p` workaround e
     session-end.cjs             <- Stop handler (existing, evolves to call inner-voice.cjs for REM)
     preserve-knowledge.cjs      <- PreCompact handler (existing, evolves to include Tier 1 triage)
     capture-changes.cjs         <- PostToolUse handler (existing, evolves to call activation.cjs)
+    iv-subagent-start.cjs       <- SubagentStart handler for inner-voice subagent (NEW)
+    iv-subagent-stop.cjs        <- SubagentStop handler for inner-voice subagent (NEW)
 ```
 
 #### Exports Per Module
@@ -835,7 +920,8 @@ module.exports = {
 module.exports = {
   selectPath(activationMap, semanticShift, predictions) -> "hot"|"deliberation"|"skip",
   executeHotPath(entities, state, domainFrame) -> { injection: string, tokens: number },
-  executeDeliberationPath(entities, state, domainFrame) -> { injection: string, tokens: number }
+  executeDeliberationPath(entities, state, domainFrame) -> { injection: string, tokens: number },
+  shouldUseSubagent(config) -> boolean  // Check billing model preference
 };
 ```
 
@@ -851,35 +937,98 @@ module.exports = {
 
 #### Hook Handler Pattern
 
-Each hook handler follows the existing Dynamo pattern:
+Each hook handler uses `additionalContext` for model-visible injection:
 
 ```javascript
 // In hook handler (e.g., prompt-augment.cjs)
 const { processUserPrompt } = require('../inner-voice.cjs');
 const fs = require('fs');
 const STATE_PATH = path.join(__dirname, '..', 'inner-voice-state.json');
+const RESULT_PATH = path.join(__dirname, '..', 'inner-voice-deliberation-result.json');
 
 async function handler(input) {
   // 1. Load state
   const state = JSON.parse(fs.readFileSync(STATE_PATH, 'utf8'));
 
-  // 2. Process
-  const result = await processUserPrompt(input, state);
+  // 2. Check for pending subagent results (state bridge pattern)
+  let pendingResult = null;
+  if (fs.existsSync(RESULT_PATH)) {
+    const result = JSON.parse(fs.readFileSync(RESULT_PATH, 'utf8'));
+    if (result.status === 'complete') {
+      pendingResult = result.injection;
+      fs.unlinkSync(RESULT_PATH);  // Consume the result
+    }
+  }
 
-  // 3. Persist updated state
+  // 3. Process
+  const result = await processUserPrompt(input, state, pendingResult);
+
+  // 4. Persist updated state
   fs.writeFileSync(STATE_PATH, JSON.stringify(result.updatedState, null, 2));
 
-  // 4. Return injection (or empty)
-  return result.injection || '';
+  // 5. Return injection via additionalContext for model-visible injection
+  return JSON.stringify({
+    hookSpecificOutput: {
+      hookEventName: "UserPromptSubmit",
+      additionalContext: result.injection || ""
+    }
+  });
 }
 ```
 
-#### Direct API Call Pattern
+#### Subagent Invocation Pattern
 
-Same pattern as existing `curation.cjs`:
+The deliberation path can trigger the custom subagent through the main session. The SubagentStart and SubagentStop hooks bridge state:
 
 ```javascript
-// In dual-path.cjs, executeDeliberationPath()
+// iv-subagent-start.cjs -- SubagentStart hook for inner-voice subagent
+// Matcher: "inner-voice" (targets only the Inner Voice subagent)
+async function handler(input) {
+  if (input.agent_type !== 'inner-voice') return '';
+
+  // Inject current IV state into subagent context at spawn time
+  const state = JSON.parse(fs.readFileSync(STATE_PATH, 'utf8'));
+  const queue = fs.existsSync(QUEUE_PATH)
+    ? JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf8'))
+    : null;
+
+  return JSON.stringify({
+    hookSpecificOutput: {
+      hookEventName: "SubagentStart",
+      additionalContext: JSON.stringify({
+        currentState: state,
+        deliberationQueue: queue,
+        instructions: "Process the deliberation queue and produce injection content."
+      })
+    }
+  });
+}
+```
+
+```javascript
+// iv-subagent-stop.cjs -- SubagentStop hook for inner-voice subagent
+async function handler(input) {
+  if (input.agent_type !== 'inner-voice') return '';
+
+  // Write results to state file for next UserPromptSubmit pickup
+  const result = {
+    status: 'complete',
+    timestamp: new Date().toISOString(),
+    injection: input.last_assistant_message,
+    agentId: input.agent_id
+  };
+  fs.writeFileSync(RESULT_PATH, JSON.stringify(result, null, 2));
+
+  return '';  // No direct parent context injection (SubagentStop gap)
+}
+```
+
+#### Direct API Call Pattern (API plan fallback)
+
+For API plan users or when the subagent path is not preferred (hot-path-only mode), the direct API call pattern remains available. Same pattern as existing `curation.cjs`:
+
+```javascript
+// In dual-path.cjs, executeDeliberationPath() -- API plan fallback
 async function callAnthropic(model, systemPrompt, userPrompt) {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -899,7 +1048,7 @@ async function callAnthropic(model, systemPrompt, userPrompt) {
 }
 ```
 
-No npm dependencies. No subagent spawning. Node's built-in `fetch` (available in Node 18+) or `https` module for the HTTP call.
+No npm dependencies. Node's built-in `fetch` (available in Node 18+) or `https` module for the HTTP call. Used when `ANTHROPIC_API_KEY` is set and subagent mode is not preferred.
 
 ---
 
@@ -911,7 +1060,7 @@ No npm dependencies. No subagent spawning. Node's built-in `fetch` (available in
 
 Current text: "Semantic shift detection, smart curation replacing Haiku pipeline, self-model persistence (basic JSON cache). Absorbs MENH-01, MENH-02, MENH-10, MENH-11 functionality."
 
-Recommended addition: "Includes basic domain classification (keyword/regex heuristic) for frame-informed activation weighting (Synthesis v2 Concept 1, CONDITIONAL GO). Includes basic REM consolidation: Tier 1 state preservation in PreCompact, Tier 3 session synthesis in Stop hook (Synthesis v2 Concept 5, GO). Inner Voice implemented as pure CJS modules with direct Anthropic API calls -- NOT as Claude Code subagent (Synthesis v2 Concept 7, NO-GO; confirmed by research)."
+Recommended addition: "Includes basic domain classification (keyword/regex heuristic) for frame-informed activation weighting (Synthesis v2 Concept 1, CONDITIONAL GO). Includes basic REM consolidation: Tier 1 state preservation in PreCompact, Tier 3 session synthesis in Stop hook (Synthesis v2 Concept 5, GO). Inner Voice implemented as hybrid architecture: CJS command hooks for hot path with `additionalContext` injection + custom subagent definition for deliberation path (Synthesis v2 Concept 7, CONDITIONAL GO; revised architecture per corrected research 260319-17p)."
 
 **Confidence: HIGH**
 
@@ -946,18 +1095,23 @@ Recommended addition: "Includes IV memory metacognitive layer with concrete JSON
 #### v1.3/v1.4 Boundary Shifts
 
 No boundary shifts. All concepts map cleanly to their existing milestone assignments:
-- v1.3 gets basic versions of Concepts 1 and 5
+- v1.3 gets basic versions of Concepts 1, 5, and 7 (hybrid architecture)
 - v1.4 gets full versions of Concepts 1, 2, 4, 5, and 6
-- Concepts 3 and 7 are killed (no milestone impact)
+- Concept 3 is killed (no milestone impact)
+- Concept 7 (hybrid) enters v1.3 as CJS hooks for hot path + custom subagent for deliberation
 
 #### Cost Projection Revisions
 
-The v1.3 cost projection from INNER-VOICE-SPEC.md Section 4.9 ($1.97/day without caching, $1.20/day with caching) does NOT need revision. The surviving v1.3 concepts (basic domain classification, basic REM consolidation) add:
+The v1.3 cost projection depends on billing model. The custom subagent definition file (`~/.claude/agents/inner-voice.md`) is minimal infrastructure -- a single Markdown file with YAML frontmatter.
+
+**For API plan users:** The v1.3 cost projection from INNER-VOICE-SPEC.md Section 4.9 ($1.97/day without caching, $1.20/day with caching) does NOT need revision. The surviving v1.3 concepts add:
 - Domain classification: $0 (keyword/regex, deterministic)
 - REM Tier 1 (PreCompact): $0.01/day (one Haiku call per compaction event)
 - REM Tier 3 is already costed as "Stop synthesis" in the existing projection
+- **Net v1.3 impact (API plan):** +$0.01/day (negligible)
 
-**Net v1.3 impact:** +$0.01/day (negligible).
+**For subscription plan users (Pro/Max):** Subagent-based deliberation and REM consolidation are included in subscription at no additional per-token cost. The hot path (deterministic CJS processing) requires no API calls. Only the Haiku formatting calls on the hot path have marginal cost ($0.36/day). Deliberation and REM via custom subagent: $0 additional (subscription-included, subject to rate limits).
+- **Net v1.3 cost (subscription):** ~$0.37/day (hot path Haiku + deterministic processing only, with deliberation and REM covered by subscription)
 
 The v1.4 cost projection ($3.50-5.00/day from MASTER-ROADMAP) should be revised upward to account for:
 - Full REM operations: +$1.50/day (retroactive evaluation, observation synthesis)
@@ -976,6 +1130,7 @@ No new CORTEX requirement IDs needed. All surviving concepts map to existing req
 - Concept 4 (IV Memory) -> CORTEX-06
 - Concept 5 (REM) -> CORTEX-01 (basic), CORTEX-04 (full), CORTEX-05 (observation synthesis)
 - Concept 6 (Scalar compute) -> CORTEX-04
+- Concept 7 (Hybrid subagent) -> CORTEX-01 (hybrid invocation pattern), CORTEX-07 (agent coordination scope reduced -- v1.3 now covers basic subagent use)
 
 #### Requirements to Remove or De-scope
 
@@ -985,11 +1140,11 @@ None. No existing requirements are invalidated by this analysis.
 
 ### 6. Updated Cost Model
 
-#### Daily Cost Projection Table
+#### Daily Cost Projection Table (API Plan Users)
 
 | Operation | Model | v1.3 (Baseline) | v1.3 + Synthesis | v1.4 + Synthesis | Notes |
 |-----------|-------|-----------------|------------------|------------------|-------|
-| Hot path formatting | Haiku | $0.36 | $0.36 | $0.36 | Unchanged |
+| Hot path formatting | Haiku | $0.36 | $0.36 | $0.36 | Unchanged (always CJS + direct API) |
 | Domain classification | None | $0.00 | $0.00 | $0.00 | Deterministic (keyword v1.3, embedding v1.4) |
 | Deliberation injections | Sonnet | $0.81 | $0.81 | $1.50-4.00 | v1.4: multi-frame fan-out adds calls |
 | Session start briefing | Sonnet | $0.38 | $0.38 | $0.50 | v1.4: frame-weighted queries slightly larger |
@@ -998,43 +1153,68 @@ None. No existing requirements are invalidated by this analysis.
 | Self-model updates | Sonnet | $0.15 | $0.15 | $0.15 | Unchanged |
 | User-relative definitions | Sonnet | -- | -- | $0.30-0.60 | v1.4 only: 3-5 per session |
 | IV memory I/O | None | -- | -- | $0.00 | File I/O, no LLM cost |
-| **Daily total** | | **$1.97** | **$1.98** | **$3.39-6.19** | |
+| **Daily total (API plan)** | | **$1.97** | **$1.98** | **$3.39-6.19** | |
 | **With prompt caching** | | **$1.20** | **$1.21** | **$2.40-4.30** | 40-50% reduction on cached inputs |
+
+#### Daily Cost Projection Table (Subscription Plan Users -- Pro/Max)
+
+| Operation | Model | v1.3 + Synthesis | v1.4 + Synthesis | Notes |
+|-----------|-------|------------------|------------------|-------|
+| Hot path formatting | Haiku | $0.36 | $0.36 | CJS command hook, deterministic + Haiku formatting |
+| Domain classification | None | $0.00 | $0.00 | Deterministic |
+| Deliberation injections | Sonnet (subagent) | $0.00* | $0.00* | Included in subscription via custom subagent |
+| Session start briefing | Sonnet (subagent) | $0.00* | $0.00* | Included in subscription via custom subagent |
+| Stop synthesis (REM Tier 3) | Sonnet (subagent) | $0.00* | $0.00* | Included in subscription via custom subagent |
+| REM Tier 1 (PreCompact) | Haiku | $0.01 | $0.01 | CJS hook, small Haiku call |
+| Self-model updates | Sonnet (subagent) | $0.00* | $0.00* | Part of Stop synthesis |
+| User-relative definitions | Sonnet (subagent) | -- | $0.00* | v1.4 only, via subagent |
+| IV memory I/O | None | -- | $0.00 | File I/O |
+| **Daily total (subscription)** | | **$0.37** | **$0.37** | *Subject to rate limits |
+| **Note** | | | | *$0.00 = included in Pro/Max subscription, not per-token billed |
 
 #### Monthly Cost Projection Table
 
 | Scenario | Daily | Monthly | Change from Baseline |
 |----------|-------|---------|---------------------|
 | Current Dynamo (baseline) | $0.70 | $21 | -- |
+| **API Plan Users** | | | |
 | v1.3 (INNER-VOICE-SPEC.md projections) | $1.97 | $59 | +$38 |
 | v1.3 + Synthesis v2 surviving concepts | $1.98 | $59 | +$38 (negligible change) |
 | v1.3 + caching | $1.21 | $36 | +$15 |
 | v1.4 + Synthesis v2 full (without caching) | $3.39-6.19 | $102-186 | +$81-165 |
 | v1.4 + Synthesis v2 full (with caching) | $2.40-4.30 | $72-129 | +$51-108 |
+| **Subscription Plan Users (Pro/Max)** | | | |
+| v1.3 + Synthesis v2 (subscription) | $0.37 | $11 | -$10 (cheaper than baseline!) |
+| v1.4 + Synthesis v2 (subscription) | $0.37 | $11 | -$10 (subagent costs subscription-included) |
+| **Both Plans** | | | |
 | v1.5 (agent coordination, per MASTER-ROADMAP) | $5.00-8.00 | $150-240 | +$129-219 |
 | v2.0 (full deliberation, per MASTER-ROADMAP) | $6.00-15.00 | $180-450 | +$159-429 |
 
 #### Key Cost Insights
 
-1. **v1.3 cost is unchanged by Synthesis v2.** The only surviving v1.3 concept with cost impact is REM Tier 1, which adds $0.01/day. Domain classification is deterministic. The subagent NO-GO verdict means no new infrastructure cost.
+1. **v1.3 cost depends on billing model.** For API plan users, the v1.3 cost is effectively unchanged ($1.98/day). For subscription plan users (Pro/Max), the cost drops dramatically to $0.37/day because deliberation and REM consolidation via custom subagent are included in the subscription at no additional per-token cost.
 
-2. **v1.4 cost increases by 50-100% over original projections.** Multi-frame fan-out on the deliberation path is the primary driver. The original v1.4 projection of $3.50-5.00/day assumed single-frame processing. Multi-frame adds $1.50-4.00/day.
+2. **v1.4 cost increases by 50-100% over original projections (API plan only).** Multi-frame fan-out on the deliberation path is the primary driver. The original v1.4 projection of $3.50-5.00/day assumed single-frame processing. Multi-frame adds $1.50-4.00/day. For subscription users, v1.4 remains at $0.37/day (same subagent inclusion applies).
 
-3. **Prompt caching is critical for v1.4.** Without caching, v1.4 could reach $6.19/day ($186/month). With caching, the range compresses to $2.40-4.30/day ($72-129/month). Caching should be a v1.4 day-1 requirement.
+3. **Prompt caching is critical for v1.4 on API plans.** Without caching, v1.4 could reach $6.19/day ($186/month). With caching, the range compresses to $2.40-4.30/day ($72-129/month). Caching should be a v1.4 day-1 requirement for API plan users.
 
-4. **The CJS+API pattern (vs subagent cost model) is equivalent.** The Synthesis v2 assumption that subagents would use subscription pricing was incorrect (260318-x21-RESEARCH.md Section 1). Direct API calls use the same per-token pricing. No cost model adjustment needed for the invocation pattern change.
+4. **For subscription plan users (Pro/Max), subagent-based deliberation and REM consolidation are included in subscription at no additional per-token cost.** This materially changes the cost model from the previous analysis. The $1.97/day v1.3 projection applies to API plan users; subscription users pay $0.37/day (hot path Haiku + deterministic processing only, with deliberation and REM covered by subscription). The hybrid architecture serves both billing models.
 
-5. **Budget enforcement (CORTEX-03) becomes more important.** The wider cost range for v1.4 ($72-186/month) means budget caps must be tight. Hard enforcement that degrades to hot-path-only when budget is exhausted prevents runaway costs.
+5. **Subscription plan users can run the deliberation path and REM consolidation through the custom subagent at $0 additional marginal cost** (subject to rate limits). This materially reduces the projected daily cost for subscription users. Rate limit degradation (falling back to hot-path-only when rate-limited) is the primary cost control mechanism for subscription users, replacing budget-based enforcement.
+
+6. **Budget enforcement (CORTEX-03) remains important for API plan users.** The wider cost range for v1.4 ($72-186/month on API plans) means budget caps must be tight. Hard enforcement that degrades to hot-path-only when budget is exhausted prevents runaway costs. Subscription users use rate limit monitoring instead of budget caps.
 
 ---
 
 *Analysis based on:*
 - *INNER-VOICE-SYNTHESIS-v2.md (7 concepts analyzed)*
-- *260318-x21-RESEARCH.md (empirical research findings)*
+- *260318-x21-RESEARCH.md (empirical research findings -- original)*
+- *260319-17p-RESEARCH.md (corrected hook and subagent capabilities research -- Concept 7 re-evaluation)*
 - *INNER-VOICE-SPEC.md (existing mechanical design, Sections 1-7)*
 - *LEDGER-CORTEX-ANALYSIS.md (component verdicts)*
 - *LEDGER-CORTEX-BRIEF.md (strategic context)*
 - *MASTER-ROADMAP-DRAFT-v1.3-cortex.md (current roadmap with CORTEX-01 through CORTEX-11)*
 
-*Research date: 2026-03-18*
-*Valid until: 2026-04-18 (Claude Code hooks API evolving; re-verify before implementation)*
+*Original research date: 2026-03-18*
+*Correction date: 2026-03-19 (Concept 7 verdict changed from NO-GO to CONDITIONAL GO)*
+*Valid until: 2026-04-19 (Claude Code hooks API evolving; re-verify before implementation)*

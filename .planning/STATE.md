@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 18-01-PLAN.md
-last_updated: "2026-03-19T20:36:52Z"
+status: phase-complete
+stopped_at: Completed 18-02-PLAN.md (phase 18 complete)
+last_updated: "2026-03-19T20:54:42Z"
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 
 ## Current Position
 
-Phase: 18 (restructure-prerequisites) — EXECUTING
-Plan: 2 of 2
+Phase: 18 (restructure-prerequisites) — COMPLETE
+Plan: 2 of 2 (all complete)
 
 ### Prior Milestones
 
@@ -64,6 +64,9 @@ Recent decisions affecting current work:
 - [18-01]: scope.cjs is standalone (no core.cjs require) -- only 2 core<->ledger cycles exist
 - [18-01]: install.cjs <-> update.cjs intra-switchboard cycle added to allowlist
 - [18-01]: 8 subsystem keys in layout map including future paths (assay, terminus, reverie, cc)
+- [18-02]: Dual-layout bootstrap for dynamo/ root files -- conditional require since deployed layout flattens dynamo/ to root
+- [18-02]: install.cjs Step 6 changed from deleting lib/ to verifying lib/ (lib/ is now required shared substrate)
+- [18-02]: SYNC_PAIRS expanded from 3 to 4 entries for lib/ deployment
 
 ### Blockers/Concerns
 
@@ -71,6 +74,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T20:36:52Z
-Stopped at: Completed 18-01-PLAN.md
-Resume file: .planning/phases/18-restructure-prerequisites/18-01-SUMMARY.md
+Last session: 2026-03-19T20:54:42Z
+Stopped at: Completed 18-02-PLAN.md (Phase 18 complete)
+Resume file: .planning/phases/18-restructure-prerequisites/18-02-SUMMARY.md

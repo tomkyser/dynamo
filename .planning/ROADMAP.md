@@ -5,7 +5,7 @@
 - ✅ **v1.0 Research and Ranked Report** -- Phases 1-3 (shipped 2026-03-17)
 - ✅ **v1.1 Fix Memory System** -- Phases 4-7 (shipped 2026-03-17)
 - ✅ **v1.2 Dynamo Foundation** -- Phases 8-11 (shipped 2026-03-18)
-- **v1.2.1 Stabilization and Polish** -- Phases 12-17 (in progress)
+- **v1.2.1 Stabilization and Polish** -- Phases 12-17 (shipped 2026-03-19)
 
 ## Phases
 
@@ -47,7 +47,7 @@
 - [x] **Phase 14: Documentation and Branding** - README, exhaustive docs, CLAUDE.md, architecture capture (completed 2026-03-18)
 - [x] **Phase 15: Update System** - Version checks, migration, and rollback (completed 2026-03-19)
 - [x] **Phase 16: Tech Debt Cleanup** - Doc updates, stale permissions removal, deploy to live (completed 2026-03-19)
-- [ ] **Phase 17: Deploy Pipeline and Integration Fixes** - Fix hook path resolution, remove MCP re-registration, add CLAUDE.md deployment, minor cleanup
+- [x] **Phase 17: Deploy Pipeline and Integration Fixes** - Fix hook path resolution, remove MCP re-registration, add CLAUDE.md deployment, minor cleanup (completed 2026-03-19)
 
 ## Phase Details
 
@@ -144,12 +144,12 @@ Plans:
   5. `dynamo toggle off` fully disables all memory access (CLI gate + hook gate + no MCP bypass)
   6. README Mermaid diagram shows correct Neo4j ports (`:7475/:7687`)
   7. Regression tests reference correct paths (no `lib/` references)
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 17-01-PLAN.md -- Fix hook dispatcher dual-layout path resolution + installer MCP deregistration and CLAUDE.md deploy
-- [ ] 17-02-PLAN.md -- Fix regression tests for current layout + update dispatcher/install test assertions + correct README port
-- [ ] 17-03-PLAN.md -- Deploy to live, run full test suite, human-verify hooks in deployed environment
+- [x] 17-01-PLAN.md -- Fix hook dispatcher dual-layout path resolution + installer MCP deregistration and CLAUDE.md deploy
+- [x] 17-02-PLAN.md -- Fix regression tests for current layout + update dispatcher/install test assertions + correct README port
+- [x] 17-03-PLAN.md -- Deploy to live, run full test suite, human-verify hooks in deployed environment
 
 ## Progress
 
@@ -174,4 +174,4 @@ Phases execute in numeric order: 12 -> 12.1 -> 13 -> 13.1 -> 14 -> 15 -> 16 -> 1
 | 14. Documentation and Branding | v1.2.1 | 3/3 | Complete | 2026-03-18 |
 | 15. Update System | v1.2.1 | 4/4 | Complete | 2026-03-19 |
 | 16. Tech Debt Cleanup | v1.2.1 | 1/1 | Complete | 2026-03-19 |
-| 17. Deploy Pipeline Fixes | 2/3 | In Progress|  | - |
+| 17. Deploy Pipeline Fixes | v1.2.1 | 3/3 | Complete | 2026-03-19 |

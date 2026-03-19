@@ -10,10 +10,9 @@ const os = require('os');
 const DYNAMO_DIR = path.join(os.homedir(), '.claude', 'dynamo');
 const DISPATCHER = path.join(DYNAMO_DIR, 'hooks', 'dynamo-hooks.cjs');
 
-// Handlers: check deployed layout first (ledger/hooks/), fallback to legacy (lib/ledger/hooks/)
+// Handlers: deployed layout (ledger/hooks/)
 const HANDLERS_DIR_NEW = path.join(DYNAMO_DIR, 'ledger', 'hooks');
-const HANDLERS_DIR_LEGACY = path.join(DYNAMO_DIR, 'lib', 'ledger', 'hooks');
-const HANDLERS_DIR = fs.existsSync(HANDLERS_DIR_NEW) ? HANDLERS_DIR_NEW : HANDLERS_DIR_LEGACY;
+const HANDLERS_DIR = HANDLERS_DIR_NEW;
 
 describe('Dispatcher structure', () => {
   it('dispatcher file exists', () => {
@@ -50,6 +49,14 @@ describe('Dispatcher structure', () => {
   it('dispatcher always exits with code 0', () => {
     const src = fs.readFileSync(DISPATCHER, 'utf8');
     assert.ok(src.includes('process.exit(0)'), 'Must exit 0');
+  });
+
+  it('dispatcher uses resolveHandlers() for dual-layout path resolution', () => {
+    const src = fs.readFileSync(DISPATCHER, 'utf8');
+    assert.ok(src.includes('function resolveHandlers'), 'Must have resolveHandlers() function');
+    assert.ok(src.includes('resolveHandlers()'), 'Must call resolveHandlers()');
+    // Verify it checks both layouts
+    assert.ok(src.includes('fs.existsSync'), 'Must check path existence for layout detection');
   });
 
   it('dispatcher uses __dirname-based paths (no bare relative requires)', () => {

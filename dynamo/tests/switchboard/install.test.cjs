@@ -68,9 +68,11 @@ describe('install.cjs', () => {
     assert.ok(content.includes('health-check'), 'should reference health-check');
   });
 
-  it('references claude mcp add for MCP registration', () => {
+  it('does NOT register MCP -- uses defensive deregistration only', () => {
     const content = fs.readFileSync(INSTALL_PATH, 'utf8');
-    assert.ok(content.includes('claude mcp add'), 'should reference MCP registration command');
+    assert.ok(!content.includes('claude mcp add'), 'must NOT register MCP (CLI-only architecture)');
+    assert.ok(!content.includes('function registerMcp'), 'registerMcp function must be removed');
+    assert.ok(content.includes('claude mcp remove graphiti'), 'must have defensive MCP deregistration');
   });
 
   it('uses REPO_ROOT constant (renamed from REPO_DIR)', () => {
@@ -84,6 +86,17 @@ describe('install.cjs', () => {
     assert.ok(content.includes("path.join(REPO_ROOT, 'dynamo')"), 'should copy from dynamo/');
     assert.ok(content.includes("path.join(REPO_ROOT, 'ledger')"), 'should copy from ledger/');
     assert.ok(content.includes("path.join(REPO_ROOT, 'switchboard')"), 'should copy from switchboard/');
+  });
+
+  it('deploys CLAUDE.md template during install', () => {
+    const content = fs.readFileSync(INSTALL_PATH, 'utf8');
+    assert.ok(content.includes('CLAUDE.md.template'), 'should reference CLAUDE.md template');
+    assert.ok(content.includes('Deploy CLAUDE.md'), 'should have Deploy CLAUDE.md step name');
+  });
+
+  it('cleans stale lib/ directory during install', () => {
+    const content = fs.readFileSync(INSTALL_PATH, 'utf8');
+    assert.ok(content.includes('staleLibDir') || content.includes('Clean stale lib'), 'should clean stale lib/ directory');
   });
 
   it('generateConfig includes enabled:true in source', () => {

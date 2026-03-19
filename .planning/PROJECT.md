@@ -8,12 +8,31 @@ A Claude Code power-user platform for persistent memory and self-management. Dyn
 
 Every capability must be self-manageable by Claude Code (install, configure, update, troubleshoot) without requiring manual user intervention in config files.
 
+## Current Milestone: v1.3-M1 Foundation and Infrastructure Refactor
+
+**Goal:** Restructure the codebase to the six-subsystem architecture and establish the infrastructure prerequisites for the intelligence layer. Infrastructure ready for Reverie.
+
+**Target features:**
+- Directory restructure from 3-dir layout to six-subsystem architecture (`subsystems/`, `cc/`, `lib/`)
+- Transport flexibility (MENH-06) -- support both API and native Haiku; remove OpenRouter SPOF
+- Model selection (MENH-07) -- per-path model selection (Haiku hot path, Sonnet deliberation)
+- Dependency management (MGMT-01) -- self-contained dependency management
+- Jailbreak protection (MGMT-08) -- security hardening of hook system
+- SQLite session index (MGMT-11) -- replace flat-file session index with SQLite
+
+**Governing specifications:**
+- DYNAMO-PRD.md -- six-subsystem architecture, boundary rules, platform adapter pattern
+- TERMINUS-SPEC.md -- transport layer, MCP client migration, health/diagnostics consolidation
+- SWITCHBOARD-SPEC.md -- dispatcher migration to cc/, handler ownership model, install/sync updates
+- ASSAY-SPEC.md -- read operations split from Ledger, session management, search migration
+- LEDGER-SPEC.md -- write-only narrowing, curation split, capture handler extraction
+
 ## Current State
 
 **Shipped:** v1.2.1 Stabilization and Polish (2026-03-19)
-**Next milestone:** v1.3 milestoned delivery (1.3-M1 through 1.3-M7) -- architecture specification complete, implementation planning next
+**Active milestone:** v1.3-M1 Foundation and Infrastructure Refactor
 
-v1.2.1 closed all stabilization gaps. v1.3 architecture specification is complete: 6-subsystem model defined (Dynamo, Switchboard, Ledger, Assay, Terminus, Reverie), all subsystem specs written, Dynamo PRD authored, abstract Inner Voice concept documented, and master roadmap refactored to milestoned iterations. The platform adapter pattern (`cc/` directory) isolates Claude Code specifics. The hybrid architecture (CJS command hooks for hot path + custom subagent for deliberation) is specified. Next step: implementation planning for 1.3-M1 (Foundation and Infrastructure Refactor).
+v1.2.1 closed all stabilization gaps. v1.3 architecture specification is complete: 6-subsystem model defined (Dynamo, Switchboard, Ledger, Assay, Terminus, Reverie), all subsystem specs written, Dynamo PRD authored, abstract Inner Voice concept documented, and master roadmap refactored to milestoned iterations. The platform adapter pattern (`cc/` directory) isolates Claude Code specifics. The hybrid architecture (CJS command hooks for hot path + custom subagent for deliberation) is specified.
 
 ## Requirements
 
@@ -474,4 +493,4 @@ These items must be assessed during every phase's planning and execution. Not al
 - [ ] **Dynamo toggle awareness**: If a global on/off or dev mode toggle exists, ensure phase work respects it and updates toggle behavior if scope changes.
 
 ---
-*Last updated: 2026-03-19 after v1.3 architecture specification (260319-fzc task -- 6-subsystem architecture, milestoned roadmap, 9 spec documents)*
+*Last updated: 2026-03-19 after v1.3-M1 milestone start*

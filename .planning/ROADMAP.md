@@ -46,7 +46,7 @@
 - [x] **Phase 13: Cleanup and Fixes** - Archive legacy system, fix Neo4j browser (completed 2026-03-18)
 - [x] **Phase 14: Documentation and Branding** - README, exhaustive docs, CLAUDE.md, architecture capture (completed 2026-03-18)
 - [x] **Phase 15: Update System** - Version checks, migration, and rollback (completed 2026-03-19)
-- [ ] **Phase 16: Tech Debt Cleanup** - Doc updates, stale permissions removal, deploy to live
+- [x] **Phase 16: Tech Debt Cleanup** - Doc updates, stale permissions removal, deploy to live (completed 2026-03-19)
 
 ## Phase Details
 
@@ -125,7 +125,7 @@ Plans:
   2. CLAUDE.md.template CLI reference includes `check-update`, `update`, and updated `rollback` descriptions
   3. settings-hooks.json contains zero `mcp__graphiti__*` permission entries
   4. `dynamo install` deploys current code to live `~/.claude/dynamo/`
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 16-01-PLAN.md -- Update docs for Phase 15 commands, clean stale MCP permissions, deploy to live
@@ -152,4 +152,4 @@ Phases execute in numeric order: 12 -> 12.1 -> 13 -> 13.1 -> 14 -> 15 -> 16
 | 13. Cleanup and Fixes | v1.2.1 | 2/2 | Complete | 2026-03-18 |
 | 14. Documentation and Branding | v1.2.1 | 3/3 | Complete | 2026-03-18 |
 | 15. Update System | v1.2.1 | 4/4 | Complete | 2026-03-19 |
-| 16. Tech Debt Cleanup | v1.2.1 | 0/1 | Planned | - |
+| 16. Tech Debt Cleanup | 1/1 | Complete   | 2026-03-19 | - |

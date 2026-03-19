@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-stopped_at: Completed 15-04-PLAN.md (Phase 15 complete)
-last_updated: "2026-03-19T01:32:07.368Z"
+status: complete
+stopped_at: Completed 16-01-PLAN.md (Phase 16 complete)
+last_updated: "2026-03-19T02:13:16.000Z"
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 13
-  completed_plans: 13
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 14
+  completed_plans: 14
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Every capability must be self-manageable by Claude Code without manual user config file edits
-**Current focus:** Phase 15 — update-system
+**Current focus:** Phase 16 — tech-debt-cleanup
 
 ## Current Position
 
-Phase: 15 (update-system) — COMPLETE
-Plan: 4 of 4 (all complete)
+Phase: 16 (tech-debt-cleanup) — COMPLETE
+Plan: 1 of 1 (done)
 
 ### Prior Milestones
 
@@ -75,6 +75,8 @@ Recent decisions affecting current work:
 - [Phase 15]: install.cjs rollback() checks dynamo-backup/ first for full-snapshot restore, falls back to legacy settings-only
 - [Phase 15]: [15-04 check-update]: Human-readable status to stderr, --format json to stdout -- no output() call in non-JSON mode
 - [Phase 15]: [15-04 inline status]: check-update exits cleanly without calling output() since status was already written to stderr
+- [Phase 16]: [16-01 resolveSibling]: Dual-layout path resolution in dynamo.cjs -- checks repo path first, falls back to deployed path
+- [Phase 16]: [16-01 permissions cleanup]: Removed entire permissions block from settings-hooks.json -- Graphiti MCP is deregistered, no permissions needed
 
 ### Blockers/Concerns
 
@@ -82,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T01:21:36Z
-Stopped at: Completed 15-04-PLAN.md (Phase 15 complete)
+Last session: 2026-03-19T02:13:16Z
+Stopped at: Completed 16-01-PLAN.md (Phase 16 complete)
 Resume file: None

@@ -5,22 +5,6 @@
     "CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS": "10000"
   },
 
-  "permissions": {
-    "allow": [
-      "mcp__graphiti__add_memory",
-      "mcp__graphiti__search_nodes",
-      "mcp__graphiti__search_memory_facts",
-      "mcp__graphiti__get_episodes",
-      "mcp__graphiti__delete_episode",
-      "mcp__graphiti__get_entity_edge",
-      "mcp__graphiti__get_status"
-    ],
-    "ask": [
-      "mcp__graphiti__clear_graph",
-      "mcp__graphiti__delete_entity_edge"
-    ]
-  },
-
   "hooks": {
     "SessionStart": [
       {

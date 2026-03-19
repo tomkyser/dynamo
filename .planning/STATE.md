@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 260319-fzc-03 (Ledger + Assay specs)
-last_updated: "2026-03-19T17:07:57Z"
+stopped_at: Completed 260319-fzc-04 (Reverie spec)
+last_updated: "2026-03-19T17:18:15Z"
 progress:
   total_phases: 6
   completed_phases: 6
@@ -19,7 +19,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Every capability must be self-manageable by Claude Code without manual user config file edits
-**Current focus:** v1.3 architecture specification in progress (260319-fzc plans 04-05 remaining)
+**Current focus:** v1.3 architecture specification in progress (260319-fzc plan 05 remaining)
 
 ## Current Position
 
@@ -46,6 +46,7 @@ Total prior: 11 phases, 28 plans completed.
 | 260319-fzc-01 | Abstract Inner Voice concept + Dynamo PRD | 2026-03-19 | 2447c76 | Complete | [260319-fzc](./quick/260319-fzc-housekeeping-clarification-and-inner-voi/) |
 | 260319-fzc-02 | Terminus + Switchboard subsystem specs | 2026-03-19 | c4d4274 | Complete | [260319-fzc](./quick/260319-fzc-housekeeping-clarification-and-inner-voi/) |
 | 260319-fzc-03 | Ledger + Assay subsystem specs | 2026-03-19 | c4c7a90 | Complete | [260319-fzc](./quick/260319-fzc-housekeeping-clarification-and-inner-voi/) |
+| 260319-fzc-04 | Reverie (Inner Voice) subsystem spec | 2026-03-19 | f5d0287 | Complete | [260319-fzc](./quick/260319-fzc-housekeeping-clarification-and-inner-voi/) |
 
 ## Accumulated Context
 
@@ -103,6 +104,13 @@ Recent decisions affecting current work:
 - [260319-fzc-03]: Assay owns session index writes (local file I/O) for domain cohesion
 - [260319-fzc-03]: extractContent moves to shared lib/transport-utils.cjs to prevent cross-subsystem imports
 - [260319-fzc-03]: curation.cjs splits: LLM functions to Reverie, deterministic formatting to Ledger
+- [260319-fzc-04]: Reverie reads through Assay and writes through Ledger -- never directly through Terminus for standard operations
+- [260319-fzc-04]: Hot path targets <500ms with zero LLM calls when cached data available
+- [260319-fzc-04]: Deliberation uses custom subagent (subscription) or direct API (API plan)
+- [260319-fzc-04]: State bridge pattern (file-based) for SubagentStop-to-parent context gap
+- [260319-fzc-04]: PostToolUse dispatched to BOTH Ledger (capture) and Reverie (activation update)
+- [260319-fzc-04]: Feature flag (reverie.mode) enables instant rollback to classic Haiku curation
+- [260319-fzc-04]: Subscription users pay $0.37/day (cheaper than current baseline)
 
 ### Blockers/Concerns
 
@@ -110,6 +118,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T17:07:57Z
-Stopped at: Completed 260319-fzc-03 (Ledger + Assay specs)
+Last session: 2026-03-19T17:18:15Z
+Stopped at: Completed 260319-fzc-04 (Reverie spec)
 Resume file: None

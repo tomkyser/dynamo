@@ -5,7 +5,7 @@
 - ✅ **v1.0 Research and Ranked Report** -- Phases 1-3 (shipped 2026-03-17)
 - ✅ **v1.1 Fix Memory System** -- Phases 4-7 (shipped 2026-03-17)
 - ✅ **v1.2 Dynamo Foundation** -- Phases 8-11 (shipped 2026-03-18)
-- **v1.2.1 Stabilization and Polish** -- Phases 12-16 (in progress)
+- **v1.2.1 Stabilization and Polish** -- Phases 12-17 (in progress)
 
 ## Phases
 
@@ -47,6 +47,7 @@
 - [x] **Phase 14: Documentation and Branding** - README, exhaustive docs, CLAUDE.md, architecture capture (completed 2026-03-18)
 - [x] **Phase 15: Update System** - Version checks, migration, and rollback (completed 2026-03-19)
 - [x] **Phase 16: Tech Debt Cleanup** - Doc updates, stale permissions removal, deploy to live (completed 2026-03-19)
+- [ ] **Phase 17: Deploy Pipeline and Integration Fixes** - Fix hook path resolution, remove MCP re-registration, add CLAUDE.md deployment, minor cleanup
 
 ## Phase Details
 
@@ -130,10 +131,24 @@ Plans:
 Plans:
 - [ ] 16-01-PLAN.md -- Update docs for Phase 15 commands, clean stale MCP permissions, deploy to live
 
+### Phase 17: Deploy Pipeline and Integration Fixes
+**Goal**: Dynamo's deploy pipeline correctly reflects all architectural decisions — hooks work in deployed layout, toggle provides true blackout, and installer deploys all operational files
+**Depends on**: Phase 16 (all prior tech debt closed)
+**Requirements**: STAB-03, STAB-04, STAB-10
+**Gap Closure:** Closes INT-HOOKS-PATH, INT-MCP-REREG, INT-CLAUDEMD-DEPLOY, FLOW-HOOKS-DEPLOYED, FLOW-TOGGLE-BLACKOUT, FLOW-FRESH-INSTALL from v1.2.1 audit
+**Success Criteria** (what must be TRUE):
+  1. `dynamo-hooks.cjs` resolves handler paths correctly in both repo and deployed (`~/.claude/dynamo/`) layouts
+  2. `dynamo install` does NOT register Graphiti MCP server — CLI is the sole memory access path
+  3. `dynamo install` copies `CLAUDE.md.template` to `~/.claude/CLAUDE.md`
+  4. All 5 hook events execute successfully in deployed layout (not silently fail)
+  5. `dynamo toggle off` fully disables all memory access (CLI gate + hook gate + no MCP bypass)
+  6. README Mermaid diagram shows correct Neo4j ports (`:7475/:7687`)
+  7. Regression tests reference correct paths (no `lib/` references)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 12 -> 12.1 -> 13 -> 13.1 -> 14 -> 15 -> 16
+Phases execute in numeric order: 12 -> 12.1 -> 13 -> 13.1 -> 14 -> 15 -> 16 -> 17
 
 | Phase | Milestone | Plans | Status | Completed |
 |-------|-----------|-------|--------|-----------|
@@ -152,4 +167,5 @@ Phases execute in numeric order: 12 -> 12.1 -> 13 -> 13.1 -> 14 -> 15 -> 16
 | 13. Cleanup and Fixes | v1.2.1 | 2/2 | Complete | 2026-03-18 |
 | 14. Documentation and Branding | v1.2.1 | 3/3 | Complete | 2026-03-18 |
 | 15. Update System | v1.2.1 | 4/4 | Complete | 2026-03-19 |
-| 16. Tech Debt Cleanup | 1/1 | Complete    | 2026-03-19 | - |
+| 16. Tech Debt Cleanup | v1.2.1 | 1/1 | Complete | 2026-03-19 |
+| 17. Deploy Pipeline Fixes | v1.2.1 | 0/0 | Pending | - |

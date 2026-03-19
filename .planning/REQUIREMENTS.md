@@ -166,14 +166,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | STAB-01 | Phase 14 | Complete |
 | STAB-02 | Phase 13 | Complete |
-| STAB-03 | Phase 14 | Complete |
-| STAB-04 | Phase 14 | Complete |
+| STAB-03 | Phase 14, Phase 17 | Complete |
+| STAB-04 | Phase 14, Phase 17 | Complete |
 | STAB-05 | Phase 15 | Complete |
 | STAB-06 | Phase 14 | Complete |
 | STAB-07 | Phase 13 | Complete |
 | STAB-08 | Phase 12 | Complete |
 | STAB-09 | Phase 12 | Complete |
-| STAB-10 | Phase 12 | Complete |
+| STAB-10 | Phase 12, Phase 17 | Complete |
 
 **v1.2.1 Coverage:**
 - v1.2.1 requirements: 10 total
@@ -182,4 +182,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-17*
-*Last updated: 2026-03-18 after v1.2.1 roadmap creation*
+*Last updated: 2026-03-19 after v1.2.1 gap closure phase 17 creation*

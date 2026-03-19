@@ -318,7 +318,7 @@ function restorePython(graphitiDir, legacyDir) {
  * @param {string[]} args - CLI args
  * @param {boolean} pretty - Pretty output flag
  */
-async function run(args = [], pretty = false) {
+async function run(args = [], pretty = false, _returnOnly = false) {
   const usePretty = pretty || args.includes('--pretty');
   const steps = [];
 
@@ -393,6 +393,10 @@ async function run(args = [], pretty = false) {
     formatInstallReport(result);
   }
 
+  if (_returnOnly) {
+    return result;
+  }
+
   output(result);
 }
 
@@ -404,23 +408,26 @@ async function run(args = [], pretty = false) {
  * @param {boolean} pretty - Pretty output flag
  */
 async function rollback(args = [], pretty = false) {
-  const restored = [];
+  const BACKUP_DIR = path.join(os.homedir(), '.claude', 'dynamo-backup');
 
-  // Restore settings.json
-  restoreSettings();
-  if (fs.existsSync(SETTINGS_BACKUP)) {
-    restored.push('settings.json');
+  if (fs.existsSync(BACKUP_DIR)) {
+    // Full snapshot rollback (from update system)
+    try {
+      const updateMod = require(path.join(__dirname, 'update.cjs'));
+      const result = updateMod.restoreSnapshot({ backupDir: BACKUP_DIR, liveDir: LIVE_DIR });
+      output({ command: 'rollback', type: 'full-snapshot', ...result });
+    } catch (e) {
+      // update.cjs not available (older install) -- fall through to legacy
+      output({ command: 'rollback', type: 'error', error: 'Snapshot restore failed: ' + e.message });
+    }
+  } else if (fs.existsSync(SETTINGS_BACKUP)) {
+    // Legacy settings-only rollback
+    restoreSettings();
+    output({ command: 'rollback', type: 'settings-only', status: 'ok', restored: ['settings.json'] });
+  } else {
+    output({ command: 'rollback', type: 'none', status: 'no-backup-found',
+             detail: 'No dynamo-backup/ directory or settings.json.bak found' });
   }
-
-  // Restore Python files
-  restorePython();
-  if (fs.existsSync(GRAPHITI_DIR)) {
-    restored.push('graphiti/');
-  }
-
-  const result = { command: 'rollback', status: 'ok', restored };
-
-  output(result);
 }
 
 // --- Exports ---

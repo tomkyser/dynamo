@@ -129,7 +129,7 @@ Plans:
 **Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 16-01-PLAN.md -- Update docs for Phase 15 commands, clean stale MCP permissions, deploy to live
+- [x] 16-01-PLAN.md -- Update docs for Phase 15 commands, clean stale MCP permissions, deploy to live
 
 ### Phase 17: Deploy Pipeline and Integration Fixes
 **Goal**: Dynamo's deploy pipeline correctly reflects all architectural decisions — hooks work in deployed layout, toggle provides true blackout, and installer deploys all operational files
@@ -144,6 +144,12 @@ Plans:
   5. `dynamo toggle off` fully disables all memory access (CLI gate + hook gate + no MCP bypass)
   6. README Mermaid diagram shows correct Neo4j ports (`:7475/:7687`)
   7. Regression tests reference correct paths (no `lib/` references)
+**Plans:** 3 plans
+
+Plans:
+- [ ] 17-01-PLAN.md -- Fix hook dispatcher dual-layout path resolution + installer MCP deregistration and CLAUDE.md deploy
+- [ ] 17-02-PLAN.md -- Fix regression tests for current layout + update dispatcher/install test assertions + correct README port
+- [ ] 17-03-PLAN.md -- Deploy to live, run full test suite, human-verify hooks in deployed environment
 
 ## Progress
 
@@ -168,4 +174,4 @@ Phases execute in numeric order: 12 -> 12.1 -> 13 -> 13.1 -> 14 -> 15 -> 16 -> 1
 | 14. Documentation and Branding | v1.2.1 | 3/3 | Complete | 2026-03-18 |
 | 15. Update System | v1.2.1 | 4/4 | Complete | 2026-03-19 |
 | 16. Tech Debt Cleanup | v1.2.1 | 1/1 | Complete | 2026-03-19 |
-| 17. Deploy Pipeline Fixes | v1.2.1 | 0/0 | Pending | - |
+| 17. Deploy Pipeline Fixes | v1.2.1 | 0/3 | In Progress | - |

@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 17-03-PLAN.md (Phase 17 complete)
-last_updated: "2026-03-19T06:20:37Z"
+stopped_at: Completed 260319-fzc-01 (Abstract Inner Voice + Dynamo PRD)
+last_updated: "2026-03-19T16:58:02Z"
 progress:
   total_phases: 6
   completed_phases: 6
@@ -19,7 +19,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Every capability must be self-manageable by Claude Code without manual user config file edits
-**Current focus:** v1.2.1 milestone complete — planning next milestone
+**Current focus:** v1.3 architecture specification in progress (260319-fzc plans 02-05 remaining)
 
 ## Current Position
 
@@ -43,6 +43,7 @@ Total prior: 11 phases, 28 plans completed.
 | 260318-x55 | Update MASTER-ROADMAP.md to mark v1.2.1 as shipped | 2026-03-19 | 5869aff | | [260318-x55](./quick/260318-x55-update-the-master-roadmap-now-that-1-2-1/) |
 | 260318-x21 | Steel-man analysis and implementation planning for Synthesis v2 | 2026-03-19 | 5fe6a40 | Verified | [260318-x21](./quick/260318-x21-steel-man-analysis-and-implementation-pl/) |
 | 260319-17p | Re-evaluate subagent verdict and cascade corrections | 2026-03-19 | 06a60a2 | Verified | [260319-17p](./quick/260319-17p-re-evaluate-subagent-verdict-and-cascade/) |
+| 260319-fzc-01 | Abstract Inner Voice concept + Dynamo PRD | 2026-03-19 | 2447c76 | Complete | [260319-fzc](./quick/260319-fzc-housekeeping-clarification-and-inner-voi/) |
 
 ## Accumulated Context
 
@@ -87,6 +88,10 @@ Recent decisions affecting current work:
 - [260319-17p]: Concept 7 verdict corrected from NO-GO to CONDITIONAL GO -- hybrid architecture (CJS hooks for hot path + custom subagent for deliberation)
 - [260319-17p]: Dual cost model: subscription users $0.37/day, API users $1.98/day for v1.3 Inner Voice
 - [260319-17p]: State file bridge pattern for SubagentStop-to-parent context gap
+- [260319-fzc-01]: Platform-agnostic Inner Voice concept separated from platform-specific spec (INNER-VOICE-ABSTRACT.md)
+- [260319-fzc-01]: Six-subsystem architecture defined (Dynamo, Switchboard, Ledger, Assay, Terminus, Reverie)
+- [260319-fzc-01]: cc/ adapter pattern for Claude Code platform isolation
+- [260319-fzc-01]: v1.3 milestoned delivery (1.3-M1 through 1.3-M7), no planning beyond 1.3
 
 ### Blockers/Concerns
 
@@ -94,6 +99,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T06:20:37Z
-Stopped at: Completed 260319-17p (Re-evaluate subagent verdict and cascade)
+Last session: 2026-03-19T16:58:02Z
+Stopped at: Completed 260319-fzc-01 (Abstract Inner Voice + Dynamo PRD)
 Resume file: None

@@ -70,6 +70,7 @@ Phase 12 complete — repo restructured into 3 root directories (`dynamo/`, `led
 Phase 13 complete — legacy Python/Bash system tagged (`v1.2-legacy-archive`), archived, and fully removed. Neo4j admin browser accessible at localhost:7475 with working Bolt connection.
 Phase 14 complete — README rewritten (537 lines, Mermaid diagram, 25 CLI commands), CLAUDE.md template expanded with 20+ commands and troubleshooting, PROJECT.md expanded with 19 structured decision records, all 7 codebase maps rewritten for CJS architecture.
 Phase 15 complete — Self-updating system: `dynamo check-update` (GitHub Releases API), `dynamo update` (dual-mode: git pull for devs, tarball download for users), version-keyed migration harness, pre-update snapshot with automatic rollback on failure.
+Phase 16 complete — Tech debt cleanup: all 6 v1.2.1 audit gaps closed (CLI reference tables updated, stale MCP permissions removed, CLI router dual-path resolution for deployed layout).
 Tech stack: Node/CJS (dynamo/), Docker (Graphiti stack), Claude Haiku (session naming via OpenRouter).
 Total project: ~7,000+ LOC CJS plus prompts.
 Python/Bash legacy retired to `~/.claude/graphiti-legacy/`.
@@ -453,4 +454,4 @@ These items must be assessed during every phase's planning and execution. Not al
 - [ ] **Dynamo toggle awareness**: If a global on/off or dev mode toggle exists, ensure phase work respects it and updates toggle behavior if scope changes.
 
 ---
-*Last updated: 2026-03-19 after Phase 15 (Update System — self-updating with version check, dual-mode upgrade, migration, rollback)*
+*Last updated: 2026-03-19 after Phase 16 (Tech Debt Cleanup — all v1.2.1 audit gaps closed, CLI docs and permissions cleaned)*

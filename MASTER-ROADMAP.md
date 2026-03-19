@@ -1,16 +1,16 @@
 # Dynamo Master Roadmap
 
-**Last updated:** 2026-03-18
+**Last updated:** 2026-03-19
 
 This document covers the Dynamo project roadmap from v1.2.1 through v2.0. Milestones v1.0 (Research and Ranked Report), v1.1 (Fix Memory System), and v1.2 (Dynamo Foundation) are complete. Requirements are prioritized and assigned to milestones based on dependency analysis and the project's core value: every capability must be self-manageable by Claude Code without manual user config file edits.
 
-> **How to Use This Document:** This is a living document that Claude Code should read to understand what comes next and in what order. When planning future work, consult the milestone assignments and dependency notes to determine what to build next. Requirement IDs (MENH-XX, MGMT-XX, UI-XX, STAB-XX, CORTEX-XX) correspond to entries in `.planning/REQUIREMENTS.md`.
+> **How to Use This Document:** This is a living document that Claude Code should read to understand what comes next and in what order. When planning future work, consult the milestone assignments and dependency notes to determine what to build next. Requirement IDs (MENH-XX, MGMT-XX, UI-XX, STAB-XX, CORTEX-XX) are indexed in the Requirement Index table below.
 
 ## Milestone Overview
 
 | Milestone | Theme | Requirements | Description |
 |-----------|-------|:------------:|-------------|
-| v1.2.1 | Stabilization and Polish | 10 | Close gaps from v1.2: rebranding, directory/scope refactor, legacy cleanup, docs, CLI integration, update system, architecture capture, Neo4j fix, dev toggles |
+| v1.2.1 | Stabilization and Polish | 10 | **Shipped 2026-03-19.** Closed all gaps from v1.2: rebranding, directory/scope refactor, legacy cleanup, docs, CLI integration, update system, architecture capture, Neo4j fix, dev toggles |
 | v1.3 | Intelligent Memory and Modularity | 17 | Inner Voice, dual-path routing, cost monitoring + management modularity. Absorbs MENH-01, MENH-02, MENH-10, MENH-11, MGMT-09. |
 | v1.4 | Memory Quality and Agent Foundation | 9 | Advanced Inner Voice, observation synthesis, preferences. Adds CORTEX-04/05/06. MGMT-09 moved to v1.3. |
 | v1.5 | Dashboard, Visibility, and Agent Coordination | 10 | UI + agent SDK integration + connector framework. Adds CORTEX-07/08/09. |
@@ -19,34 +19,16 @@ This document covers the Dynamo project roadmap from v1.2.1 through v2.0. Milest
 ## Completed Milestones
 
 <details>
-<summary>v1.0 through v1.2 (completed)</summary>
+<summary>v1.0 through v1.2.1 (completed)</summary>
 
 - **v1.0 Research and Ranked Report** (Phases 1-3) -- Completed 2026-03-17. Vetted and ranked tools for the Claude Code ecosystem using a 4-gate methodology.
 - **v1.1 Fix Memory System** (Phases 4-7) -- Completed 2026-03-17. Diagnosed root causes of silent hook failures, fixed memory persistence, added session management and auto-naming.
 - **v1.2 Dynamo Foundation** (Phases 8-11) -- Completed 2026-03-18. Rewrote the Python/Bash foundation to Node/CJS architecture with full feature parity. Established Dynamo/Ledger/Switchboard branding and project structure.
+- **v1.2.1 Stabilization and Polish** (Phases 12-17) -- Completed 2026-03-19. Closed all stabilization gaps: directory restructure, component scope refactor, global toggle, legacy removal, comprehensive documentation, CLI integration, update system, architecture capture, Neo4j fix, and dev mode toggles. All 10 STAB requirements shipped.
 
 </details>
 
 ## Milestone Details
-
-### v1.2.1 -- Stabilization and Polish
-
-**Goal:** Close the gaps between v1.2's CJS rewrite and v1.3's intelligence work. The foundation is solid but the public-facing artifacts (README, repo identity, docs) and operational concerns (update system, legacy cleanup, CLAUDE.md integration) were not addressed in v1.2. This milestone ensures Dynamo is properly branded, fully documented, easy to update, and that the architectural decisions made during v1.2 are captured for continuity.
-
-**Dependencies:** v1.2 (CJS substrate complete, feature parity achieved)
-
-| Requirement | Name | Rationale |
-|-------------|------|-----------|
-| STAB-01 | README and rebranding pass | README still references Python/Bash architecture and old naming; repo name change on GitHub to reflect Dynamo identity |
-| STAB-02 | Archive legacy Python/Bash system | Cutover should be complete: tag and branch the old system, remove from dev/master branches |
-| STAB-03 | Exhaustive documentation | Cover all facets: architecture, usage, CLI commands, hook behavior, configuration, development guide |
-| STAB-04 | Dynamo CLI integration in CLAUDE.md | Claude Code must know how to use the Dynamo CLI and system; CLAUDE.md needs complete operational instructions |
-| STAB-05 | Update/upgrade system | Design, implement, and document a system for updating Dynamo as a whole (version checks, migration, rollback) |
-| STAB-06 | Architecture and design decision capture | Deep analysis of GSD-made architectural decisions from v1.0-v1.2; incorporate into planning artifacts for development continuity |
-| STAB-07 | Fix Neo4j admin browser connectivity | Unable to connect to Neo4j through the admin browser (port 7475); investigate root cause and fix -- critical for visibility into the knowledge graph |
-| STAB-08 | Directory structure refactor | Establish `dynamo/`, `ledger/`, `switchboard/` as root-level directories reflecting the three-component architecture; `graphiti/` moves under `ledger/` as its storage backend |
-| STAB-09 | Component scope refactor | Refactor code as necessary to honor the established scope boundaries of Dynamo (orchestration/CLI), Ledger (memory/knowledge), and Switchboard (management/ops); ensure no cross-boundary leakage |
-| STAB-10 | Global on/off and dev mode toggles | Global toggle to disable all Dynamo hooks/MCP/functionality across all threads; dev mode toggle to override global off for the current development thread only -- prevents Dynamo from interfering during development while allowing the dev session to use it selectively |
 
 ### v1.3 -- Intelligent Memory and Modularity
 
@@ -150,16 +132,16 @@ This document covers the Dynamo project roadmap from v1.2.1 through v2.0. Milest
 
 | Requirement ID | Name | Milestone | Notes |
 |----------------|------|-----------|-------|
-| STAB-01 | README and rebranding pass | v1.2.1 | |
-| STAB-02 | Archive legacy Python/Bash system | v1.2.1 | |
-| STAB-03 | Exhaustive documentation | v1.2.1 | |
-| STAB-04 | Dynamo CLI integration in CLAUDE.md | v1.2.1 | |
-| STAB-05 | Update/upgrade system | v1.2.1 | |
-| STAB-06 | Architecture and design decision capture | v1.2.1 | |
-| STAB-07 | Fix Neo4j admin browser connectivity | v1.2.1 | |
-| STAB-08 | Directory structure refactor | v1.2.1 | |
-| STAB-09 | Component scope refactor | v1.2.1 | |
-| STAB-10 | Global on/off and dev mode toggles | v1.2.1 | |
+| STAB-01 | README and rebranding pass | v1.2.1 | Shipped v1.2.1 (2026-03-19) |
+| STAB-02 | Archive legacy Python/Bash system | v1.2.1 | Shipped v1.2.1 (2026-03-19) |
+| STAB-03 | Exhaustive documentation | v1.2.1 | Shipped v1.2.1 (2026-03-19) |
+| STAB-04 | Dynamo CLI integration in CLAUDE.md | v1.2.1 | Shipped v1.2.1 (2026-03-19) |
+| STAB-05 | Update/upgrade system | v1.2.1 | Shipped v1.2.1 (2026-03-19) |
+| STAB-06 | Architecture and design decision capture | v1.2.1 | Shipped v1.2.1 (2026-03-19) |
+| STAB-07 | Fix Neo4j admin browser connectivity | v1.2.1 | Shipped v1.2.1 (2026-03-19) |
+| STAB-08 | Directory structure refactor | v1.2.1 | Shipped v1.2.1 (2026-03-19) |
+| STAB-09 | Component scope refactor | v1.2.1 | Shipped v1.2.1 (2026-03-19) |
+| STAB-10 | Global on/off and dev mode toggles | v1.2.1 | Shipped v1.2.1 (2026-03-19) |
 | MENH-01 | Decision engine -- infer context type | v1.3 | Absorbed by CORTEX-01 |
 | MENH-02 | Preload engine -- auto inference and injection | v1.3 | Absorbed by CORTEX-01 |
 | MENH-03 | Memory synthesis and export | v1.4 | |
@@ -216,5 +198,5 @@ This document covers the Dynamo project roadmap from v1.2.1 through v2.0. Milest
 
 ---
 *Master Roadmap created: 2026-03-18*
-*Last updated: 2026-03-18 -- Cortex integration (Ledger Cortex phased delivery, CORTEX-01 through CORTEX-11)*
-*Source: .planning/REQUIREMENTS.md + .planning/research/LEDGER-CORTEX-ANALYSIS.md + .planning/research/INNER-VOICE-SPEC.md*
+*Last updated: 2026-03-19 -- v1.2.1 shipped, milestone marked complete*
+*Source: .planning/research/LEDGER-CORTEX-ANALYSIS.md + .planning/research/INNER-VOICE-SPEC.md*

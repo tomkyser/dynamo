@@ -2,16 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Phase 18 context gathered
-last_updated: "2026-03-19T20:11:42.231Z"
-last_activity: 2026-03-19 -- Roadmap created for v1.3-M1 (5 phases, 14 requirements)
+status: executing
+stopped_at: Completed 18-01-PLAN.md
+last_updated: "2026-03-19T20:36:52Z"
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 2
+  completed_plans: 1
 ---
 
 # Project State
@@ -21,16 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Every capability must be self-manageable by Claude Code without manual user config file edits
-**Current focus:** v1.3-M1 Phase 18 -- Restructure Prerequisites
+**Current focus:** Phase 18 — restructure-prerequisites
 
 ## Current Position
 
-Phase: 18 of 22 (Restructure Prerequisites)
-Plan: --
-Status: Ready to plan
-Last activity: 2026-03-19 -- Roadmap created for v1.3-M1 (5 phases, 14 requirements)
-
-Progress: [####################....................] 0% (M1)
+Phase: 18 (restructure-prerequisites) — EXECUTING
+Plan: 2 of 2
 
 ### Prior Milestones
 
@@ -67,6 +61,9 @@ Recent decisions affecting current work:
 - [260319-fzc]: Six-subsystem architecture, cc/ adapter pattern, milestoned delivery model
 - [260319-fzc]: Switchboard dispatches but does not handle; Ledger narrows to write-only
 - [260319-fzc]: Reverie reads through Assay, writes through Ledger
+- [18-01]: scope.cjs is standalone (no core.cjs require) -- only 2 core<->ledger cycles exist
+- [18-01]: install.cjs <-> update.cjs intra-switchboard cycle added to allowlist
+- [18-01]: 8 subsystem keys in layout map including future paths (assay, terminus, reverie, cc)
 
 ### Blockers/Concerns
 
@@ -74,6 +71,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T20:11:42.229Z
-Stopped at: Phase 18 context gathered
-Resume file: .planning/phases/18-restructure-prerequisites/18-CONTEXT.md
+Last session: 2026-03-19T20:36:52Z
+Stopped at: Completed 18-01-PLAN.md
+Resume file: .planning/phases/18-restructure-prerequisites/18-01-SUMMARY.md

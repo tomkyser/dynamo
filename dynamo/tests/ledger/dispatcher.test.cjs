@@ -27,11 +27,14 @@ describe('Dispatcher structure', () => {
     assert.ok(src.startsWith('// Dynamo >'), 'Must start with "// Dynamo >" identity block');
   });
 
-  it('dispatcher contains switch cases for all 5 events', () => {
+  it('dispatcher contains handler routing for all 7 events', () => {
     const src = fs.readFileSync(DISPATCHER, 'utf8');
     for (const evt of ['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'PreCompact', 'Stop']) {
       assert.ok(src.includes(`case '${evt}'`), `Missing case for ${evt}`);
     }
+    // SubagentStart/SubagentStop are routed via SUBAGENT_ROUTE, not switch/case
+    assert.ok(src.includes("'SubagentStart'"), 'Missing routing for SubagentStart');
+    assert.ok(src.includes("'SubagentStop'"), 'Missing routing for SubagentStop');
   });
 
   it('dispatcher calls loadEnv before routing', () => {
@@ -148,8 +151,8 @@ describe('Input validation (MGMT-08a)', () => {
       assert.strictEqual(violations.length, 0);
     });
 
-    it('accepts all 5 valid event names', () => {
-      for (const event of ['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'PreCompact', 'Stop']) {
+    it('accepts all 7 valid event names', () => {
+      for (const event of ['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'PreCompact', 'Stop', 'SubagentStart', 'SubagentStop']) {
         const violations = validateInput({ hook_event_name: event });
         assert.strictEqual(violations.length, 0, event + ' should be valid');
       }
@@ -211,8 +214,8 @@ describe('Input validation (MGMT-08a)', () => {
   });
 
   describe('constants', () => {
-    it('VALID_EVENTS has exactly 5 events', () => {
-      assert.strictEqual(VALID_EVENTS.size, 5);
+    it('VALID_EVENTS has exactly 7 events', () => {
+      assert.strictEqual(VALID_EVENTS.size, 7);
     });
 
     it('LIMITS.hook_event_name is 64', () => {
@@ -303,5 +306,146 @@ describe('Dispatcher validation integration', () => {
   it('dispatcher exports BOUNDARY_OPEN and BOUNDARY_CLOSE for testability', () => {
     assert.strictEqual(typeof dispatcher.BOUNDARY_OPEN, 'string', 'should export BOUNDARY_OPEN');
     assert.strictEqual(typeof dispatcher.BOUNDARY_CLOSE, 'string', 'should export BOUNDARY_CLOSE');
+  });
+});
+
+describe('SubagentStart/SubagentStop validation (HOOK-02)', () => {
+  const { validateInput, VALID_EVENTS } = dispatcher;
+
+  it('VALID_EVENTS has 7 events (5 original + 2 subagent)', () => {
+    assert.strictEqual(VALID_EVENTS.size, 7);
+  });
+
+  it('VALID_EVENTS includes SubagentStart', () => {
+    assert.ok(VALID_EVENTS.has('SubagentStart'));
+  });
+
+  it('VALID_EVENTS includes SubagentStop', () => {
+    assert.ok(VALID_EVENTS.has('SubagentStop'));
+  });
+
+  it('validateInput accepts SubagentStart event', () => {
+    const violations = validateInput({ hook_event_name: 'SubagentStart' });
+    assert.strictEqual(violations.length, 0);
+  });
+
+  it('validateInput accepts SubagentStop event', () => {
+    const violations = validateInput({ hook_event_name: 'SubagentStop' });
+    assert.strictEqual(violations.length, 0);
+  });
+});
+
+describe('JSON_OUTPUT_EVENTS (HOOK-02)', () => {
+  const { JSON_OUTPUT_EVENTS } = dispatcher;
+
+  it('JSON_OUTPUT_EVENTS exists and is a Set', () => {
+    assert.ok(JSON_OUTPUT_EVENTS instanceof Set, 'should export JSON_OUTPUT_EVENTS as Set');
+  });
+
+  it('JSON_OUTPUT_EVENTS contains SubagentStart and SubagentStop', () => {
+    assert.ok(JSON_OUTPUT_EVENTS.has('SubagentStart'));
+    assert.ok(JSON_OUTPUT_EVENTS.has('SubagentStop'));
+  });
+
+  it('JSON_OUTPUT_EVENTS does not contain regular events', () => {
+    assert.ok(!JSON_OUTPUT_EVENTS.has('SessionStart'));
+    assert.ok(!JSON_OUTPUT_EVENTS.has('UserPromptSubmit'));
+  });
+});
+
+describe('Mode-based routing (HOOK-01)', () => {
+  it('dispatcher source reads reverie.mode from config', () => {
+    const src = fs.readFileSync(DISPATCHER, 'utf8');
+    assert.ok(src.includes('config.reverie') && src.includes('mode'), 'should read reverie.mode from config');
+  });
+
+  it('dispatcher source defaults mode to classic', () => {
+    const src = fs.readFileSync(DISPATCHER, 'utf8');
+    assert.ok(src.includes("|| 'classic'"), 'should default to classic mode');
+  });
+
+  it('dispatcher source contains REVERIE_ROUTE mapping', () => {
+    const src = fs.readFileSync(DISPATCHER, 'utf8');
+    assert.ok(src.includes('REVERIE_ROUTE'), 'should have REVERIE_ROUTE mapping');
+  });
+
+  it('REVERIE_ROUTE maps all 5 cognitive events to handler files', () => {
+    const src = fs.readFileSync(DISPATCHER, 'utf8');
+    assert.ok(src.includes("'session-start.cjs'"), 'should map SessionStart');
+    assert.ok(src.includes("'user-prompt.cjs'"), 'should map UserPromptSubmit');
+    assert.ok(src.includes("'post-tool-use.cjs'"), 'should map PostToolUse');
+    assert.ok(src.includes("'pre-compact.cjs'"), 'should map PreCompact');
+    assert.ok(src.includes("'stop.cjs'"), 'should map Stop');
+  });
+
+  it('dispatcher resolves reverie handlers directory', () => {
+    const src = fs.readFileSync(DISPATCHER, 'utf8');
+    assert.ok(src.includes("resolve('reverie', 'handlers')"), 'should resolve reverie handlers path');
+  });
+
+  it('dispatcher preserves classic switch/case in else block', () => {
+    const src = fs.readFileSync(DISPATCHER, 'utf8');
+    // Classic handler paths must still be present for classic mode
+    assert.ok(src.includes("'session-start.cjs'"), 'should have session-start handler reference');
+    assert.ok(src.includes("'prompt-augment.cjs'"), 'should have prompt-augment handler reference');
+    assert.ok(src.includes("'capture-change.cjs'"), 'should have capture-change handler reference');
+    assert.ok(src.includes("'preserve-knowledge.cjs'"), 'should have preserve-knowledge handler reference');
+    assert.ok(src.includes("'session-summary.cjs'"), 'should have session-summary handler reference');
+  });
+});
+
+describe('SubagentStart/SubagentStop output format (Pitfall prevention)', () => {
+  it('dispatcher contains hookSpecificOutput JSON structure for SubagentStart', () => {
+    const src = fs.readFileSync(DISPATCHER, 'utf8');
+    assert.ok(src.includes('hookSpecificOutput'), 'should output hookSpecificOutput JSON');
+    assert.ok(src.includes('hookEventName'), 'should include hookEventName field');
+    assert.ok(src.includes('additionalContext'), 'should include additionalContext field');
+  });
+
+  it('SubagentStart/SubagentStop handlers skip boundary wrapping', () => {
+    const src = fs.readFileSync(DISPATCHER, 'utf8');
+    // The JSON_OUTPUT_EVENTS check should prevent boundary wrapping
+    assert.ok(src.includes('JSON_OUTPUT_EVENTS'), 'should reference JSON_OUTPUT_EVENTS for boundary skip logic');
+  });
+});
+
+describe('settings-hooks.json subagent registration (HOOK-02)', () => {
+  const settingsPath = path.join(REPO_ROOT, 'cc', 'settings-hooks.json');
+
+  it('settings-hooks.json is valid JSON', () => {
+    const content = fs.readFileSync(settingsPath, 'utf8');
+    assert.doesNotThrow(() => JSON.parse(content), 'must be valid JSON');
+  });
+
+  it('settings-hooks.json contains SubagentStart entry', () => {
+    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    assert.ok(settings.hooks.SubagentStart, 'must have SubagentStart entry');
+    assert.ok(Array.isArray(settings.hooks.SubagentStart), 'SubagentStart must be array');
+  });
+
+  it('settings-hooks.json contains SubagentStop entry', () => {
+    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    assert.ok(settings.hooks.SubagentStop, 'must have SubagentStop entry');
+    assert.ok(Array.isArray(settings.hooks.SubagentStop), 'SubagentStop must be array');
+  });
+
+  it('SubagentStart matcher is inner-voice', () => {
+    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    assert.strictEqual(settings.hooks.SubagentStart[0].matcher, 'inner-voice');
+  });
+
+  it('SubagentStop matcher is inner-voice', () => {
+    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    assert.strictEqual(settings.hooks.SubagentStop[0].matcher, 'inner-voice');
+  });
+
+  it('SubagentStart command points to dynamo-hooks.cjs', () => {
+    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    assert.ok(settings.hooks.SubagentStart[0].hooks[0].command.includes('dynamo-hooks.cjs'));
+  });
+
+  it('SubagentStop command points to dynamo-hooks.cjs', () => {
+    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    assert.ok(settings.hooks.SubagentStop[0].hooks[0].command.includes('dynamo-hooks.cjs'));
   });
 });

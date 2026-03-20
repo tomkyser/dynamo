@@ -130,7 +130,7 @@ Plans:
   4. `dynamo sync` round-trips correctly between repo and deployed layout with zero silent file skips
 **Plans**: 4 plans
 Plans:
-- [ ] 22-01-PLAN.md -- Automated M1 verification (tmpdir sandbox, smoke tests, draft VERIFICATION.md)
+- [x] 22-01-PLAN.md -- Automated M1 verification (tmpdir sandbox, smoke tests, draft VERIFICATION.md)
 - [ ] 22-02-PLAN.md -- Cleanup (core.cjs re-export audit, dead code removal, stale comment fixes)
 - [ ] 22-03-PLAN.md -- Real install verification and VERIFICATION.md finalization
 - [ ] 22-04-PLAN.md -- Documentation refresh and milestone closure
@@ -163,4 +163,4 @@ Phases execute in numeric order: 18 -> 19 -> 20 -> 21 -> 22
 | 19. Six-Subsystem Directory Restructure | v1.3-M1 | 3/3 | Complete | 2026-03-20 |
 | 20. Management Hardening | v1.3-M1 | 2/2 | Complete | 2026-03-20 |
 | 21. SQLite Session Index | v1.3-M1 | 2/2 | Complete | 2026-03-20 |
-| 22. M1 Verification and Cleanup | v1.3-M1 | 0/4 | Not started | - |
+| 22. M1 Verification and Cleanup | v1.3-M1 | 1/4 | In Progress|  |

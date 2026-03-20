@@ -102,8 +102,8 @@ Plans:
   3. `additionalContext` content injected into hooks is wrapped in boundary markers that prevent prompt content from bleeding into system instructions
 **Plans**: 2 plans
 Plans:
-- [ ] 20-01-PLAN.md -- Add Node.js version verification to health-check and install pipelines
-- [ ] 20-02-PLAN.md -- Add input validation and prompt injection boundary protection to hook dispatcher
+- [x] 20-01-PLAN.md -- Add Node.js version verification to health-check and install pipelines
+- [x] 20-02-PLAN.md -- Add input validation and prompt injection boundary protection to hook dispatcher
 
 ### Phase 21: SQLite Session Index
 **Goal**: Session data lives in an indexed SQLite database with identical query interface and safe migration from the existing JSON file
@@ -114,7 +114,10 @@ Plans:
   2. Running `dynamo install` on a system with an existing `sessions.json` automatically migrates all session records into the SQLite database (one-time, idempotent)
   3. On a Node.js version where `node:sqlite` is unavailable, session commands transparently fall back to the existing JSON file with no user-visible errors
   4. Session query performance is at least as fast as JSON file reads for typical operations (list, view, label)
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 21-01-PLAN.md -- Create SQLite session storage layer in Terminus with comprehensive test suite
+- [ ] 21-02-PLAN.md -- Wire sessions.cjs delegation, install migration step, and health-check storage stage
 
 ### Phase 22: M1 Verification and Cleanup
 **Goal**: All M1 deliverables verified end-to-end in deployed layout with any migration shims or temporary scaffolding removed
@@ -153,6 +156,6 @@ Phases execute in numeric order: 18 -> 19 -> 20 -> 21 -> 22
 | 17. Deploy Pipeline Fixes | v1.2.1 | 3/3 | Complete | 2026-03-19 |
 | 18. Restructure Prerequisites | v1.3-M1 | 2/2 | Complete | 2026-03-19 |
 | 19. Six-Subsystem Directory Restructure | v1.3-M1 | 3/3 | Complete | 2026-03-20 |
-| 20. Management Hardening | 2/2 | Complete    | 2026-03-20 | - |
-| 21. SQLite Session Index | v1.3-M1 | 0/TBD | Not started | - |
+| 20. Management Hardening | v1.3-M1 | 2/2 | Complete | 2026-03-20 |
+| 21. SQLite Session Index | v1.3-M1 | 0/2 | Not started | - |
 | 22. M1 Verification and Cleanup | v1.3-M1 | 0/TBD | Not started | - |

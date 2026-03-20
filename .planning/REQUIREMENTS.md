@@ -13,10 +13,10 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 - [x] **IV-02**: Entity extraction identifies project names, file paths, function names, and technical terms from prompts via deterministic pattern matching (<5ms)
 - [x] **IV-03**: Activation map tracks entity relevance with time-based decay and 1-hop spreading activation from anchor entities via Assay graph queries
 - [x] **IV-04**: Sublimation threshold evaluates composite score (activation * surprise * relevance * (1 - cognitive_load) * confidence) to determine what surfaces
-- [ ] **IV-05**: Injection formatting respects token limits by context (500 session start, 150 mid-session, 50 urgent) following Cognitive Load Theory
+- [x] **IV-05**: Injection formatting respects token limits by context (500 session start, 150 mid-session, 50 urgent) following Cognitive Load Theory
 - [ ] **IV-06**: Self-model persists across sessions (attention state, injection mode, confidence, working patterns) with session-scoped fields that reset
-- [ ] **IV-07**: Curation functions migrate from Ledger to Reverie as subagent-based processing; Ledger retains only deterministic formatting
-- [ ] **IV-08**: Curation templates use adversarial counter-prompting to evaluate from user's experience, not canonical definitions
+- [x] **IV-07**: Curation functions migrate from Ledger to Reverie as subagent-based processing; Ledger retains only deterministic formatting
+- [x] **IV-08**: Curation templates use adversarial counter-prompting to evaluate from user's experience, not canonical definitions
 - [ ] **IV-09**: Semantic shift detection triggers injection on topic changes using keyword overlap (embedding-based deferred to M4/MENH-08)
 - [x] **IV-10**: Domain frame classification categorizes prompts into engineering/debugging/architecture/social/general via keyword/regex heuristic (<1ms)
 - [ ] **IV-11**: Explicit recall bypass skips sublimation threshold when user asks "do you remember X?" — all entities above 0.2 activation considered
@@ -100,10 +100,10 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 | IV-02 | Phase 23 | Complete |
 | IV-03 | Phase 23 | Complete |
 | IV-04 | Phase 23 | Complete |
-| IV-05 | Phase 24 | Pending |
+| IV-05 | Phase 24 | Complete |
 | IV-06 | Phase 24 | Pending |
-| IV-07 | Phase 24 | Pending |
-| IV-08 | Phase 24 | Pending |
+| IV-07 | Phase 24 | Complete |
+| IV-08 | Phase 24 | Complete |
 | IV-09 | Phase 24 | Pending |
 | IV-10 | Phase 23 | Complete |
 | IV-11 | Phase 24 | Pending |

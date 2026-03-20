@@ -42,7 +42,9 @@ Every capability must be self-manageable by Claude Code (install, configure, upd
 
 **Shipped:** v1.3-M1 Foundation and Infrastructure Refactor (2026-03-20)
 **Current milestone:** v1.3-M2 Core Intelligence
-**Active phase:** Phase 24 (Cognitive Pipeline) — Phase 23 complete
+**Active phase:** Phase 25 (Graduated Rollout) — Phase 24 complete
+
+Phase 24 (Cognitive Pipeline) replaced all 7 pass-through Reverie handler stubs with full cognitive processing pipelines. Created 3 new core modules: `dual-path.cjs` (deterministic path selection, semantic shift detection, explicit recall, token estimation, hot-path formatting), `curation.cjs` (template-based injection formatting with adversarial counter-prompting, token limit enforcement), and `inner-voice.cjs` (pipeline orchestrator with per-hook processing, state bridge for deliberation results). Created inner-voice subagent definition at `cc/agents/inner-voice.md` and 5 prompt templates. 188 new tests (257 total reverie), 0 regressions. Validated in Phase 24: IV-05, IV-06, IV-07, IV-08, IV-09, IV-11, PATH-01, PATH-02, PATH-03, PATH-04, PATH-05, PATH-06.
 
 Phase 23 (Foundation and Routing) delivered the Reverie subsystem foundation: config CLI module with dot-notation get/set/validate, Inner Voice state file with atomic persistence and corruption recovery, activation computation engine (entity extraction, spreading activation, domain classification, sublimation scoring, spawn budget tracking), 7 Reverie handler stubs with dual-mode dispatcher routing, and SubagentStart/SubagentStop event registration. 198 tests, ~500 production LOC. Validated in Phase 23: IV-01, IV-02, IV-03, IV-04, IV-10, IV-12, OPS-MON-01, OPS-MON-02, FLAG-01, FLAG-03, HOOK-01, HOOK-02, HOOK-03.
 
@@ -128,8 +130,10 @@ Phase 19 complete — Six-subsystem directory restructure: 27 production files m
 Phase 20 complete — Management hardening: Node.js >= 22 version check in health-check (7th stage) and install (Step 0, WARN-only). Hook dispatcher input validation with field type checks and length limits (MGMT-08a). Stdout boundary markers (`<dynamo-memory-context>`) wrap all hook injection output (MGMT-08b). 35 new dispatcher tests. Validated: MGMT-01, MGMT-08a, MGMT-08b.
 Phase 21 complete — SQLite session index: `subsystems/terminus/session-store.cjs` (232 LOC) provides SQLite-backed session storage via `node:sqlite` DatabaseSync. `sessions.cjs` delegates to SQLite when available, dual-writes JSON for backward compatibility, falls back transparently to JSON when `node:sqlite` unavailable. `dynamo install` migrates `sessions.json` to SQLite (idempotent, transaction-safe). Health-check reports storage backend type (8th stage). 30 new session-store tests. 479 total tests passing. Validated: DATA-01, DATA-02, DATA-03, DATA-04.
 Phase 22 complete -- M1 verification and cleanup: automated verification suite (36 tests in tmpdir sandbox covering all 14 requirements), core.cjs re-export audit (7 re-exports removed, only MCPClient retained), real fresh install verified (10/10 steps, 45 files deployed, 314 sessions migrated to SQLite), documentation refreshed (README, CLAUDE.md template, PROJECT.md, roadmaps, 7 codebase maps). v1.3-M1 tagged on dev branch.
+Phase 23 complete -- Foundation and Routing: Reverie config CLI, IV state file with atomic persistence, activation engine (entity extraction, spreading activation, sublimation scoring), 7 handler stubs with dual-mode dispatcher, SubagentStart/SubagentStop registration. 198 new tests, ~500 production LOC.
+Phase 24 complete -- Cognitive Pipeline: 3 new core modules (dual-path.cjs, curation.cjs, inner-voice.cjs), inner-voice subagent definition, 5 prompt templates, all 7 handler stubs replaced with full cognitive pipelines, state bridge for deliberation results. 188 new tests, 257 reverie tests total.
 Tech stack: Node/CJS (subsystems/, cc/, lib/), Docker (Graphiti stack), Claude Haiku (session naming via OpenRouter), SQLite (session storage via node:sqlite).
-Total project: ~5,335 production LOC CJS, 515 tests passing, across 22 phases and 57 plans.
+Total project: ~6,500+ production LOC CJS, 700+ tests passing, across 24 phases and 65 plans.
 Python/Bash legacy retired to `~/.claude/graphiti-legacy/`.
 v1.2.1 shipped with all 10 STAB requirements complete.
 v1.3 architecture specification complete (260319-fzc task, 5 plans across 4 waves):
@@ -537,4 +541,4 @@ These items must be assessed during every phase's planning and execution. Not al
 - [ ] **Dynamo toggle awareness**: If a global on/off or dev mode toggle exists, ensure phase work respects it and updates toggle behavior if scope changes.
 
 ---
-*Last updated: 2026-03-20 after Phase 23 completion*
+*Last updated: 2026-03-20 after Phase 24 completion*

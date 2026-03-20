@@ -26,7 +26,7 @@ Requirements for Foundation and Infrastructure Refactor. Each maps to roadmap ph
 ### Data Infrastructure
 
 - [x] **DATA-01**: Session data stored in SQLite via `node:sqlite` DatabaseSync API
-- [ ] **DATA-02**: Session query functions maintain identical interface (listSessions, viewSession, labelSession, etc.)
+- [x] **DATA-02**: Session query functions maintain identical interface (listSessions, viewSession, labelSession, etc.)
 - [x] **DATA-03**: One-time migration converts existing `sessions.json` to SQLite database
 - [x] **DATA-04**: Graceful fallback to JSON file if `node:sqlite` is unavailable
 
@@ -78,7 +78,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MGMT-08a | Phase 20 | Complete |
 | MGMT-08b | Phase 20 | Complete |
 | DATA-01 | Phase 21 | Complete |
-| DATA-02 | Phase 21 | Pending |
+| DATA-02 | Phase 21 | Complete |
 | DATA-03 | Phase 21 | Complete |
 | DATA-04 | Phase 21 | Complete |
 

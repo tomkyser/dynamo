@@ -58,7 +58,7 @@
 - [x] **Phase 18: Restructure Prerequisites** - Centralized path resolver, circular dependency detection, and layout mapping before any files move (completed 2026-03-19)
 - [x] **Phase 19: Six-Subsystem Directory Restructure** - 3-wave migration from 3-dir to six-subsystem layout with sync/install/deploy validation (completed 2026-03-20)
 - [x] **Phase 20: Management Hardening** - Dependency verification and jailbreak protection for the hook system (completed 2026-03-20)
-- [ ] **Phase 21: SQLite Session Index** - Replace sessions.json with SQLite-backed session storage via node:sqlite
+- [x] **Phase 21: SQLite Session Index** - Replace sessions.json with SQLite-backed session storage via node:sqlite (completed 2026-03-20)
 - [ ] **Phase 22: M1 Verification and Cleanup** - End-to-end validation of all M1 deliverables in deployed layout
 
 ## Phase Details
@@ -157,5 +157,5 @@ Phases execute in numeric order: 18 -> 19 -> 20 -> 21 -> 22
 | 18. Restructure Prerequisites | v1.3-M1 | 2/2 | Complete | 2026-03-19 |
 | 19. Six-Subsystem Directory Restructure | v1.3-M1 | 3/3 | Complete | 2026-03-20 |
 | 20. Management Hardening | v1.3-M1 | 2/2 | Complete | 2026-03-20 |
-| 21. SQLite Session Index | 1/2 | In Progress|  | - |
+| 21. SQLite Session Index | 2/2 | Complete   | 2026-03-20 | - |
 | 22. M1 Verification and Cleanup | v1.3-M1 | 0/TBD | Not started | - |

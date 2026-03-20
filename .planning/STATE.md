@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-stopped_at: Completed 21-01-PLAN.md
-last_updated: "2026-03-20T03:14:05.390Z"
+status: complete
+stopped_at: Completed 21-02-PLAN.md
+last_updated: "2026-03-20T03:23:05Z"
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 9
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # Project State
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 
 ## Current Position
 
-Phase: 21 (sqlite-session-index) — EXECUTING
-Plan: 2 of 2
+Phase: 21 (sqlite-session-index) — COMPLETE
+Plan: 2 of 2 (all plans complete)
 
 ### Prior Milestones
 
@@ -83,6 +83,10 @@ Recent decisions affecting current work:
 - [Phase 21-01]: Connection Map keyed by dbPath (not singleton) for test isolation
 - [Phase 21-01]: INSERT OR REPLACE for upsert, INSERT OR IGNORE for migration -- different intent semantics
 - [Phase 21-01]: getSession returns null (not undefined) matching existing viewSession contract
+- [Phase 21-02]: Dual-write pattern -- SQLite authoritative for reads, JSON always written for backward compatibility
+- [Phase 21-02]: loadSessions reads from JSON (not SQLite) to preserve insertion order that tests rely on
+- [Phase 21-02]: stageSessionStorage has dependsOn: [] -- no prerequisites, always runs independently
+- [Phase 21-02]: Migration step renames sessions.json to sessions.json.migrated (backup, not deletion)
 
 ### Blockers/Concerns
 
@@ -90,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T03:14:05.387Z
-Stopped at: Completed 21-01-PLAN.md
+Last session: 2026-03-20T03:23:05Z
+Stopped at: Completed 21-02-PLAN.md
 Resume file: None

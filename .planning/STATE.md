@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 24-02-PLAN.md
-last_updated: "2026-03-20T22:11:02Z"
+stopped_at: Completed 24-01-PLAN.md
+last_updated: "2026-03-20T22:16:40.207Z"
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 7
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-20)
 ## Current Position
 
 Phase: 24 (cognitive-pipeline) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 
 ### Prior Milestones
 
@@ -60,6 +60,9 @@ v1.3-M1 decisions archived to milestones/v1.3-M1-ROADMAP.md.
 - [Phase 24-02]: Synchronous-only curation functions serve as both hot-path formatter and degradation fallback
 - [Phase 24-02]: Case-insensitive adversarial framing -- "From your experience" at line start counts as D-03 framing
 - [Phase 24-02]: truncateToTokenLimit prefers sentence boundaries over hard char cuts
+- [Phase 24]: selectPath priority chain: predictionsMatch(skip) > explicitRecall(deliberation) > rateLimited(hot) > semanticShift > lowConfidence > noInjection(skip) > default(hot)
+- [Phase 24]: Jaccard overlap with 0.3 threshold for semantic shift detection -- deterministic, sub-millisecond, no embeddings
+- [Phase 24]: Adversarial framing uses 'From your experience' and 'As you described it' qualifiers in template injection output
 
 ### Blockers/Concerns
 
@@ -67,6 +70,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-20T22:11:02Z
-Stopped at: Completed 24-02-PLAN.md
-Resume file: .planning/phases/24-cognitive-pipeline/24-02-SUMMARY.md
+Last session: 2026-03-20T22:16:40.205Z
+Stopped at: Completed 24-01-PLAN.md
+Resume file: None

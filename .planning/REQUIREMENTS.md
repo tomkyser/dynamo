@@ -17,19 +17,19 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 - [ ] **IV-06**: Self-model persists across sessions (attention state, injection mode, confidence, working patterns) with session-scoped fields that reset
 - [x] **IV-07**: Curation functions migrate from Ledger to Reverie as subagent-based processing; Ledger retains only deterministic formatting
 - [x] **IV-08**: Curation templates use adversarial counter-prompting to evaluate from user's experience, not canonical definitions
-- [ ] **IV-09**: Semantic shift detection triggers injection on topic changes using keyword overlap (embedding-based deferred to M4/MENH-08)
+- [x] **IV-09**: Semantic shift detection triggers injection on topic changes using keyword overlap (embedding-based deferred to M4/MENH-08)
 - [x] **IV-10**: Domain frame classification categorizes prompts into engineering/debugging/architecture/social/general via keyword/regex heuristic (<1ms)
-- [ ] **IV-11**: Explicit recall bypass skips sublimation threshold when user asks "do you remember X?" — all entities above 0.2 activation considered
+- [x] **IV-11**: Explicit recall bypass skips sublimation threshold when user asks "do you remember X?" — all entities above 0.2 activation considered
 - [x] **IV-12**: Predictions state tracks expected topic and activity; surprise factor provides principled reason for silence when expectations are met
 
 ### Dual-Path Routing (CORTEX-02)
 
-- [ ] **PATH-01**: Deterministic path selection (hot/deliberation/skip) based on signal thresholds without LLM call — the path decision itself is always cheap
+- [x] **PATH-01**: Deterministic path selection (hot/deliberation/skip) based on signal thresholds without LLM call — the path decision itself is always cheap
 - [ ] **PATH-02**: Hot path executes under 500ms with per-step timing instrumentation via performance.now() and a 400ms abort threshold
 - [ ] **PATH-03**: Deliberation path spawns custom `inner-voice` subagent (Sonnet model, read-only tools, permissionMode: dontAsk) for Max subscription users
-- [ ] **PATH-04**: Deliberation path degrades gracefully to hot-path-only when subagent spawn fails or daily cap reached
+- [x] **PATH-04**: Deliberation path degrades gracefully to hot-path-only when subagent spawn fails or daily cap reached
 - [ ] **PATH-05**: State bridge pattern uses SubagentStop file write with correlation ID and 60s TTL, consumed atomically by next UserPromptSubmit via fs.renameSync
-- [ ] **PATH-06**: Rate limit detection sets runtime flag on spawn failure or daily cap; system degrades to hot-path-only until cleared
+- [x] **PATH-06**: Rate limit detection sets runtime flag on spawn failure or daily cap; system degrades to hot-path-only until cleared
 
 ### Operational Monitoring (CORTEX-03)
 
@@ -104,16 +104,16 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 | IV-06 | Phase 24 | Pending |
 | IV-07 | Phase 24 | Complete |
 | IV-08 | Phase 24 | Complete |
-| IV-09 | Phase 24 | Pending |
+| IV-09 | Phase 24 | Complete |
 | IV-10 | Phase 23 | Complete |
-| IV-11 | Phase 24 | Pending |
+| IV-11 | Phase 24 | Complete |
 | IV-12 | Phase 23 | Complete |
-| PATH-01 | Phase 24 | Pending |
+| PATH-01 | Phase 24 | Complete |
 | PATH-02 | Phase 24 | Pending |
 | PATH-03 | Phase 24 | Pending |
-| PATH-04 | Phase 24 | Pending |
+| PATH-04 | Phase 24 | Complete |
 | PATH-05 | Phase 24 | Pending |
-| PATH-06 | Phase 24 | Pending |
+| PATH-06 | Phase 24 | Complete |
 | COST-01 | -- | Deferred (no cost to track on Max subscription) |
 | COST-02 | -- | Deferred (no budget to enforce with native subagents) |
 | COST-03 | Phase 23 | Revised → OPS-MON-01 (subagent spawn tracking) |

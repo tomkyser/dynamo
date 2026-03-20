@@ -1,9 +1,9 @@
 ---
 phase: 19
 slug: six-subsystem-directory-restructure
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-03-19
 ---
 
@@ -38,13 +38,13 @@ created: 2026-03-19
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 19-01-01 | 01 | 1 | ARCH-04 | unit | `node --test dynamo/tests/resolve.test.cjs` | ✅ (needs update) | ⬜ pending |
-| 19-01-02 | 01 | 1 | ARCH-01 | unit | `node --test dynamo/tests/boundary.test.cjs` | ✅ (needs update) | ⬜ pending |
-| 19-02-01 | 02 | 2 | ARCH-01 | unit | `node --test dynamo/tests/boundary.test.cjs` | ✅ (needs update) | ⬜ pending |
-| 19-02-02 | 02 | 2 | ARCH-07 | full suite | `node --test dynamo/tests/*.test.cjs dynamo/tests/ledger/*.test.cjs dynamo/tests/switchboard/*.test.cjs` | ✅ | ⬜ pending |
-| 19-03-01 | 03 | 3 | ARCH-05 | unit | `node --test dynamo/tests/switchboard/sync.test.cjs` | ✅ (needs update) | ⬜ pending |
-| 19-03-02 | 03 | 3 | ARCH-06 | unit | `node --test dynamo/tests/switchboard/install.test.cjs` | ✅ (needs update) | ⬜ pending |
-| 19-03-03 | 03 | 3 | ARCH-07 | full suite | `node --test dynamo/tests/*.test.cjs dynamo/tests/ledger/*.test.cjs dynamo/tests/switchboard/*.test.cjs` | ✅ | ⬜ pending |
+| 19-01-01 | 01 | 1 | ARCH-04 | unit | `node --test dynamo/tests/resolve.test.cjs` | ✅ | ✅ green |
+| 19-01-02 | 01 | 1 | ARCH-01 | unit | `node --test dynamo/tests/boundary.test.cjs` | ✅ | ✅ green |
+| 19-02-01 | 02 | 2 | ARCH-01 | unit | `node --test dynamo/tests/boundary.test.cjs` | ✅ | ✅ green |
+| 19-02-02 | 02 | 2 | ARCH-07 | full suite | `node --test dynamo/tests/*.test.cjs dynamo/tests/ledger/*.test.cjs dynamo/tests/switchboard/*.test.cjs` | ✅ | ✅ green |
+| 19-03-01 | 03 | 3 | ARCH-05 | unit | `node --test dynamo/tests/switchboard/sync.test.cjs` | ✅ | ✅ green |
+| 19-03-02 | 03 | 3 | ARCH-06 | unit | `node --test dynamo/tests/switchboard/install.test.cjs` | ✅ | ✅ green |
+| 19-03-03 | 03 | 3 | ARCH-07 | full suite | `node --test dynamo/tests/*.test.cjs dynamo/tests/ledger/*.test.cjs dynamo/tests/switchboard/*.test.cjs` | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -52,9 +52,9 @@ created: 2026-03-19
 
 ## Wave 0 Requirements
 
-- [ ] `dynamo/tests/layout.test.cjs` — tests for new `lib/layout.cjs` module (ARCH-04)
-- [ ] Updated `dynamo/tests/boundary.test.cjs` assertions for new subsystem directory paths
-- [ ] Updated `dynamo/tests/circular-deps.test.cjs` scan directories and allowlist paths
+- [x] Layout detection tests — absorbed into `dynamo/tests/resolve.test.cjs` (`resolve paths (six-subsystem layout)` describe block) rather than separate `layout.test.cjs`
+- [x] Updated `dynamo/tests/boundary.test.cjs` assertions for new subsystem directory paths
+- [x] Updated `dynamo/tests/circular-deps.test.cjs` scan directories and allowlist paths
 
 *Existing infrastructure covers remaining phase requirements.*
 
@@ -72,11 +72,22 @@ created: 2026-03-19
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 15s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 15s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved (2026-03-20)
+
+---
+
+## Validation Audit 2026-03-20
+| Metric | Count |
+|--------|-------|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
+
+Full suite: 514 pass, 0 fail. Layout tests folded into resolve.test.cjs. All Wave 0 items satisfied.

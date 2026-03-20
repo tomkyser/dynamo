@@ -1,9 +1,9 @@
 ---
 phase: 21
 slug: sqlite-session-index
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-03-20
 ---
 
@@ -38,10 +38,10 @@ created: 2026-03-20
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 21-01-01 | 01 | 1 | DATA-01 | unit | `node --test dynamo/tests/switchboard/session-store.test.cjs` | ❌ W0 | ⬜ pending |
-| 21-01-02 | 01 | 1 | DATA-02 | unit | `node --test dynamo/tests/ledger/sessions.test.cjs` | ✅ | ⬜ pending |
-| 21-02-01 | 02 | 2 | DATA-03 | integration | `node --test dynamo/tests/switchboard/install.test.cjs` | ✅ | ⬜ pending |
-| 21-02-02 | 02 | 2 | DATA-04 | unit | `node --test dynamo/tests/ledger/sessions.test.cjs` | ✅ | ⬜ pending |
+| 21-01-01 | 01 | 1 | DATA-01 | unit | `node --test dynamo/tests/switchboard/session-store.test.cjs` | ✅ | ✅ green |
+| 21-01-02 | 01 | 1 | DATA-02 | unit | `node --test dynamo/tests/ledger/sessions.test.cjs` | ✅ | ✅ green |
+| 21-02-01 | 02 | 2 | DATA-03 | integration | `node --test dynamo/tests/switchboard/install.test.cjs` | ✅ | ✅ green |
+| 21-02-02 | 02 | 2 | DATA-04 | unit | `node --test dynamo/tests/ledger/sessions.test.cjs` | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -49,8 +49,8 @@ created: 2026-03-20
 
 ## Wave 0 Requirements
 
-- [ ] `dynamo/tests/switchboard/session-store.test.cjs` — tests for new session-store.cjs module (SQLite init, schema, CRUD, WAL mode, migration)
-- [ ] Existing `dynamo/tests/ledger/sessions.test.cjs` — must continue passing unchanged against SQLite backend
+- [x] `dynamo/tests/switchboard/session-store.test.cjs` — tests for new session-store.cjs module (SQLite init, schema, CRUD, WAL mode, migration)
+- [x] Existing `dynamo/tests/ledger/sessions.test.cjs` — continues passing against SQLite backend
 
 *Existing test infrastructure covers the framework and fixtures.*
 
@@ -66,11 +66,22 @@ created: 2026-03-20
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 10s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 10s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved (2026-03-20)
+
+---
+
+## Validation Audit 2026-03-20
+| Metric | Count |
+|--------|-------|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
+
+Full suite: 514 pass, 0 fail. session-store.test.cjs exists and passes. All Wave 0 items satisfied.

@@ -1,9 +1,9 @@
 ---
 phase: 20
 slug: management-hardening
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-03-20
 ---
 
@@ -38,10 +38,10 @@ created: 2026-03-20
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 20-01-01 | 01 | 1 | MGMT-01 | unit | `node --test dynamo/tests/switchboard/health-check.test.cjs` | ✅ (needs update) | ⬜ pending |
-| 20-01-02 | 01 | 1 | MGMT-01 | unit | `node --test dynamo/tests/switchboard/install.test.cjs` | ✅ (needs update) | ⬜ pending |
-| 20-02-01 | 02 | 1 | MGMT-08a | unit | `node --test dynamo/tests/ledger/dispatcher.test.cjs` | ✅ (needs update) | ⬜ pending |
-| 20-02-02 | 02 | 1 | MGMT-08b | unit | `node --test dynamo/tests/ledger/dispatcher.test.cjs` | ✅ (needs update) | ⬜ pending |
+| 20-01-01 | 01 | 1 | MGMT-01 | unit | `node --test dynamo/tests/switchboard/health-check.test.cjs` | ✅ | ✅ green |
+| 20-01-02 | 01 | 1 | MGMT-01 | unit | `node --test dynamo/tests/switchboard/install.test.cjs` | ✅ | ✅ green |
+| 20-02-01 | 02 | 1 | MGMT-08a | unit | `node --test dynamo/tests/ledger/dispatcher.test.cjs` | ✅ | ✅ green |
+| 20-02-02 | 02 | 1 | MGMT-08b | unit | `node --test dynamo/tests/ledger/dispatcher.test.cjs` | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -49,8 +49,8 @@ created: 2026-03-20
 
 ## Wave 0 Requirements
 
-- [ ] Updated `dynamo/tests/switchboard/health-check.test.cjs` — stage count assertion update (6 → 7)
-- [ ] New validation tests in `dynamo/tests/ledger/dispatcher.test.cjs` — malformed JSON, field length, boundary wrapping
+- [x] Updated `dynamo/tests/switchboard/health-check.test.cjs` — stage count assertion update (6 → 7)
+- [x] New validation tests in `dynamo/tests/ledger/dispatcher.test.cjs` — malformed JSON, field length, boundary wrapping
 
 *Existing infrastructure covers remaining phase requirements.*
 
@@ -67,11 +67,22 @@ created: 2026-03-20
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 15s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 15s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved (2026-03-20)
+
+---
+
+## Validation Audit 2026-03-20
+| Metric | Count |
+|--------|-------|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
+
+Full suite: 514 pass, 0 fail. All Wave 0 items satisfied.

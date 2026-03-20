@@ -55,11 +55,12 @@ describe('Activation Module', () => {
     it('completes entity extraction in under 5ms for 1000-char prompt', () => {
       const { extractEntities } = require(ACTIVATION_PATH);
       // Generate a realistic 1000-char engineering prompt
-      const prompt = 'We need to implement the loadConfig() function in ./src/config/loader.ts to handle the MCPClient class initialization. ' +
+      const base = 'We need to implement the loadConfig() function in ./src/config/loader.ts to handle the MCPClient class initialization. ' +
         'The dynamo subsystem requires reverie to process hooks and dispatch activation events. ' +
         'Check the handler for sublimation injection patterns. Fix the error in the session state module. ' +
         'The deployment pipeline needs to compile the migration scripts before running the schema update. ' +
-        'Consider refactoring the entity extraction to use a more efficient pattern matching algorithm. '.repeat(3);
+        'Consider refactoring the entity extraction to use a more efficient pattern matching algorithm. ';
+      const prompt = base.repeat(3);
       assert.ok(prompt.length >= 1000, `Prompt should be >= 1000 chars, got ${prompt.length}`);
 
       // Warm up
@@ -144,8 +145,9 @@ describe('Activation Module', () => {
 
     it('completes classification in under 1ms for 500-char prompt', () => {
       const { classifyDomainFrame } = require(ACTIVATION_PATH);
-      const prompt = 'We need to implement the function and deploy it. Fix the error and debug the crash. ' +
-        'Design the architecture and refactor the module. Remember my preference and workflow pattern. '.repeat(3);
+      const base = 'We need to implement the function and deploy it. Fix the error and debug the crash. ' +
+        'Design the architecture and refactor the module. Remember my preference and workflow pattern. ';
+      const prompt = base.repeat(5);
       assert.ok(prompt.length >= 500, `Prompt should be >= 500 chars, got ${prompt.length}`);
 
       // Warm up

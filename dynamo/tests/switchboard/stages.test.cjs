@@ -17,14 +17,14 @@ describe('stages module', () => {
   });
 
   describe('module exports', () => {
-    it('exports exactly 16 keys (14 functions + STAGE_NAMES + HEALTH_STAGES)', () => {
+    it('exports exactly 17 keys (15 functions + STAGE_NAMES + HEALTH_STAGES)', () => {
       const keys = Object.keys(stages);
-      assert.strictEqual(keys.length, 16, `Expected 16 exports, got ${keys.length}: ${keys.join(', ')}`);
+      assert.strictEqual(keys.length, 17, `Expected 17 exports, got ${keys.length}: ${keys.join(', ')}`);
     });
 
-    it('exports STAGE_NAMES as an array of 14 strings', () => {
+    it('exports STAGE_NAMES as an array of 15 strings', () => {
       assert.ok(Array.isArray(stages.STAGE_NAMES));
-      assert.strictEqual(stages.STAGE_NAMES.length, 14);
+      assert.strictEqual(stages.STAGE_NAMES.length, 15);
       for (const name of stages.STAGE_NAMES) {
         assert.strictEqual(typeof name, 'string');
       }
@@ -32,15 +32,16 @@ describe('stages module', () => {
 
     it('exports HEALTH_STAGES as an array of indices', () => {
       assert.ok(Array.isArray(stages.HEALTH_STAGES));
-      assert.deepStrictEqual(stages.HEALTH_STAGES, [0, 1, 2, 3, 4, 12, 13]);
+      assert.deepStrictEqual(stages.HEALTH_STAGES, [0, 1, 2, 3, 4, 12, 13, 14]);
     });
 
-    it('exports all 14 stage functions', () => {
+    it('exports all 15 stage functions', () => {
       const expectedFunctions = [
         'stageDocker', 'stageNeo4j', 'stageGraphitiApi', 'stageMcpSession',
         'stageEnvVars', 'stageEnvFile', 'stageHookRegistrations', 'stageHookFiles',
         'stageCjsModules', 'stageMcpToolCall', 'stageSearchRoundtrip',
-        'stageEpisodeWrite', 'stageCanaryWriteRead', 'stageNodeVersion'
+        'stageEpisodeWrite', 'stageCanaryWriteRead', 'stageNodeVersion',
+        'stageSessionStorage'
       ];
       for (const name of expectedFunctions) {
         assert.strictEqual(typeof stages[name], 'function', `${name} should be a function`);
@@ -54,7 +55,8 @@ describe('stages module', () => {
         'stageDocker', 'stageNeo4j', 'stageGraphitiApi', 'stageMcpSession',
         'stageEnvVars', 'stageEnvFile', 'stageHookRegistrations', 'stageHookFiles',
         'stageCjsModules', 'stageMcpToolCall', 'stageSearchRoundtrip',
-        'stageEpisodeWrite', 'stageCanaryWriteRead', 'stageNodeVersion'
+        'stageEpisodeWrite', 'stageCanaryWriteRead', 'stageNodeVersion',
+        'stageSessionStorage'
       ];
 
       for (const name of stageFns) {
@@ -277,6 +279,21 @@ describe('stages module', () => {
     it('accepts options.minMajor override', async () => {
       const result = await stages.stageNodeVersion({ minMajor: 1 });
       assert.strictEqual(result.status, 'OK');
+    });
+  });
+
+  describe('stageSessionStorage', () => {
+    it('returns OK or WARN indicating storage backend', async () => {
+      const result = await stages.stageSessionStorage();
+      assert.ok(['OK', 'WARN'].includes(result.status));
+      assert.strictEqual(typeof result.detail, 'string');
+      // On Node.js v24 with node:sqlite available, should return OK with SQLite
+      if (result.status === 'OK') {
+        assert.ok(result.detail.includes('SQLite'), 'OK result should mention SQLite');
+      } else {
+        assert.ok(result.detail.includes('JSON fallback') || result.detail.includes('detection failed'),
+          'WARN result should mention fallback or detection failure');
+      }
     });
   });
 

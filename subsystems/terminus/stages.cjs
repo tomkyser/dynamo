@@ -142,18 +142,13 @@ async function stageMcpSession(options = {}) {
 async function stageEnvVars(options = {}) {
   const { verbose = false } = options;
   try {
-    const hasOpenRouter = !!process.env.OPENROUTER_API_KEY;
     const hasNeo4j = !!process.env.NEO4J_PASSWORD;
 
     if (!hasNeo4j) {
-      return fail('NEO4J_PASSWORD missing' + (!hasOpenRouter ? ', OPENROUTER_API_KEY missing' : ''));
+      return fail('NEO4J_PASSWORD missing');
     }
 
-    if (!hasOpenRouter) {
-      return warn('OPENROUTER_API_KEY missing (non-fatal)');
-    }
-
-    return ok('OPENROUTER_API_KEY set, NEO4J_PASSWORD set');
+    return ok('NEO4J_PASSWORD set');
   } catch (e) {
     return fail(e.message);
   }
@@ -172,7 +167,7 @@ async function stageEnvFile(options = {}) {
     }
 
     const content = fs.readFileSync(envPath, 'utf8');
-    const requiredKeys = ['OPENROUTER_API_KEY', 'NEO4J_PASSWORD', 'GRAPHITI_MCP_URL'];
+    const requiredKeys = ['NEO4J_PASSWORD', 'GRAPHITI_MCP_URL'];
     const missing = [];
 
     for (const key of requiredKeys) {

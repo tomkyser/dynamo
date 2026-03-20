@@ -132,7 +132,7 @@ const COMMAND_HELP = {
   'session':      'Usage: dynamo session <list|view|label|backfill> [args] [--pretty]\n  Session management.',
   'test':         'Usage: dynamo test\n  Run the Dynamo test suite.',
   'version':      'Usage: dynamo version\n  Show Dynamo version.',
-  'config':       'Usage: dynamo config <get|set> <key> [value]\n  Get or set configuration values using dot notation.\n  Examples:\n    dynamo config get reverie.mode\n    dynamo config set reverie.mode cortex\n    dynamo config set reverie.activation.sublimation_threshold 0.5',
+  'config':       'Usage: dynamo config <get|set> <key> [value]\n  Get or set configuration values using dot notation.\n  Examples:\n    dynamo config get reverie.activation.sublimation_threshold\n    dynamo config set reverie.activation.sublimation_threshold 0.5\n    dynamo config set reverie.operational.subagent_daily_cap 30',
 };
 
 // --- Version ---
@@ -395,7 +395,7 @@ async function main() {
           output({ command: 'session', subcommand: 'label', status: 'ok' });
           break;
         case 'backfill': {
-          const { generateSessionName } = require(resolve('ledger', 'curation.cjs'));
+          const { generateSessionName } = require(resolve('reverie', 'curation.cjs'));
           const count = await sessions.backfillSessions(
             async (entry) => generateSessionName(entry.project || 'unnamed session')
           );

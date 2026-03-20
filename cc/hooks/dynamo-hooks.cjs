@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 // Bootstrap resolver: cc/hooks/ is at depth 2 from root
 const resolve = require('../../lib/resolve.cjs');
-const { loadConfig, loadEnv, detectProject, logError } = require(resolve('lib', 'core.cjs'));
+const { loadEnv, detectProject, logError } = require(resolve('lib', 'core.cjs'));
 const { SCOPE } = require(resolve('lib', 'scope.cjs'));
 
 // Load .env early (API keys needed by handlers)
@@ -115,46 +115,8 @@ process.stdin.on('end', async () => {
 
     const ctx = { ...data, project, scope };
 
-    // Determine routing mode (per D-04, D-11)
-    const config = loadConfig();
-    const mode = (config.reverie && config.reverie.mode) || 'classic';
-
-    if (mode !== 'classic' && !JSON_OUTPUT_EVENTS.has(event)) {
-      // Cortex/hybrid mode: route cognitive events to Reverie handlers
-      const REVERIE_HANDLERS = resolve('reverie', 'handlers');
-      const REVERIE_ROUTE = {
-        'SessionStart':     'session-start.cjs',
-        'UserPromptSubmit': 'user-prompt.cjs',
-        'PostToolUse':      'post-tool-use.cjs',
-        'PreCompact':       'pre-compact.cjs',
-        'Stop':             'stop.cjs',
-      };
-      const handlerFile = REVERIE_ROUTE[event];
-      if (handlerFile) {
-        // Stdout boundary wrapping (same as classic)
-        const stdoutChunks = [];
-        const originalWrite = process.stdout.write.bind(process.stdout);
-        process.stdout.write = (chunk, encoding, callback) => {
-          if (typeof chunk === 'string') {
-            stdoutChunks.push(chunk);
-          } else if (Buffer.isBuffer(chunk)) {
-            stdoutChunks.push(chunk.toString(encoding || 'utf8'));
-          }
-          if (typeof callback === 'function') callback();
-          return true;
-        };
-        try {
-          await require(path.join(REVERIE_HANDLERS, handlerFile))(ctx);
-        } finally {
-          process.stdout.write = originalWrite;
-        }
-        const handlerOutput = stdoutChunks.join('');
-        if (handlerOutput.length > 0) {
-          originalWrite(BOUNDARY_OPEN + '\n' + handlerOutput + '\n' + BOUNDARY_CLOSE);
-        }
-      }
-    } else if (JSON_OUTPUT_EVENTS.has(event)) {
-      // SubagentStart/SubagentStop: route to Reverie handlers, output JSON directly (no boundary wrapping per Pitfall 4)
+    if (JSON_OUTPUT_EVENTS.has(event)) {
+      // SubagentStart/SubagentStop: route to Reverie handlers, output JSON directly (no boundary wrapping)
       const REVERIE_HANDLERS = resolve('reverie', 'handlers');
       const SUBAGENT_ROUTE = {
         'SubagentStart':  'iv-subagent-start.cjs',
@@ -175,49 +137,38 @@ process.stdin.on('end', async () => {
         // SubagentStop: no stdout output needed (stub returns null)
       }
     } else {
-      // Classic mode: existing switch/case unchanged
-      const stdoutChunks = [];
-      const originalWrite = process.stdout.write.bind(process.stdout);
-      process.stdout.write = (chunk, encoding, callback) => {
-        if (typeof chunk === 'string') {
-          stdoutChunks.push(chunk);
-        } else if (Buffer.isBuffer(chunk)) {
-          stdoutChunks.push(chunk.toString(encoding || 'utf8'));
-        }
-        if (typeof callback === 'function') callback();
-        return true;
+      // All cognitive events route to Reverie handlers
+      const REVERIE_HANDLERS = resolve('reverie', 'handlers');
+      const REVERIE_ROUTE = {
+        'SessionStart':     'session-start.cjs',
+        'UserPromptSubmit': 'user-prompt.cjs',
+        'PostToolUse':      'post-tool-use.cjs',
+        'PreCompact':       'pre-compact.cjs',
+        'Stop':             'stop.cjs',
       };
-
-      try {
-        // Route to handler
-        const HANDLERS = resolve('ledger', 'hooks');
-        switch (event) {
-          case 'SessionStart':
-            await require(path.join(HANDLERS, 'session-start.cjs'))(ctx);
-            break;
-          case 'UserPromptSubmit':
-            await require(path.join(HANDLERS, 'prompt-augment.cjs'))(ctx);
-            break;
-          case 'PostToolUse':
-            await require(path.join(HANDLERS, 'capture-change.cjs'))(ctx);
-            break;
-          case 'PreCompact':
-            await require(path.join(HANDLERS, 'preserve-knowledge.cjs'))(ctx);
-            break;
-          case 'Stop':
-            await require(path.join(HANDLERS, 'session-summary.cjs'))(ctx);
-            break;
-          default:
-            break;
+      const handlerFile = REVERIE_ROUTE[event];
+      if (handlerFile) {
+        // Stdout boundary wrapping
+        const stdoutChunks = [];
+        const originalWrite = process.stdout.write.bind(process.stdout);
+        process.stdout.write = (chunk, encoding, callback) => {
+          if (typeof chunk === 'string') {
+            stdoutChunks.push(chunk);
+          } else if (Buffer.isBuffer(chunk)) {
+            stdoutChunks.push(chunk.toString(encoding || 'utf8'));
+          }
+          if (typeof callback === 'function') callback();
+          return true;
+        };
+        try {
+          await require(path.join(REVERIE_HANDLERS, handlerFile))(ctx);
+        } finally {
+          process.stdout.write = originalWrite;
         }
-      } finally {
-        process.stdout.write = originalWrite;
-      }
-
-      // Wrap collected output in boundary markers
-      const handlerOutput = stdoutChunks.join('');
-      if (handlerOutput.length > 0) {
-        originalWrite(BOUNDARY_OPEN + '\n' + handlerOutput + '\n' + BOUNDARY_CLOSE);
+        const handlerOutput = stdoutChunks.join('');
+        if (handlerOutput.length > 0) {
+          originalWrite(BOUNDARY_OPEN + '\n' + handlerOutput + '\n' + BOUNDARY_CLOSE);
+        }
       }
     }
   } catch (e) {

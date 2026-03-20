@@ -284,6 +284,19 @@ async function run(args = [], pretty = false, _returnOnly = false) {
   const usePretty = pretty || args.includes('--pretty');
   const steps = [];
 
+  // Step 0: Check dependencies
+  try {
+    const version = process.version;
+    const major = parseInt(version.slice(1).split('.')[0], 10);
+    if (major >= 22) {
+      steps.push({ name: 'Check dependencies', status: 'OK', detail: 'Node.js ' + version + ' (meets minimum v22.x)' });
+    } else {
+      steps.push({ name: 'Check dependencies', status: 'WARN', detail: 'Node.js ' + version + ' is below minimum v22.x. Install Node.js 22 or later: https://nodejs.org/' });
+    }
+  } catch (e) {
+    steps.push({ name: 'Check dependencies', status: 'WARN', detail: 'Version check failed: ' + e.message });
+  }
+
   // Step 1: Copy files (six-subsystem layout -> deployed layout)
   try {
     let fileCount = 0;

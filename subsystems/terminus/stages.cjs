@@ -28,11 +28,12 @@ const STAGE_NAMES = [
   'MCP Tool Call',
   'Search Round-trip',
   'Episode Write',
-  'Canary Write/Read'
+  'Canary Write/Read',
+  'Node.js Version'
 ];
 
-// Indices of the 6 health-check stages
-const HEALTH_STAGES = [0, 1, 2, 3, 4, 12];
+// Indices of the 7 health-check stages
+const HEALTH_STAGES = [0, 1, 2, 3, 4, 12, 13];
 
 // --- Helpers ---
 
@@ -491,6 +492,28 @@ async function stageCanaryWriteRead(options = {}) {
   }
 }
 
+// --- Stage 14: Node.js Version ---
+
+async function stageNodeVersion(options = {}) {
+  const { verbose = false, minMajor = 22 } = options;
+  try {
+    const version = process.version; // e.g., 'v24.13.1'
+    const major = parseInt(version.slice(1).split('.')[0], 10);
+    if (isNaN(major)) {
+      return fail('Could not parse Node.js version from: ' + version);
+    }
+    if (major >= minMajor) {
+      return ok('Node.js ' + version + ' (meets minimum v' + minMajor + '.x)');
+    }
+    return fail(
+      'Node.js ' + version + ' is below minimum v' + minMajor + '.x. ' +
+      'Install Node.js ' + minMajor + ' or later: https://nodejs.org/'
+    );
+  } catch (e) {
+    return fail('Version check error: ' + e.message);
+  }
+}
+
 // --- Exports ---
 
 module.exports = {
@@ -507,6 +530,7 @@ module.exports = {
   stageSearchRoundtrip,
   stageEpisodeWrite,
   stageCanaryWriteRead,
+  stageNodeVersion,
   STAGE_NAMES,
   HEALTH_STAGES
 };

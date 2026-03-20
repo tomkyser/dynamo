@@ -14,6 +14,9 @@ const DISPATCHER = path.join(REPO_ROOT, 'cc', 'hooks', 'dynamo-hooks.cjs');
 // Handlers: repo layout (subsystems/ledger/hooks/)
 const HANDLERS_DIR = path.join(REPO_ROOT, 'subsystems', 'ledger', 'hooks');
 
+// Load dispatcher exports for unit testing validateInput
+const dispatcher = require(DISPATCHER);
+
 describe('Dispatcher structure', () => {
   it('dispatcher file exists', () => {
     assert.ok(fs.existsSync(DISPATCHER), 'dynamo-hooks.cjs must exist');
@@ -98,5 +101,207 @@ describe('Handler exports', () => {
     }
     assert.strictEqual(violations.length, 0,
       'Bare .catch(() => {}) found in: ' + violations.join(', '));
+  });
+});
+
+describe('Input validation (MGMT-08a)', () => {
+  const { validateInput, VALID_EVENTS, LIMITS } = dispatcher;
+
+  describe('validateInput function', () => {
+    it('returns violations for missing hook_event_name', () => {
+      const violations = validateInput({});
+      assert.ok(violations.length > 0, 'should have violations');
+      assert.ok(violations[0].includes('hook_event_name'), 'should mention hook_event_name');
+    });
+
+    it('returns violations for non-string hook_event_name', () => {
+      const violations = validateInput({ hook_event_name: 123 });
+      assert.ok(violations.length > 0);
+      assert.ok(violations[0].includes('hook_event_name'));
+    });
+
+    it('returns violations for unknown hook_event_name', () => {
+      const violations = validateInput({ hook_event_name: 'UnknownEvent' });
+      assert.ok(violations.length > 0);
+      assert.ok(violations[0].includes('unknown hook_event_name'));
+      assert.ok(violations[0].includes('UnknownEvent'));
+    });
+
+    it('returns violations for oversized hook_event_name', () => {
+      const violations = validateInput({ hook_event_name: 'A'.repeat(65) });
+      assert.ok(violations.length > 0);
+      assert.ok(violations[0].includes('exceeds'));
+    });
+
+    it('returns no violations for valid SessionStart event', () => {
+      const violations = validateInput({ hook_event_name: 'SessionStart' });
+      assert.strictEqual(violations.length, 0);
+    });
+
+    it('returns no violations for valid UserPromptSubmit event', () => {
+      const violations = validateInput({ hook_event_name: 'UserPromptSubmit' });
+      assert.strictEqual(violations.length, 0);
+    });
+
+    it('returns no violations for valid PostToolUse event', () => {
+      const violations = validateInput({ hook_event_name: 'PostToolUse', tool_name: 'Write', tool_input: { file_path: '/tmp/test' } });
+      assert.strictEqual(violations.length, 0);
+    });
+
+    it('accepts all 5 valid event names', () => {
+      for (const event of ['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'PreCompact', 'Stop']) {
+        const violations = validateInput({ hook_event_name: event });
+        assert.strictEqual(violations.length, 0, event + ' should be valid');
+      }
+    });
+
+    it('returns violations for non-string tool_name', () => {
+      const violations = validateInput({ hook_event_name: 'PostToolUse', tool_name: 42 });
+      assert.ok(violations.some(v => v.includes('tool_name')));
+    });
+
+    it('returns violations for non-object tool_input', () => {
+      const violations = validateInput({ hook_event_name: 'PostToolUse', tool_input: 'not-an-object' });
+      assert.ok(violations.some(v => v.includes('tool_input')));
+    });
+
+    it('returns violations for array tool_input', () => {
+      const violations = validateInput({ hook_event_name: 'PostToolUse', tool_input: [1, 2, 3] });
+      assert.ok(violations.some(v => v.includes('tool_input')));
+    });
+
+    it('returns violations for null tool_input', () => {
+      const violations = validateInput({ hook_event_name: 'PostToolUse', tool_input: null });
+      assert.ok(violations.some(v => v.includes('tool_input')));
+    });
+
+    it('returns violations for non-string cwd', () => {
+      const violations = validateInput({ hook_event_name: 'SessionStart', cwd: 123 });
+      assert.ok(violations.some(v => v.includes('cwd')));
+    });
+
+    it('returns violations for oversized cwd', () => {
+      const violations = validateInput({ hook_event_name: 'SessionStart', cwd: '/'.repeat(4097) });
+      assert.ok(violations.some(v => v.includes('cwd') && v.includes('4096')));
+    });
+
+    it('returns violations for oversized tool_input string value', () => {
+      const bigValue = 'x'.repeat(102401);
+      const violations = validateInput({ hook_event_name: 'PostToolUse', tool_input: { content: bigValue } });
+      assert.ok(violations.some(v => v.includes('tool_input.content') && v.includes('100KB')));
+    });
+
+    it('allows tool_input string values under 100KB', () => {
+      const okValue = 'x'.repeat(102400);
+      const violations = validateInput({ hook_event_name: 'PostToolUse', tool_input: { content: okValue } });
+      assert.strictEqual(violations.length, 0);
+    });
+
+    it('ignores unknown fields (future-proof)', () => {
+      const violations = validateInput({ hook_event_name: 'SessionStart', agent_id: 'abc', unknown_field: true });
+      assert.strictEqual(violations.length, 0, 'unknown fields should not cause violations');
+    });
+
+    it('returns early on missing hook_event_name without checking other fields', () => {
+      const violations = validateInput({ tool_name: 42, cwd: 123 });
+      // Should only report hook_event_name issue, not tool_name/cwd
+      assert.strictEqual(violations.length, 1);
+      assert.ok(violations[0].includes('hook_event_name'));
+    });
+  });
+
+  describe('constants', () => {
+    it('VALID_EVENTS has exactly 5 events', () => {
+      assert.strictEqual(VALID_EVENTS.size, 5);
+    });
+
+    it('LIMITS.hook_event_name is 64', () => {
+      assert.strictEqual(LIMITS.hook_event_name, 64);
+    });
+
+    it('LIMITS.cwd is 4096', () => {
+      assert.strictEqual(LIMITS.cwd, 4096);
+    });
+
+    it('LIMITS.tool_input_value is 102400', () => {
+      assert.strictEqual(LIMITS.tool_input_value, 102400);
+    });
+  });
+});
+
+describe('Boundary markers (MGMT-08b)', () => {
+  const { BOUNDARY_OPEN, BOUNDARY_CLOSE } = dispatcher;
+
+  it('BOUNDARY_OPEN contains dynamo-memory-context tag', () => {
+    assert.ok(BOUNDARY_OPEN.includes('dynamo-memory-context'), 'should use dynamo-memory-context tag');
+    assert.ok(BOUNDARY_OPEN.includes('source='), 'should have source attribute');
+  });
+
+  it('BOUNDARY_CLOSE is the closing tag', () => {
+    assert.ok(BOUNDARY_CLOSE.includes('</dynamo-memory-context>'), 'should be closing XML tag');
+  });
+
+  it('dispatcher source contains stdout interception pattern', () => {
+    const src = fs.readFileSync(DISPATCHER, 'utf8');
+    assert.ok(src.includes('process.stdout.write'), 'should intercept stdout');
+    assert.ok(src.includes('originalWrite'), 'should save original write');
+  });
+
+  it('dispatcher source has try/finally around handler to restore stdout', () => {
+    const src = fs.readFileSync(DISPATCHER, 'utf8');
+    // Find the stdout interception area
+    assert.ok(src.includes('finally'), 'should have finally block');
+    assert.ok(src.includes('process.stdout.write = originalWrite'), 'should restore stdout in finally');
+  });
+
+  it('dispatcher guards against wrapping empty output', () => {
+    const src = fs.readFileSync(DISPATCHER, 'utf8');
+    assert.ok(src.includes('handlerOutput.length > 0'), 'should only wrap non-empty output');
+  });
+
+  it('dispatcher emits BOUNDARY_OPEN before handler output and BOUNDARY_CLOSE after', () => {
+    const src = fs.readFileSync(DISPATCHER, 'utf8');
+    const openIdx = src.indexOf('BOUNDARY_OPEN');
+    const closeIdx = src.indexOf('BOUNDARY_CLOSE');
+    assert.ok(openIdx !== -1, 'should reference BOUNDARY_OPEN');
+    assert.ok(closeIdx !== -1, 'should reference BOUNDARY_CLOSE');
+  });
+});
+
+describe('Dispatcher validation integration', () => {
+  it('dispatcher source calls validateInput before handler routing', () => {
+    const src = fs.readFileSync(DISPATCHER, 'utf8');
+    const validateIdx = src.indexOf('validateInput(');
+    const switchIdx = src.indexOf('switch (event)');
+    assert.ok(validateIdx !== -1, 'should call validateInput');
+    assert.ok(switchIdx !== -1, 'should have switch routing');
+    assert.ok(validateIdx < switchIdx, 'validateInput must be called before switch routing');
+  });
+
+  it('dispatcher logs validation failures via logError', () => {
+    const src = fs.readFileSync(DISPATCHER, 'utf8');
+    assert.ok(src.includes("logError('dispatcher', 'input validation failed:"), 'should log validation failures');
+  });
+
+  it('dispatcher specifically logs malformed JSON', () => {
+    const src = fs.readFileSync(DISPATCHER, 'utf8');
+    assert.ok(src.includes('malformed JSON input'), 'should log malformed JSON specifically');
+  });
+
+  it('dispatcher exports validateInput for testability', () => {
+    assert.strictEqual(typeof dispatcher.validateInput, 'function', 'should export validateInput');
+  });
+
+  it('dispatcher exports VALID_EVENTS for testability', () => {
+    assert.ok(dispatcher.VALID_EVENTS instanceof Set, 'should export VALID_EVENTS as Set');
+  });
+
+  it('dispatcher exports LIMITS for testability', () => {
+    assert.strictEqual(typeof dispatcher.LIMITS, 'object', 'should export LIMITS');
+  });
+
+  it('dispatcher exports BOUNDARY_OPEN and BOUNDARY_CLOSE for testability', () => {
+    assert.strictEqual(typeof dispatcher.BOUNDARY_OPEN, 'string', 'should export BOUNDARY_OPEN');
+    assert.strictEqual(typeof dispatcher.BOUNDARY_CLOSE, 'string', 'should export BOUNDARY_CLOSE');
   });
 });

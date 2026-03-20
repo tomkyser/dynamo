@@ -90,6 +90,7 @@ Commands:
   session        Session management (list, view, label, backfill)
   test           Run the Dynamo test suite
   version        Show Dynamo version
+  config         Get or set configuration values (dot notation)
   help           Show this help message
 
 Options:
@@ -130,7 +131,8 @@ const COMMAND_HELP = {
   'status':       'Usage: dynamo status [--pretty]\n  Show Dynamo enabled/disabled state.',
   'session':      'Usage: dynamo session <list|view|label|backfill> [args] [--pretty]\n  Session management.',
   'test':         'Usage: dynamo test\n  Run the Dynamo test suite.',
-  'version':      'Usage: dynamo version\n  Show Dynamo version.'
+  'version':      'Usage: dynamo version\n  Show Dynamo version.',
+  'config':       'Usage: dynamo config <get|set> <key> [value]\n  Get or set configuration values using dot notation.\n  Examples:\n    dynamo config get reverie.mode\n    dynamo config set reverie.mode cortex\n    dynamo config set reverie.activation.sublimation_threshold 0.5',
 };
 
 // --- Version ---
@@ -406,10 +408,39 @@ async function main() {
       break;
     }
 
+    case 'config': {
+      const configModule = require(resolve('lib', 'config.cjs'));
+      const subCmd = restArgs[0];
+      if (subCmd === 'get') {
+        const key = restArgs[1];
+        if (!key) { error('Usage: dynamo config get <key>'); return; }
+        const value = configModule.get(key);
+        if (value === undefined) {
+          process.stderr.write('(not set)\n');
+        } else {
+          const display = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
+          process.stderr.write(display + '\n');
+        }
+      } else if (subCmd === 'set') {
+        const key = restArgs[1];
+        const val = restArgs[2];
+        if (!key || val === undefined) { error('Usage: dynamo config set <key> <value>'); return; }
+        try {
+          const written = configModule.set(key, val);
+          process.stderr.write(key + ' = ' + JSON.stringify(written) + '\n');
+        } catch (e) {
+          error(e.message);
+        }
+      } else {
+        error('Usage: dynamo config <get|set> <key> [value]');
+      }
+      break;
+    }
+
     case 'test': {
       const { execSync } = require('child_process');
       const testDir = path.join(__dirname, 'dynamo', 'tests');
-      const cmd = 'node --test ' + path.join(testDir, '*.test.cjs') + ' ' + path.join(testDir, 'ledger', '*.test.cjs') + ' ' + path.join(testDir, 'switchboard', '*.test.cjs');
+      const cmd = 'node --test ' + path.join(testDir, '*.test.cjs') + ' ' + path.join(testDir, 'ledger', '*.test.cjs') + ' ' + path.join(testDir, 'switchboard', '*.test.cjs') + ' ' + path.join(testDir, 'reverie', '*.test.cjs');
       execSync(cmd, { stdio: 'inherit' });
       break;
     }

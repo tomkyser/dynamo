@@ -1,876 +1,944 @@
-# Architecture Patterns: v1.3-M1 Foundation and Infrastructure Refactor
+# Architecture: Reverie Integration into Dynamo
 
-**Domain:** CJS application restructure + infrastructure features for Dynamo
-**Researched:** 2026-03-19
-**Overall confidence:** HIGH (based on existing specs, codebase inspection, and verified technology capabilities)
-
----
-
-## 1. Recommended Architecture: Integration Map
-
-v1.3-M1 transforms a 3-directory flat layout into a 6-subsystem architecture while simultaneously adding 5 infrastructure features. The architecture must maintain dual-layout compatibility (repo vs `~/.claude/dynamo/`) throughout migration and keep 374 tests green at every commit.
-
-### 1.1 Current State (3-directory)
-
-```
-dynamo/                       # CLI router, core, hooks, config, tests, prompts, migrations
-  dynamo.cjs                  # CLI entry point -- resolveSibling() for dual-layout
-  core.cjs                    # Shared substrate -- re-exports MCPClient, scope, sessions from Ledger
-  hooks/dynamo-hooks.cjs      # Dispatcher -- resolveHandlers() for dual-layout
-  config.json, VERSION, prompts/, migrations/, tests/
-ledger/                       # ALL memory operations (read+write+transport+curation+hooks)
-  episodes.cjs, search.cjs, sessions.cjs, curation.cjs, mcp-client.cjs, scope.cjs
-  hooks/                      # 5 handler files (session-start, prompt-augment, capture-change, preserve-knowledge, session-summary)
-switchboard/                  # ALL operations + infrastructure
-  install.cjs, sync.cjs, update.cjs, update-check.cjs
-  health-check.cjs, diagnose.cjs, verify-memory.cjs, stages.cjs, stack.cjs, migrate.cjs, pretty.cjs
-claude-config/                # settings-hooks.json, CLAUDE.md.template
-```
-
-### 1.2 Target State (6-subsystem)
-
-```
-lib/                          # Shared substrate (was dynamo/core.cjs internals)
-  core.cjs                    # Config, paths, utilities, re-exports
-  scope.cjs                   # Scope constants (from ledger/scope.cjs)
-  pretty.cjs                  # Formatters (from switchboard/pretty.cjs)
-  transport-utils.cjs         # extractContent (from ledger/episodes.cjs)
-cc/                           # Claude Code platform adapter
-  hooks/dynamo-hooks.cjs      # Dispatcher (from dynamo/hooks/)
-  prompts/                    # Prompt templates (from dynamo/prompts/)
-  agents/                     # Subagent definitions (new, for Reverie)
-  CLAUDE-TEMPLATE.MD          # CLAUDE.md template (from claude-config/)
-  settings-hooks.json         # Hook defs (from claude-config/)
-  dynamo-cc.cjs               # CC-specific integration (new)
-subsystems/
-  switchboard/                # install, sync, update, update-check
-  assay/                      # search, sessions, inspect (from ledger/)
-  ledger/                     # episodes, format, capture (narrowed)
-  terminus/                   # mcp-client, stack, health-check, diagnose, verify-memory, stages, migrate
-  reverie/                    # (stub only in M1 -- handlers, curation migrate here in M2)
-shared/                       # config.json, VERSION
-migrations/                   # Migration scripts (from dynamo/migrations/)
-graphiti/                     # Docker infrastructure (unchanged)
-dynamo.cjs                    # CLI router entry point (from dynamo/dynamo.cjs)
-```
-
-### 1.3 Key Integration Points
-
-```
-                      dynamo.cjs (CLI entry)
-                          |
-              +-----------+-----------+
-              |                       |
-         lib/core.cjs            cc/hooks/
-         (shared substrate)      (dispatcher)
-              |                       |
-    +---------+---------+    +--------+--------+
-    |         |         |    |        |        |
- subsystems/ subsystems/ subsystems/ subsystems/ subsystems/
- switchboard assay      ledger     terminus    reverie
-    |         |         |    |        ^         (stub)
-    |    reads|    writes|   |        |
-    |         +----+-----+   |     transport
-    |              |         |        |
-    |         lib/transport  |   Knowledge
-    |         -utils.cjs     |   Graph (MCP)
-    |                        |
-    +-- calls Terminus for --+
-        install/update ops
-```
+**Domain:** Inner Voice cognitive layer integration into six-subsystem Dynamo memory platform
+**Researched:** 2026-03-20
+**Confidence:** HIGH (based on existing specs + verified Claude Code platform docs + live codebase analysis)
+**Milestone:** v1.3-M2 Core Intelligence
 
 ---
 
-## 2. Migration Architecture: Directory Restructure
+## 1. Executive Summary
 
-### 2.1 Optimal Migration Order
+This document specifies how the Reverie subsystem (Inner Voice) integrates with Dynamo's existing six-subsystem architecture. It covers four data flows (hot-path injection, deliberation-path activation, cost tracking, and memory backfill), identifies all new and modified modules with file paths, defines the build order across M2 requirements, and ensures six-subsystem boundary rules are honored throughout.
 
-The restructure must be sequenced so that at every commit: (a) all 374 tests pass, (b) the deployed layout at `~/.claude/dynamo/` continues to work, and (c) no circular dependencies are introduced.
+The integration is a surgical transformation: the hook dispatcher (`cc/hooks/dynamo-hooks.cjs`) gains a mode switch that routes to either classic Ledger handlers or new Reverie handlers. Reverie's CJS modules provide deterministic hot-path processing. Claude Code's custom subagent system provides the deliberation path. A file-based state bridge connects the two. Cost monitoring wraps all LLM-calling paths. The bare `dynamo` CLI shim is a self-contained install-time symlink.
 
-**The migration order is driven by dependency depth -- move leaves first, roots last.**
-
-#### Wave 1: Shared Substrate (no consumers depend on the new paths yet)
-
-| Step | Action | Rationale |
-|------|--------|-----------|
-| 1a | Create `lib/` directory; copy `scope.cjs` from `ledger/scope.cjs` | Zero current consumers at `lib/` path. Leaf module -- no imports of its own from Ledger. |
-| 1b | Copy `pretty.cjs` from `switchboard/pretty.cjs` to `lib/pretty.cjs` | Leaf module used only by `install.cjs`. No subsystem imports. |
-| 1c | Extract `extractContent()` from `ledger/episodes.cjs` into `lib/transport-utils.cjs` | Shared utility consumed by both Assay (search) and Ledger (episodes). Must exist before either moves. |
-| 1d | Create `lib/core.cjs` as a thin wrapper that re-exports from original `dynamo/core.cjs` | Enables subsystems to `require('../../lib/core.cjs')` immediately. Original core.cjs unchanged. |
-
-**At end of Wave 1:** Old paths still work. New `lib/` paths exist but nothing requires them yet. Tests pass unchanged.
-
-#### Wave 2: Create `subsystems/` skeleton and move infrastructure (Terminus)
-
-| Step | Action | Rationale |
-|------|--------|-----------|
-| 2a | Create `subsystems/terminus/` directory | Infrastructure has no inbound consumers except Dynamo CLI and Switchboard install/update. |
-| 2b | Move `ledger/mcp-client.cjs` to `subsystems/terminus/mcp-client.cjs`; leave re-export shim at old path | MCP client is consumed by episodes.cjs, search.cjs, and core.cjs. Shim preserves all existing imports. |
-| 2c | Move `switchboard/{stack,health-check,diagnose,verify-memory,stages,migrate}.cjs` to `subsystems/terminus/`; leave shims | These 6 files are consumed only by dynamo.cjs CLI router and install.cjs. Shims at old paths maintain backward compat. |
-| 2d | Update dynamo.cjs `resolveSibling` calls to prefer `subsystems/terminus/` paths, falling back to old paths | Dual-path resolution now checks new location first. |
-
-**At end of Wave 2:** Terminus is fully in place. Old paths are shims. Tests pass via shims.
-
-#### Wave 3: Split Ledger -- move reads to Assay, narrow writes
-
-| Step | Action | Rationale |
-|------|--------|-----------|
-| 3a | Create `subsystems/assay/`; copy `ledger/search.cjs` and `ledger/sessions.cjs`; update internal imports to use `lib/` and `../terminus/` | Assay is a new subsystem. Copies (not moves) first to avoid breaking. |
-| 3b | Update Assay search.cjs to import `extractContent` from `lib/transport-utils.cjs` and MCPClient from `../terminus/mcp-client.cjs` | Removes cross-subsystem dependency on Ledger internals. |
-| 3c | Create `subsystems/assay/inspect.cjs` (new file -- `getEdge`, `getEntity`, `getRecentEpisodes`) | New module, no migration needed. Extracts logic currently inline in dynamo.cjs CLI. |
-| 3d | Create `subsystems/ledger/`; move `episodes.cjs`; create `format.cjs` (extracted from curation.cjs deterministic functions) and `capture.cjs` (from `hooks/capture-change.cjs`) | Ledger narrows to write-only. |
-| 3e | Convert old `ledger/search.cjs` and `ledger/sessions.cjs` to re-export shims pointing to `subsystems/assay/` | Existing consumers still work. |
-| 3f | Update core.cjs re-exports to point to `subsystems/assay/sessions.cjs` for `loadSessions`/`listSessions` | Core.cjs is the bridge -- update its sources. |
-
-**At end of Wave 3:** Assay and Ledger subsystems exist. Old `ledger/` directory contains only shims + hook handlers (which stay until M2/Reverie).
-
-#### Wave 4: Move Switchboard operations and dispatcher
-
-| Step | Action | Rationale |
-|------|--------|-----------|
-| 4a | Create `subsystems/switchboard/`; move `install.cjs`, `sync.cjs`, `update.cjs`, `update-check.cjs` | Operations modules. Update their internal imports to use `../terminus/` paths. |
-| 4b | Create `cc/` directory structure; move `dynamo/hooks/dynamo-hooks.cjs` to `cc/hooks/`; move `dynamo/prompts/` to `cc/prompts/` | Platform adapter. |
-| 4c | Move `claude-config/settings-hooks.json` to `cc/settings-hooks.json`; move `claude-config/CLAUDE.md.template` to `cc/CLAUDE-TEMPLATE.MD` | Claude Code config consolidation. |
-| 4d | Create `cc/dynamo-cc.cjs` stub (platform-specific integration entry point) | Placeholder for future platform adapter logic. |
-| 4e | Update dispatcher path in `cc/settings-hooks.json` to `node ~/.claude/dynamo/cc/hooks/dynamo-hooks.cjs` | Breaking change handled via migration script. |
-| 4f | Create `subsystems/reverie/` stub directory with README | Placeholder for M2. No code moves here in M1. |
-
-**At end of Wave 4:** Full 6-subsystem structure exists. Old directories contain only shims.
-
-#### Wave 5: Cleanup and finalization
-
-| Step | Action | Rationale |
-|------|--------|-----------|
-| 5a | Update all test files to import from new paths | Tests are the last consumers to update because they cover all paths. |
-| 5b | Update dynamo.cjs CLI router to use new subsystem paths (remove resolveSibling fallbacks to old dirs) | CLI router is the root -- update after all leaves are stable. |
-| 5c | Move `dynamo.cjs` from `dynamo/dynamo.cjs` to project root (or update dual-path resolution in deployed layout) | Entry point relocation. |
-| 5d | Remove all re-export shims from old directories | Old paths no longer needed. |
-| 5e | Update sync.cjs SYNC_PAIRS to reflect new directory structure | Sync must know the new layout. |
-| 5f | Update install.cjs copyTree to handle new directory layout | Install must deploy the new structure. |
-| 5g | Create migration script that updates `~/.claude/settings.json` hook paths and deployed file layout | Handles the breaking dispatcher path change for existing deployments. |
-
-**At end of Wave 5:** Clean 6-subsystem layout. No shims. All tests pass against new paths.
-
-### 2.2 Dual-Layout Compatibility During Migration
-
-The current codebase uses `resolveCore()` and `resolveSibling()` patterns for dual-layout support. During migration, a third resolution pattern is needed:
-
-```javascript
-// New pattern: subsystem-aware resolution
-// Checks: subsystems/X/ (new) -> X/ (old flat) -> fallback
-function resolveSubsystem(subsystem, file) {
-  const newPath = path.join(__dirname, '..', 'subsystems', subsystem, file);
-  if (fs.existsSync(newPath)) return newPath;
-  const oldPath = path.join(__dirname, '..', subsystem, file);
-  if (fs.existsSync(oldPath)) return oldPath;
-  throw new Error(`Cannot resolve ${subsystem}/${file}`);
-}
-```
-
-**Critical constraint:** The deployed layout at `~/.claude/dynamo/` must mirror the repo layout. When the install system copies files, it must copy the `subsystems/`, `lib/`, and `cc/` directories in addition to (and eventually replacing) the old `ledger/` and `switchboard/` directories.
-
-**Migration script requirement:** A Terminus migration script must run on first update to:
-1. Copy new directory structure to `~/.claude/dynamo/`
-2. Update hook paths in `~/.claude/settings.json` from `hooks/dynamo-hooks.cjs` to `cc/hooks/dynamo-hooks.cjs`
-3. Clean up old shim files from the deployment directory
+**Key architectural principle:** The dispatcher stays thin. It gains a feature flag check and a new routing table, but all intelligence lives in `subsystems/reverie/`. The boundary rules hold: Ledger writes, Assay reads, Reverie orchestrates both, Switchboard dispatches, Terminus transports.
 
 ---
 
-## 3. Transport Abstraction Layer
+## 2. Integration Points: Existing to New
 
-### 3.1 Current Transport Architecture
+### 2.1 Hook Dispatcher Modification (cc/hooks/dynamo-hooks.cjs)
 
-```
-curation.cjs ---> OpenRouter API (Haiku) ---> LLM responses
-    ^                                              |
-    |                                              v
-    +--- callHaiku() --- fetchWithTimeout() -------+
+The dispatcher is the single integration seam. Currently it routes all events to Ledger handlers. After M2, it conditionally routes cognitive events to Reverie handlers based on `reverie.mode` in config.
 
-mcp-client.cjs ---> Graphiti MCP Server ---> Knowledge Graph
-    ^                                              |
-    |                                              v
-    +--- callTool() --- fetchWithTimeout() --------+
-```
-
-Two separate transport paths exist today:
-1. **MCP transport** (mcp-client.cjs): JSON-RPC over HTTP with SSE for knowledge graph operations
-2. **LLM transport** (curation.cjs): Direct HTTP to OpenRouter for Haiku curation/naming
-
-### 3.2 Target Transport Architecture
-
-MENH-06 (transport flexibility) and MENH-07 (model selection) require a unified transport abstraction that supports three backends:
+**Current routing table (v1.3-M1):**
 
 ```
-subsystems/terminus/
-  mcp-client.cjs              # Unchanged -- MCP transport for knowledge graph
-  llm-transport.cjs           # NEW -- unified LLM call interface
-  transports/
-    openrouter.cjs            # OpenRouter backend (current behavior)
-    anthropic.cjs             # Direct Anthropic API backend (new)
-    native.cjs                # Claude Code native subagent backend (new)
+SessionStart      -> subsystems/ledger/hooks/session-start.cjs
+UserPromptSubmit  -> subsystems/ledger/hooks/prompt-augment.cjs
+PostToolUse       -> subsystems/ledger/hooks/capture-change.cjs
+PreCompact        -> subsystems/ledger/hooks/preserve-knowledge.cjs
+Stop              -> subsystems/ledger/hooks/session-summary.cjs
 ```
 
-### 3.3 LLM Transport Interface
+**M2 routing table (dual-mode):**
 
 ```javascript
-// subsystems/terminus/llm-transport.cjs
-'use strict';
+// Feature flag determines routing
+const config = loadConfig();
+const mode = config.reverie?.mode || 'classic';
 
-const { loadConfig, logError } = require('../../lib/core.cjs');
+if (mode === 'cortex') {
+  // Reverie handlers for cognitive events
+  SessionStart      -> subsystems/reverie/handlers/session-start.cjs
+  UserPromptSubmit  -> subsystems/reverie/handlers/user-prompt.cjs
+  PreCompact        -> subsystems/reverie/handlers/pre-compact.cjs
+  Stop              -> subsystems/reverie/handlers/stop.cjs
 
-/**
- * Unified LLM call interface. Routes to the configured transport backend.
- *
- * @param {object} params
- * @param {string} params.system - System prompt
- * @param {string} params.user - User content
- * @param {object} [params.options] - { maxTokens, temperature, timeout, hookName }
- * @returns {Promise<{text: string, uncurated: boolean, transport: string}>}
- */
-async function callLLM(params) {
-  const config = loadConfig();
-  const transportName = resolveTransport(config, params.options);
-  const transport = loadTransport(transportName);
-
-  try {
-    const result = await transport.call(params, config);
-    return { ...result, transport: transportName };
-  } catch (err) {
-    logError(params.options?.hookName || 'llm-transport', err.message);
-    return { text: params.options?.fallback || '', uncurated: true, transport: transportName };
-  }
-}
-
-/**
- * Resolve which transport to use based on config and context.
- * Priority: explicit option > per-path config > global default
- */
-function resolveTransport(config, options = {}) {
-  // 1. Explicit override in call options
-  if (options.transport) return options.transport;
-
-  // 2. Per-path selection (MENH-07)
-  if (options.path && config.transports?.paths?.[options.path]) {
-    return config.transports.paths[options.path];
-  }
-
-  // 3. Global default
-  return config.transports?.default || 'openrouter';
-}
-
-function loadTransport(name) {
-  return require(`./transports/${name}.cjs`);
-}
-
-module.exports = { callLLM, resolveTransport };
-```
-
-### 3.4 Transport Backends
-
-#### OpenRouter (existing behavior, extracted)
-
-```javascript
-// subsystems/terminus/transports/openrouter.cjs
-// Extracted from ledger/curation.cjs callHaiku() internals
-async function call(params, config) {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) return { text: params.options?.fallback || '', uncurated: true };
-
-  const resp = await fetchWithTimeout(config.curation.api_url, {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer ' + apiKey,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: config.curation.model || 'anthropic/claude-haiku-4.5',
-      messages: [
-        { role: 'system', content: params.system },
-        { role: 'user', content: params.user }
-      ],
-      max_tokens: params.options?.maxTokens || 500,
-      temperature: params.options?.temperature || 0.3
-    })
-  }, params.options?.timeout || config.timeouts.curation);
-
-  if (!resp.ok) throw new Error('HTTP ' + resp.status);
-  const data = await resp.json();
-  return { text: data.choices[0].message.content, uncurated: false };
+  // PostToolUse dispatches to BOTH (parallel)
+  PostToolUse       -> subsystems/ledger/hooks/capture-change.cjs  (file capture)
+                    -> subsystems/reverie/handlers/post-tool-use.cjs (activation update)
+} else {
+  // Classic mode: existing Ledger handlers (v1.2.1 behavior)
+  SessionStart      -> subsystems/ledger/hooks/session-start.cjs
+  UserPromptSubmit  -> subsystems/ledger/hooks/prompt-augment.cjs
+  PostToolUse       -> subsystems/ledger/hooks/capture-change.cjs
+  PreCompact        -> subsystems/ledger/hooks/preserve-knowledge.cjs
+  Stop              -> subsystems/ledger/hooks/session-summary.cjs
 }
 ```
 
-#### Direct Anthropic API (new -- removes OpenRouter SPOF)
+**Boundary compliance:** Switchboard (dispatcher) routes events. It does not implement handler logic. The `mode` check adds ~1ms overhead (config read is cached). Ledger's capture-change.cjs remains in Ledger because it decides WHAT to extract from file changes (write-side logic). Reverie's post-tool-use.cjs updates the activation map (cognitive logic).
 
-```javascript
-// subsystems/terminus/transports/anthropic.cjs
-// Direct Anthropic Messages API -- zero npm dependencies
-async function call(params, config) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return { text: params.options?.fallback || '', uncurated: true };
+**New hook registrations for settings-hooks.json:**
 
-  const model = config.transports?.anthropic?.model || 'claude-haiku-4-5';
-  const resp = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json'
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: params.options?.maxTokens || 500,
-      system: params.system,
-      messages: [{ role: 'user', content: params.user }]
-    })
-  }, params.options?.timeout || config.timeouts.curation);
-
-  if (!resp.ok) throw new Error('HTTP ' + resp.status);
-  const data = await resp.json();
-  return { text: data.content[0].text, uncurated: false };
-}
-```
-
-#### Native Claude Code Subagent (new -- zero-cost on Max subscription)
-
-```javascript
-// subsystems/terminus/transports/native.cjs
-// Uses Claude Code's built-in subagent mechanism
-// This transport writes a prompt to a temp file and invokes claude CLI
-// Only usable for deliberation path (latency > 2s) -- NOT for hot path
-async function call(params, config) {
-  // For Max subscription: subagent calls are at zero marginal cost
-  // Implementation deferred to M2 (Reverie integration)
-  // In M1: stub that falls back to anthropic transport
-  const anthropic = require('./anthropic.cjs');
-  return anthropic.call(params, config);
-}
-```
-
-### 3.5 Model Selection (MENH-07)
-
-Per-path model selection is achieved through the config:
-
-```javascript
-// config.json transport section
+```json
 {
-  "transports": {
-    "default": "anthropic",          // Global default transport
-    "paths": {
-      "curation": "anthropic",       // Hot path curation -> direct API (fast)
-      "session-name": "openrouter",  // Session naming -> OpenRouter (cheap)
-      "session-summary": "anthropic",// Session summary -> direct API
-      "deliberation": "native"       // Deliberation -> native subagent (M2)
+  "SubagentStart": [
+    {
+      "matcher": "inner-voice",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"$HOME/.claude/dynamo/cc/hooks/dynamo-hooks.cjs\"",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
+  "SubagentStop": [
+    {
+      "matcher": "inner-voice",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"$HOME/.claude/dynamo/cc/hooks/dynamo-hooks.cjs\"",
+          "timeout": 10
+        }
+      ]
+    }
+  ]
+}
+```
+
+The dispatcher handles SubagentStart/SubagentStop by checking `agent_type === 'inner-voice'` and routing to Reverie's subagent handlers. These are new events that only fire when the inner-voice custom subagent is spawned/completed.
+
+**Verified platform support:** Claude Code supports SubagentStart and SubagentStop hook events with matcher filtering by agent name. SubagentStart receives `{ session_id, transcript_path, cwd, hook_event_name, agent_id, agent_type }`. SubagentStop receives `{ session_id, transcript_path, cwd, permission_mode, hook_event_name, stop_hook_active, agent_id, agent_type, agent_transcript_path, last_assistant_message }`. SubagentStart hooks can inject context into the subagent via structured JSON output with `hookSpecificOutput.additionalContext`. SubagentStop hooks cannot inject into the parent context (confirmed: GitHub issue #5812 closed NOT_PLANNED).
+
+### 2.2 Hook Output Format Consideration
+
+**Discovery:** The current dispatcher uses raw `process.stdout.write()` for injection, intercepted and wrapped in boundary markers. Claude Code also supports structured JSON output with `hookSpecificOutput.additionalContext`. For M2, Reverie handlers should return structured data that the dispatcher formats appropriately.
+
+**Current pattern (Ledger handlers):**
+```javascript
+// Handler writes directly to stdout
+process.stdout.write('[RELEVANT MEMORY]\n\n' + curated);
+// Dispatcher wraps in boundary markers
+```
+
+**M2 pattern (Reverie handlers):**
+```javascript
+// Handler returns structured result
+return { additionalContext: injection, metadata: { path: 'hot', tokens: 85 } };
+// Dispatcher formats for output (boundary markers for backward compat)
+```
+
+This is a refinement, not a breaking change. The dispatcher already intercepts stdout. Reverie handlers return data instead of writing to stdout, and the dispatcher formats it. Classic-mode handlers continue using stdout. Both paths produce the same external output.
+
+**SubagentStart output format:** SubagentStart hooks must output structured JSON to stdout for `additionalContext` injection:
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "SubagentStart",
+    "additionalContext": "serialized IV state for subagent context"
+  }
+}
+```
+
+### 2.3 Ledger Interface (Write-Side)
+
+Reverie calls Ledger for graph writes. No Ledger modifications required -- Reverie uses the existing `addEpisode()` API.
+
+**Existing interface (unchanged):**
+```javascript
+const { addEpisode } = require(resolve('ledger', 'episodes.cjs'));
+await addEpisode(content, scope, { hookName: 'reverie-stop' });
+```
+
+**What Reverie writes through Ledger:**
+- Session synthesis episodes (Stop handler, REM Tier 3)
+- Pre-compact preservation episodes (PreCompact handler, REM Tier 1)
+
+**Boundary compliance:** Reverie decides WHAT to write. Ledger executes the write. Reverie never imports from Terminus directly for graph writes.
+
+### 2.4 Assay Interface (Read-Side)
+
+Reverie calls Assay for graph reads. No Assay modifications required -- Reverie uses the existing `combinedSearch()` and session APIs.
+
+**Existing interface (unchanged):**
+```javascript
+const { combinedSearch } = require(resolve('assay', 'search.cjs'));
+const results = await combinedSearch(query, scope, { hookName: 'reverie-prompt' });
+
+const { indexSession, generateAndApplyName } = require(resolve('assay', 'sessions.cjs'));
+```
+
+**What Reverie reads through Assay:**
+- Entity search results for activation map population (UserPromptSubmit, SessionStart)
+- Session history for briefing generation (SessionStart)
+- Entity relationship data for 1-hop propagation (activation.cjs)
+
+**Boundary compliance:** Reverie decides WHAT to read. Assay executes the query. Assay never writes.
+
+### 2.5 Curation Migration (Ledger to Reverie)
+
+The LLM-calling functions in `subsystems/ledger/curation.cjs` move to `subsystems/reverie/curation.cjs`. Deterministic formatting functions stay in Ledger.
+
+**Functions moving to Reverie:**
+- `curateResults()` -- LLM-powered relevance filtering
+- `summarizeText()` -- LLM-powered session synthesis
+- `generateSessionName()` -- LLM-powered session naming
+- `callHaiku()` -- low-level LLM call wrapper
+
+**Functions staying in Ledger:**
+- `addEpisode()` (episodes.cjs -- unchanged)
+- `extractContent()` (episodes.cjs -- unchanged)
+
+**The dividing line:** If it calls an LLM, it belongs to Reverie (cognitive processing). If it formats data or writes to the graph, it belongs to Ledger (data construction).
+
+**Migration approach:** Phase the migration. First, Reverie's curation.cjs wraps Ledger's existing functions (re-exports with cost-tracking integration). Second, move the actual code and update imports. The classic-mode route to Ledger's handlers still needs these functions, so the Ledger originals remain available during the transition. Once `reverie.mode: cortex` is proven, Ledger's LLM functions can be removed (they become dead code in classic-mode-removed future).
+
+### 2.6 Config.json Extension
+
+The existing `dynamo/config.json` gains a `reverie` section. The `loadConfig()` function in `lib/core.cjs` already uses spread merging with defaults, so new config sections need defaults added.
+
+**New config section:**
+```json
+{
+  "reverie": {
+    "enabled": true,
+    "mode": "classic",
+    "billing_model": "subscription",
+    "hot_path": {
+      "max_latency_ms": 500,
+      "entity_confidence_threshold": 0.7,
+      "semantic_shift_threshold": 0.4,
+      "min_cached_results": 3
     },
-    "anthropic": {
-      "model": "claude-haiku-4-5"    // Default model for Anthropic transport
+    "deliberation": {
+      "model": "claude-sonnet-4-6-20250514",
+      "max_latency_ms": 2000,
+      "max_turns": 10
     },
-    "openrouter": {
-      "model": "anthropic/claude-haiku-4.5"
+    "injection": {
+      "session_start_max_tokens": 500,
+      "mid_session_max_tokens": 150,
+      "urgent_max_tokens": 50
     },
-    "models": {
-      "hot-path": "claude-haiku-4-5",       // Fast, cheap
-      "deliberation": "claude-sonnet-4-6"   // Capable, slower
+    "activation": {
+      "sublimation_threshold": 0.6,
+      "decay_rate": 0.1,
+      "propagation_hops": 1,
+      "convergence_bonus": 1.5,
+      "density_threshold_entities": 100,
+      "density_threshold_relationships": 200
+    },
+    "cost": {
+      "daily_budget_dollars": 5.00,
+      "monthly_budget_dollars": 100.00,
+      "hot_path_only_on_budget_exhaust": true,
+      "tracking_file": "cost-tracker.json"
     }
   }
 }
 ```
 
-### 3.6 Where Transport Sits Between MCP Client and New API Support
+**Startup behavior:** `reverie.mode` defaults to `"classic"` on first install. The user (or Claude) switches to `"cortex"` after Reverie is validated. This is the instant rollback mechanism (MGMT-10).
 
-The MCP client (`mcp-client.cjs`) and the LLM transport (`llm-transport.cjs`) are **peers, not layers**. They serve different purposes:
+### 2.7 CLI Router Extension (dynamo.cjs)
 
+The CLI router gains new commands for Reverie management:
+
+```javascript
+case 'voice': {
+  const reverie = require(resolve('reverie', 'inner-voice.cjs'));
+  const subCmd = restArgs[0];
+  switch (subCmd) {
+    case 'status':   // Show IV state summary
+    case 'explain':  // Explain last injection decision
+    case 'reset':    // Reset self-model and relationship model
+    case 'mode':     // Get/set reverie.mode (classic/cortex)
+    default: error('Usage: dynamo voice <status|explain|reset|mode>');
+  }
+  break;
+}
+
+case 'cost': {
+  const costTracker = require(resolve('reverie', 'cost-tracker.cjs'));
+  const subCmd = restArgs[0];
+  switch (subCmd) {
+    case 'today':    // Show today's cost breakdown
+    case 'month':    // Show monthly cost summary
+    case 'budget':   // Get/set budget limits
+    case 'reset':    // Reset cost counters
+    default: error('Usage: dynamo cost <today|month|budget|reset>');
+  }
+  break;
+}
+
+case 'backfill': {
+  const backfill = require(resolve('reverie', 'backfill.cjs'));
+  await backfill.run(restArgs, pretty);
+  break;
+}
 ```
-subsystems/terminus/
-  mcp-client.cjs       --> Knowledge Graph (Graphiti MCP server)
-  llm-transport.cjs    --> LLM APIs (OpenRouter, Anthropic, Native)
-  transports/           --> Backend implementations for llm-transport
-```
-
-- **mcp-client.cjs** handles JSON-RPC transport to the Graphiti knowledge graph. It is consumed by Ledger (writes) and Assay (reads). Unchanged in M1.
-- **llm-transport.cjs** handles LLM API calls for curation, naming, and summarization. It replaces the direct OpenRouter calls in `curation.cjs`. Consumed by Reverie (M2) and by the existing curation functions during M1 migration.
-
-These two transport mechanisms never interact. They are independent pipes that Terminus provides to different consumers.
 
 ---
 
-## 4. SQLite Session Index Architecture
+## 3. New Modules (subsystems/reverie/)
 
-### 4.1 Ownership Model
-
-The SQLite session index (MGMT-11) follows the same ownership pattern as the knowledge graph:
-
-| Concern | Owner | Rationale |
-|---------|-------|-----------|
-| Database file location and lifecycle | **Terminus** | Data infrastructure -- Terminus manages storage backends |
-| Schema definition and migrations | **Terminus** | Schema is infrastructure, managed by the migration harness |
-| Query functions (read) | **Assay** | Assay owns all session queries -- the SQLite DB is its backing store |
-| Write functions (index, label) | **Assay** | Session index is Assay's managed data store (not the knowledge graph) |
-| Database module (open, close, pragma) | **Terminus** | Connection management is infrastructure |
-
-### 4.2 Data Flow
+### 3.1 Complete Module Map
 
 ```
-Reverie (Stop handler)
-    |
-    | calls indexSession(timestamp, project, label)
-    v
-Assay (sessions.cjs)
-    |
-    | INSERT INTO sessions (...)
-    v
-Terminus (session-db.cjs)
-    |
-    | node:sqlite DatabaseSync
-    v
-~/.claude/graphiti/sessions.db
+subsystems/reverie/
+  inner-voice.cjs            # Core pipeline orchestrator
+  dual-path.cjs              # Hot/deliberation path routing and scoring
+  activation.cjs             # Activation map management, spreading activation
+  curation.cjs               # Intelligent curation (migrated from Ledger)
+  cost-tracker.cjs           # Per-operation/day/month budget tracking (CORTEX-03)
+  backfill.cjs               # Memory backfill from past transcripts
+  handlers/
+    session-start.cjs        # SessionStart handler (cortex mode)
+    user-prompt.cjs          # UserPromptSubmit handler (cortex mode)
+    pre-compact.cjs          # PreCompact handler (cortex mode)
+    stop.cjs                 # Stop handler (cortex mode)
+    post-tool-use.cjs        # PostToolUse activation update (lightweight)
+    subagent-start.cjs       # SubagentStart handler (inner-voice only)
+    subagent-stop.cjs        # SubagentStop handler (inner-voice only)
+
+cc/agents/
+  inner-voice.md             # Custom subagent definition (YAML frontmatter)
+
+cc/prompts/
+  iv-system-prompt.md        # Inner Voice system prompt for deliberation
+  session-briefing.md        # Session start briefing template
+  adversarial-counter.md     # Adversarial counter-prompting template
+  (existing prompts curation.md, session-summary.md, etc. remain)
+
+State files (runtime, in ~/.claude/dynamo/):
+  inner-voice-state.json     # Operational state (~10-50KB)
+  inner-voice-deliberation-result.json  # State bridge (transient, ~1-5KB)
+  cost-tracker.json          # Cost accumulator (persistent)
 ```
 
-### 4.3 Implementation Architecture
+### 3.2 Module Descriptions and Interfaces
 
-#### Terminus: Database Module
+#### inner-voice.cjs (Core Pipeline Orchestrator)
+
+Central module implementing per-hook processing pipelines. All handlers delegate to this module.
 
 ```javascript
-// subsystems/terminus/session-db.cjs
-'use strict';
-
-const { DatabaseSync } = require('node:sqlite');
-const path = require('path');
-const os = require('os');
-
-const DEFAULT_DB_PATH = path.join(os.homedir(), '.claude', 'graphiti', 'sessions.db');
-
-/**
- * Open the session database. Creates if not exists.
- * Synchronous API -- node:sqlite is synchronous by design.
- */
-function openSessionDB(dbPath) {
-  dbPath = dbPath || DEFAULT_DB_PATH;
-  const db = new DatabaseSync(dbPath);
-
-  // WAL mode for concurrent reads during hook processing
-  db.exec('PRAGMA journal_mode = WAL');
-  db.exec('PRAGMA foreign_keys = ON');
-
-  // Ensure schema exists
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS sessions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      timestamp TEXT NOT NULL UNIQUE,
-      project TEXT NOT NULL,
-      label TEXT,
-      labeled_by TEXT DEFAULT 'auto',
-      named_phase TEXT,
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now'))
-    )
-  `);
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_sessions_project ON sessions(project);
-    CREATE INDEX IF NOT EXISTS idx_sessions_timestamp ON sessions(timestamp DESC);
-  `);
-
-  return db;
-}
-
-module.exports = { openSessionDB, DEFAULT_DB_PATH };
-```
-
-#### Assay: Updated Session Functions
-
-The function signatures remain identical. Only the backing store changes from `sessions.json` to SQLite:
-
-```javascript
-// subsystems/assay/sessions.cjs (SQLite-backed)
-const { openSessionDB } = require('../terminus/session-db.cjs');
-
-function listSessions(options = {}) {
-  const db = openSessionDB(options.dbPath);
-  try {
-    let sql = 'SELECT * FROM sessions';
-    const params = [];
-
-    if (options.project) {
-      sql += ' WHERE project = ?';
-      params.push(options.project);
-    }
-    sql += ' ORDER BY timestamp DESC';
-    if (options.limit) {
-      sql += ' LIMIT ?';
-      params.push(options.limit);
-    }
-
-    return db.prepare(sql).all(...params);
-  } finally {
-    db.close();
-  }
-}
-
-function indexSession(timestamp, project, label, labeledBy, options = {}) {
-  const db = openSessionDB(options.dbPath);
-  try {
-    // Never overwrite user-applied labels
-    const existing = db.prepare('SELECT labeled_by FROM sessions WHERE timestamp = ?').get(timestamp);
-    if (existing?.labeled_by === 'user') return;
-
-    db.prepare(`
-      INSERT INTO sessions (timestamp, project, label, labeled_by, named_phase)
-      VALUES (?, ?, ?, ?, ?)
-      ON CONFLICT(timestamp) DO UPDATE SET
-        label = excluded.label,
-        labeled_by = excluded.labeled_by,
-        named_phase = excluded.named_phase,
-        updated_at = datetime('now')
-      WHERE labeled_by != 'user'
-    `).run(timestamp, project, label, labeledBy, options.namedPhase || null);
-  } finally {
-    db.close();
-  }
-}
-```
-
-### 4.4 Migration from sessions.json
-
-A Terminus migration script handles the one-time conversion:
-
-```javascript
-// migrations/002-sqlite-sessions.cjs
 module.exports = {
-  version: '1.3.0',
-  description: 'Migrate session index from sessions.json to SQLite',
-  up: async (config) => {
-    const fs = require('fs');
-    const jsonPath = config.sessions?.filePath || '~/.claude/graphiti/sessions.json';
+  processUserPrompt(promptData, state, pendingResult, options) ->
+    { injection: string|null, updatedState: object },
 
-    if (!fs.existsSync(jsonPath)) return; // No sessions to migrate
+  processSessionStart(sessionData, state, options) ->
+    { briefing: string, updatedState: object },
 
-    const sessions = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-    if (!Array.isArray(sessions) || sessions.length === 0) return;
+  processStop(sessionData, state, options) ->
+    { synthesis: object, updatedState: object },
 
-    const { openSessionDB } = require('../subsystems/terminus/session-db.cjs');
-    const db = openSessionDB();
+  processPreCompact(compactData, state, options) ->
+    { summary: string, updatedState: object },
 
-    const insert = db.prepare(
-      'INSERT OR IGNORE INTO sessions (timestamp, project, label, labeled_by, named_phase) VALUES (?, ?, ?, ?, ?)'
-    );
+  processPostToolUse(toolData, state, options) ->
+    { updatedState: object },
 
-    for (const s of sessions) {
-      insert.run(s.timestamp, s.project || 'unknown', s.label || null, s.labeled_by || 'auto', s.named_phase || null);
-    }
-
-    db.close();
-
-    // Rename old file as backup
-    fs.renameSync(jsonPath, jsonPath + '.pre-sqlite.bak');
-  }
+  loadState(options) -> object,
+  persistState(state, options) -> void,
+  getDefaultState() -> object
 };
 ```
 
-### 4.5 Technology Verification
+**Dependencies:** `dual-path.cjs`, `activation.cjs`, `curation.cjs`, `cost-tracker.cjs`, Assay (`search.cjs`), Ledger (`episodes.cjs`), `lib/core.cjs`.
 
-**Node.js v24.13.1 includes `node:sqlite`** -- verified working on this machine without `--experimental-sqlite` flag (produces a warning but functions correctly). The `DatabaseSync` API is synchronous, which aligns with the CJS synchronous patterns used throughout Dynamo. No npm dependency required.
+#### dual-path.cjs (Path Routing and Scoring)
 
-**Confidence: HIGH** -- tested locally, synchronous API matches existing patterns.
-
----
-
-## 5. Dependency Management (MGMT-01)
-
-### 5.1 Current State
-
-Dynamo has zero npm dependencies. All code uses Node.js built-ins. The only external call is `fetchWithTimeout()` to OpenRouter (LLM) and the Graphiti MCP server (knowledge graph).
-
-### 5.2 Self-Contained Dependency Model
-
-MGMT-01 requires that any new dependencies (like `node:sqlite`) are verified at install time and degrade gracefully if unavailable.
+Deterministic path selection. No LLM call for the decision itself.
 
 ```javascript
-// lib/deps.cjs -- dependency verification
-'use strict';
+module.exports = {
+  selectPath(activationMap, semanticShift, predictions, config) ->
+    'hot' | 'deliberation' | 'skip',
 
-const REQUIRED_FEATURES = {
-  sqlite: {
-    test: () => { require('node:sqlite'); return true; },
-    fallback: 'sessions.json flat file',
-    minNodeVersion: '22.5.0'
-  },
-  fetch: {
-    test: () => typeof globalThis.fetch === 'function',
-    fallback: null, // No fallback -- required
-    minNodeVersion: '18.0.0'
-  }
+  executeHotPath(entities, state, domainFrame, options) ->
+    { injection: string, tokens: number },
+
+  queueDeliberation(entities, state, domainFrame, options) ->
+    { queued: boolean, fallbackInjection: string|null },
+
+  shouldUseSubagent(config) -> boolean,
+
+  formatInjection(content, context, tokenLimit) -> string
 };
-
-function verifyDependencies() {
-  const results = {};
-  for (const [name, dep] of Object.entries(REQUIRED_FEATURES)) {
-    try {
-      results[name] = { available: dep.test(), fallback: dep.fallback };
-    } catch {
-      results[name] = { available: false, fallback: dep.fallback };
-    }
-  }
-  return results;
-}
-
-function requireFeature(name) {
-  const dep = REQUIRED_FEATURES[name];
-  if (!dep) throw new Error('Unknown feature: ' + name);
-  try {
-    dep.test();
-    return true;
-  } catch {
-    if (dep.fallback) return false; // Caller should use fallback
-    throw new Error(`Required feature "${name}" not available. Minimum Node.js: ${dep.minNodeVersion}`);
-  }
-}
-
-module.exports = { verifyDependencies, requireFeature, REQUIRED_FEATURES };
 ```
 
-This module is called during `dynamo install` and `dynamo health-check` to verify capabilities, and by `sessions.cjs` to determine whether to use SQLite or fall back to JSON.
+**Path selection signals (all deterministic):**
 
----
+| Signal | Hot Path | Deliberation Path |
+|--------|----------|-------------------|
+| Entity match confidence | >= 0.7 | < 0.7 |
+| Cached result count | >= 3 | < 3 |
+| Semantic shift score | < 0.4 | >= 0.4 |
+| Explicit recall request | Never | Always |
+| Session start briefing | Never | Always |
+| Rate limit / budget exhausted | Always (fallback) | Never |
 
-## 6. Jailbreak Protection (MGMT-08)
+#### activation.cjs (Activation Map Management)
 
-### 6.1 Attack Surface
-
-The hook dispatcher (`dynamo-hooks.cjs`) is the single entry point for all Claude Code events. It receives raw JSON from stdin and executes handler code. The attack vectors are:
-
-1. **Malicious stdin content** -- crafted JSON that exploits handler logic
-2. **Path traversal in event data** -- event data containing `../` paths used in file operations
-3. **Prompt injection via hook context** -- content in `additionalContext` that instructs Claude to ignore previous instructions
-
-### 6.2 Protection Architecture
+Spreading activation from the Abstract applied to Graphiti's entity-relationship structure.
 
 ```javascript
-// cc/hooks/security.cjs -- hook input validation
-'use strict';
-
-const ALLOWED_EVENTS = new Set([
-  'SessionStart', 'UserPromptSubmit', 'PostToolUse', 'PreCompact', 'Stop'
-]);
-
-const MAX_INPUT_SIZE = 1_000_000; // 1MB max stdin
-
-/**
- * Validate and sanitize hook input.
- * Returns sanitized event object or null (reject).
- */
-function validateHookInput(rawInput) {
-  // Size gate
-  if (!rawInput || rawInput.length > MAX_INPUT_SIZE) return null;
-
-  // Parse gate
-  let data;
-  try {
-    data = JSON.parse(rawInput);
-  } catch {
-    return null;
-  }
-
-  // Event type gate
-  if (!data.hook_event_name || !ALLOWED_EVENTS.has(data.hook_event_name)) return null;
-
-  // Sanitize string fields that could contain injection
-  if (data.prompt && typeof data.prompt === 'string') {
-    data.prompt = sanitizePromptContent(data.prompt);
-  }
-
-  return data;
-}
-
-/**
- * Sanitize content before injection into additionalContext.
- * Strips known jailbreak patterns.
- */
-function sanitizeInjection(content) {
-  if (!content || typeof content !== 'string') return '';
-
-  // Strip instruction override patterns
-  const patterns = [
-    /IMPORTANT:\s*ignore\s*(all\s*)?(previous|above|prior)\s*instructions/gi,
-    /system\s*prompt\s*override/gi,
-    /\[SYSTEM\]/gi,
-    /<\/?system>/gi
-  ];
-
-  let sanitized = content;
-  for (const pattern of patterns) {
-    sanitized = sanitized.replace(pattern, '[FILTERED]');
-  }
-
-  return sanitized;
-}
-
-module.exports = { validateHookInput, sanitizeInjection, ALLOWED_EVENTS, MAX_INPUT_SIZE };
+module.exports = {
+  updateActivation(entities, currentMap, domainFrame, options) -> updatedMap,
+  propagateActivation(anchorEntities, graphData, hops, decayFactor) -> activationMap,
+  checkThresholdCrossings(activationMap, threshold) -> crossedEntities[],
+  decayAll(activationMap, timeDelta) -> decayedMap,
+  computeSublimationScore(entity, predictions, currentContext, cognitiveLoad) -> number,
+  classifyDomainFrame(promptText) -> { frame: string, confidence: number }
+};
 ```
 
-### 6.3 Integration Point
+**v1.3 constraints:** 1-hop propagation only. Keyword/regex domain classification. Graph density check before enabling spreading activation (falls back to direct-mention-only below 100 entities / 200 relationships).
 
-The security module integrates at the dispatcher level -- before any handler receives the event:
+#### cost-tracker.cjs (CORTEX-03: Cost Monitoring)
 
-```
-stdin -> validateHookInput() -> toggle gate -> handler routing -> sanitizeInjection() -> stdout
-```
-
----
-
-## 7. Suggested Build Order
-
-### 7.1 Build Order with Dependency Rationale
-
-The 6 M1 requirements have the following dependency relationships:
-
-```
-Directory Restructure (foundation)
-    |
-    +--- Transport Flexibility (MENH-06) -- requires Terminus to exist
-    |       |
-    |       +--- Model Selection (MENH-07) -- requires transport abstraction
-    |
-    +--- SQLite Session Index (MGMT-11) -- requires Assay + Terminus to exist
-    |
-    +--- Jailbreak Protection (MGMT-08) -- requires cc/hooks/ to exist
-    |
-    +--- Dependency Management (MGMT-01) -- requires lib/ to exist
-```
-
-### 7.2 Recommended Phase Sequence
-
-| Phase | Requirement | Prerequisites | Deliverables | Test Impact |
-|-------|-------------|---------------|--------------|-------------|
-| **Phase 1** | Directory Restructure (Waves 1-3) | None | `lib/`, `subsystems/{terminus,assay,ledger}/`, shims at old paths | All 374 tests pass via shims. New tests for subsystem imports. |
-| **Phase 2** | Directory Restructure (Waves 4-5) | Phase 1 | `cc/`, `subsystems/{switchboard,reverie}/` stub, shim cleanup, sync/install updates, migration script | Tests migrated to new paths. ~20 new tests for cc/ and migration. |
-| **Phase 3** | Dependency Management (MGMT-01) | Phase 1 (lib/ exists) | `lib/deps.cjs`, integration in install and health-check | ~10 new tests for dependency verification. |
-| **Phase 4** | Jailbreak Protection (MGMT-08) | Phase 2 (cc/hooks/ exists) | `cc/hooks/security.cjs`, dispatcher integration | ~15 new tests for input validation and injection sanitization. |
-| **Phase 5** | Transport Flexibility (MENH-06) | Phase 1 (Terminus exists) | `subsystems/terminus/llm-transport.cjs`, `transports/{openrouter,anthropic}.cjs`, curation.cjs migration | ~20 new tests. Existing curation tests adapted for transport layer. |
-| **Phase 6** | Model Selection (MENH-07) | Phase 5 (transport exists) | Config-driven model selection, per-path routing | ~10 new tests for routing logic. |
-| **Phase 7** | SQLite Session Index (MGMT-11) | Phases 1+2 (Assay + Terminus exist) | `subsystems/terminus/session-db.cjs`, updated `subsystems/assay/sessions.cjs`, migration script | ~25 new tests. Existing session tests adapted for SQLite backend. |
-
-### 7.3 Rationale for Ordering
-
-1. **Directory restructure first (Phases 1-2):** Every other feature depends on the new directory layout. Transport needs Terminus to exist. SQLite needs Assay and Terminus. Jailbreak needs cc/hooks/. This is the load-bearing prerequisite.
-
-2. **Dependency management third (Phase 3):** Small, self-contained. Creates the verification infrastructure that SQLite will need (graceful fallback if node:sqlite unavailable).
-
-3. **Jailbreak protection fourth (Phase 4):** Small, focused on cc/hooks/. No dependency on transport or SQLite. Can be tested in isolation. Security early, per the PRD principle.
-
-4. **Transport fifth (Phase 5):** Requires Terminus. The curation.cjs split (LLM functions to Reverie placeholder, deterministic to Ledger format.cjs) naturally pairs with transport because `callHaiku()` is replaced by `callLLM()` through the transport layer.
-
-5. **Model selection sixth (Phase 6):** Thin configuration layer on top of transport. Quick phase.
-
-6. **SQLite last (Phase 7):** Depends on both Assay (query functions) and Terminus (database module). Also depends on dependency management (Phase 3) for feature verification. Modifying the session data store is the highest-risk change and benefits from all infrastructure being stable first.
-
-### 7.4 New vs. Modified Modules (Explicit)
-
-| Module | Status | Description |
-|--------|--------|-------------|
-| `lib/core.cjs` | **Modified** | Thin wrapper re-exporting from original core.cjs, evolving to standalone |
-| `lib/scope.cjs` | **Moved** | From `ledger/scope.cjs` -- no logic changes |
-| `lib/pretty.cjs` | **Moved** | From `switchboard/pretty.cjs` -- no logic changes |
-| `lib/transport-utils.cjs` | **New** (extracted) | `extractContent()` extracted from `ledger/episodes.cjs` |
-| `lib/deps.cjs` | **New** | Dependency verification (MGMT-01) |
-| `cc/hooks/dynamo-hooks.cjs` | **Moved + Modified** | From `dynamo/hooks/` -- updated handler paths, added security validation |
-| `cc/hooks/security.cjs` | **New** | Jailbreak protection (MGMT-08) |
-| `cc/dynamo-cc.cjs` | **New** (stub) | Platform adapter entry point |
-| `cc/settings-hooks.json` | **Moved + Modified** | Updated dispatcher paths |
-| `cc/CLAUDE-TEMPLATE.MD` | **Moved** | From `claude-config/CLAUDE.md.template` |
-| `cc/prompts/` | **Moved** | From `dynamo/prompts/` |
-| `subsystems/terminus/mcp-client.cjs` | **Moved** | From `ledger/mcp-client.cjs` -- no logic changes |
-| `subsystems/terminus/stack.cjs` | **Moved** | From `switchboard/stack.cjs` -- no logic changes |
-| `subsystems/terminus/health-check.cjs` | **Moved** | From `switchboard/health-check.cjs` -- no logic changes |
-| `subsystems/terminus/diagnose.cjs` | **Moved** | From `switchboard/diagnose.cjs` -- no logic changes |
-| `subsystems/terminus/verify-memory.cjs` | **Moved** | From `switchboard/verify-memory.cjs` -- no logic changes |
-| `subsystems/terminus/stages.cjs` | **Moved** | From `switchboard/stages.cjs` -- no logic changes |
-| `subsystems/terminus/migrate.cjs` | **Moved** | From `switchboard/migrate.cjs` -- no logic changes |
-| `subsystems/terminus/llm-transport.cjs` | **New** | Unified LLM transport interface (MENH-06) |
-| `subsystems/terminus/transports/openrouter.cjs` | **New** (extracted) | OpenRouter backend extracted from `curation.cjs` |
-| `subsystems/terminus/transports/anthropic.cjs` | **New** | Direct Anthropic API backend |
-| `subsystems/terminus/transports/native.cjs` | **New** (stub) | Claude Code native subagent backend (implemented in M2) |
-| `subsystems/terminus/session-db.cjs` | **New** | SQLite session database module (MGMT-11) |
-| `subsystems/assay/search.cjs` | **Moved + Modified** | From `ledger/search.cjs` -- updated imports to Terminus/lib |
-| `subsystems/assay/sessions.cjs` | **Moved + Modified** | From `ledger/sessions.cjs` -- updated to SQLite backend |
-| `subsystems/assay/inspect.cjs` | **New** | Entity/edge inspection extracted from dynamo.cjs inline logic |
-| `subsystems/ledger/episodes.cjs` | **Moved + Modified** | From `ledger/episodes.cjs` -- updated imports, `extractContent` extracted |
-| `subsystems/ledger/format.cjs` | **New** (extracted) | Deterministic formatting from `curation.cjs` |
-| `subsystems/ledger/capture.cjs` | **Moved + Modified** | From `ledger/hooks/capture-change.cjs` -- extracted handler logic |
-| `subsystems/switchboard/install.cjs` | **Moved + Modified** | Updated paths, new directory layout support |
-| `subsystems/switchboard/sync.cjs` | **Moved + Modified** | Updated SYNC_PAIRS for new layout |
-| `subsystems/switchboard/update.cjs` | **Moved + Modified** | Updated imports to Terminus |
-| `subsystems/switchboard/update-check.cjs` | **Moved** | No logic changes |
-| `subsystems/reverie/` | **New** (stub only) | Empty placeholder with README for M2 |
-| `dynamo.cjs` | **Modified** | Updated routing to use subsystem paths |
-| `migrations/001-directory-restructure.cjs` | **New** | Deployed layout migration |
-| `migrations/002-sqlite-sessions.cjs` | **New** | sessions.json to SQLite migration |
-
-**Summary:** 13 moved-only, 11 moved+modified, 16 new, 2 modified-in-place. Total: ~42 file operations.
-
----
-
-## 8. Anti-Patterns to Avoid
-
-### Anti-Pattern 1: Big-Bang Migration
-**What:** Moving all files to new paths in a single commit.
-**Why bad:** If any test fails, the entire migration is suspect. Rollback is all-or-nothing.
-**Instead:** Wave-based migration with shims. Each wave is independently testable. Each commit leaves all tests green.
-
-### Anti-Pattern 2: Cross-Subsystem Imports
-**What:** `subsystems/assay/search.cjs` importing directly from `subsystems/ledger/episodes.cjs` for `extractContent`.
-**Why bad:** Creates a dependency from the read subsystem to the write subsystem, violating the boundary rule.
-**Instead:** Shared utilities live in `lib/`. Both subsystems import from the shared location.
-
-### Anti-Pattern 3: Dual resolveCore() Pattern in New Code
-**What:** Continuing to use the `resolveCore()` try-paths pattern in new subsystem modules.
-**Why bad:** The new directory structure is standardized. Dual-layout resolution should be handled once at the entry point (dynamo.cjs, dispatcher), not in every module.
-**Instead:** Subsystem modules use relative paths (`../../lib/core.cjs`). The entry point handles layout resolution.
-
-### Anti-Pattern 4: SQLite Connection Per Function Call
-**What:** Opening and closing the SQLite database on every `listSessions()` or `indexSession()` call.
-**Why bad:** SQLite open/close is not free. In hook hot paths, this adds latency.
-**Instead:** Open once per process invocation (hooks are short-lived processes). Close on process exit. The `openSessionDB()` function can cache the connection:
+Per-operation, per-day, per-month budget tracking with hard enforcement.
 
 ```javascript
-let _db = null;
-function getSessionDB(dbPath) {
-  if (!_db) _db = openSessionDB(dbPath);
-  return _db;
-}
-process.on('exit', () => { if (_db) _db.close(); });
+module.exports = {
+  trackOperation(operation, model, inputTokens, outputTokens, options) -> void,
+  getTodayCost(options) -> { total: number, breakdown: object },
+  getMonthCost(options) -> { total: number, breakdown: object },
+  isBudgetExhausted(options) -> boolean,
+  getBudgetStatus(options) -> { daily: object, monthly: object },
+  resetCounters(scope, options) -> void
+};
 ```
 
-### Anti-Pattern 5: Transport Abstraction Over MCP Client
-**What:** Wrapping mcp-client.cjs in the same llm-transport.cjs abstraction as the LLM calls.
-**Why bad:** MCP transport (JSON-RPC + SSE) and LLM transport (REST API) have fundamentally different protocols, error modes, and session semantics. Forcing them into one interface creates a leaky abstraction.
-**Instead:** Keep them as peers in Terminus. `mcp-client.cjs` and `llm-transport.cjs` are independent modules with independent interfaces.
+**Storage:** `cost-tracker.json` in `~/.claude/dynamo/`. Keyed by date (`YYYY-MM-DD`) for daily rollover. Monthly totals computed by summing daily entries.
+
+**Enforcement:** Every LLM-calling function checks `isBudgetExhausted()` before making the call. If exhausted, falls back to hot-path-only.
+
+**Pricing data:** Hardcoded cost-per-token table for known models (Haiku, Sonnet). Updated via config or migration when prices change.
+
+#### backfill.cjs (Memory Backfill)
+
+Batch processing of past chat transcripts to populate the knowledge graph retroactively.
+
+```javascript
+module.exports = {
+  run(args, pretty, options) -> { processed: number, errors: number },
+  discoverTranscripts(projectDir, options) -> transcriptPaths[],
+  processTranscript(transcriptPath, options) -> { entities: number, episodes: number },
+  estimateCost(transcriptPaths, options) -> { estimatedCost: number, tokenEstimate: number }
+};
+```
+
+**Data source:** Claude Code transcript files at `~/.claude/projects/{project}/{sessionId}.jsonl`. Each line is a JSON entry with role, content, tool calls, etc.
+
+**Processing model:** Batch job using subagent or direct API. Reads transcripts, extracts entities and relationships, writes episodes through Ledger. Cost-tracked through `cost-tracker.cjs`.
+
+#### handlers/*.cjs (Hook Handlers)
+
+Each handler follows the same pattern: load state, delegate to inner-voice.cjs pipeline, persist state, return injection (or null).
+
+```javascript
+// Pattern for handlers/user-prompt.cjs
+module.exports = async function handleUserPrompt(ctx, options = {}) {
+  const iv = require(resolve('reverie', 'inner-voice.cjs'));
+  const costTracker = require(resolve('reverie', 'cost-tracker.cjs'));
+
+  // Cost gate: if budget exhausted, degrade to minimal hot-path
+  const budgetExhausted = costTracker.isBudgetExhausted(options);
+
+  const state = iv.loadState(options);
+  const pendingResult = checkPendingDeliberation(options);
+  const { injection, updatedState } = iv.processUserPrompt(
+    ctx, state, pendingResult, { ...options, budgetExhausted }
+  );
+  iv.persistState(updatedState, options);
+
+  return injection ? { additionalContext: injection } : null;
+};
+```
+
+**SubagentStart handler:** Reads IV state, serializes relevant sections (self_model, relationship_model, activation_map, predictions, domain_frame, deliberation_queue), returns structured JSON with `additionalContext`.
+
+**SubagentStop handler:** Reads `last_assistant_message` from input, writes to `inner-voice-deliberation-result.json` state bridge file. Returns empty (cannot inject into parent).
 
 ---
 
-## 9. Scalability Considerations
+## 4. Data Flow Diagrams
 
-| Concern | v1.3-M1 | Future (M2+) | Notes |
-|---------|---------|--------------|-------|
-| Session count | SQLite handles millions of rows trivially | Add pagination to `listSessions` | JSON was the bottleneck -- SQLite eliminates it |
-| Transport latency | Direct API ~200ms vs OpenRouter ~400ms | Caching, connection pooling if needed | Direct API halves latency for Haiku calls |
-| Hook processing | Single-process, synchronous | Evaluate if hot path needs async pipeline | Current <500ms budget is met |
-| Test count | ~415 (374 + ~40 new) | Growth proportional to code | test runner handles >500 tests without issues |
-| File count in deployment | ~42 files in `~/.claude/dynamo/` | Grows with subsystem modules | Install time scales linearly, currently <2s |
+### 4.1 Hot-Path Injection (UserPromptSubmit, <500ms)
+
+This is the 95% path. Deterministic CJS processing with no LLM call on the pure fast path.
+
+```
+User types prompt
+  |
+  v
+Claude Code fires UserPromptSubmit hook
+  |
+  v
+cc/hooks/dynamo-hooks.cjs (dispatcher)
+  | [toggle gate, input validation, boundary markers]
+  | [check config.reverie.mode]
+  |
+  v  (mode === 'cortex')
+subsystems/reverie/handlers/user-prompt.cjs
+  |
+  +-- 1. Load inner-voice-state.json                          [<5ms]
+  |
+  +-- 2. Check inner-voice-deliberation-result.json           [<5ms]
+  |      (if exists and status=complete: consume + delete)
+  |
+  +-- 3. Classify domain frame (keyword/regex)                [<1ms]
+  |
+  +-- 4. Detect semantic shift (cosine or keyword overlap)    [<5ms]
+  |
+  +-- 5. Update activation map                                [10-50ms]
+  |      +-- Extract entities from prompt (pattern match)
+  |      +-- Activate in map, propagate 1-hop via Assay
+  |      +-- Apply domain frame weight bonus
+  |      +-- Decay existing activations
+  |      +-- Check threshold crossings
+  |
+  +-- 6. Select path (deterministic)                          [<1ms]
+  |      entity_confidence >= 0.7 AND cached_results >= 3
+  |      AND semantic_shift < 0.4 => HOT PATH
+  |
+  +-- 7. Execute hot path                                     [50-200ms]
+  |      +-- Retrieve cached/indexed results via Assay
+  |      +-- Format using template (no LLM) OR Haiku (<200ms)
+  |      +-- Apply cognitive load limits (150 tokens mid-session)
+  |      +-- Track cost via cost-tracker.cjs
+  |
+  +-- 8. Persist updated state                                [<5ms]
+  |
+  +-- 9. Return { additionalContext: "injection..." }
+  |
+  v
+Dispatcher wraps in boundary markers, outputs to stdout
+  |
+  v
+Claude Code injects into model context
+```
+
+**Total latency budget: 100-500ms** (well within 15s hook timeout)
+
+### 4.2 Deliberation-Path Activation (UserPromptSubmit -> Subagent -> next UserPromptSubmit)
+
+This is the 5% path. Fires when the hot path determines deliberation is needed.
+
+```
+UserPromptSubmit (turn N)
+  |
+  v
+handlers/user-prompt.cjs
+  | [steps 1-6 same as hot path]
+  | [step 6: selectPath() returns 'deliberation']
+  |
+  +-- 7a. Queue deliberation in state                         [<5ms]
+  |       state.processing.deliberation_pending = true
+  |       state.processing.deliberation_queue = { entities, frame, context }
+  |
+  +-- 7b. Return hot-path-available injection (may be minimal) [50-200ms]
+  |
+  +-- 8. Return { additionalContext: "minimal injection...\n
+  |       [Internal: Spawn the inner-voice subagent for deep
+  |        context analysis of the current topic shift.]" }
+  |
+  v
+Claude Code model reads additionalContext, sees processing directive
+  | [Model decides to spawn inner-voice subagent]
+  |
+  v
+Claude Code spawns inner-voice subagent
+  |
+  v
+SubagentStart hook fires (matcher: "inner-voice")
+  |
+  v
+cc/hooks/dynamo-hooks.cjs -> handlers/subagent-start.cjs
+  | Reads inner-voice-state.json
+  | Serializes: self_model, relationship_model, activation_map,
+  |             predictions, domain_frame, deliberation_queue
+  | Returns structured JSON:
+  | { hookSpecificOutput: { hookEventName: "SubagentStart",
+  |   additionalContext: "<serialized IV state + instructions>" } }
+  |
+  v
+inner-voice subagent processes (2-10s, Sonnet model)
+  | Has tools: Read, Grep, Glob, Bash (read-only + CLI access)
+  | Disallowed: Write, Edit, Agent
+  | Runs: dynamo search queries via Bash CLI
+  | Performs: deep analysis, narrative construction
+  | Respects: token limits from injected state
+  |
+  v
+Subagent completes, SubagentStop hook fires (matcher: "inner-voice")
+  |
+  v
+cc/hooks/dynamo-hooks.cjs -> handlers/subagent-stop.cjs
+  | Reads input.last_assistant_message
+  | Writes inner-voice-deliberation-result.json:
+  |   { status: "complete", injection: "...",
+  |     agent_id: "...", timestamp: "..." }
+  |
+  v
+--- one turn delay ---
+  |
+  v
+UserPromptSubmit (turn N+1)
+  |
+  v
+handlers/user-prompt.cjs
+  +-- Step 2: Finds deliberation result file
+  |   Reads injection content, deletes file
+  |   Merges into current processing context
+  |
+  +-- Returns combined injection (deliberation result + hot-path content)
+  |
+  v
+Claude Code model receives enriched context
+```
+
+**Key constraint:** There is always a one-turn delay between subagent completion and injection. Acceptable because the hot path already provided immediate injection and the deliberation enriches the NEXT interaction.
+
+**Subagent spawn trigger:** The hot-path handler includes a natural-language directive in `additionalContext` that the main session model interprets. This is not a guaranteed trigger -- it relies on the model choosing to spawn the agent. If the model does not spawn it, the deliberation queue persists in state and is re-evaluated on the next prompt.
+
+### 4.3 Cost Tracking Accumulation
+
+Cost tracking wraps every LLM-calling code path as a cross-cutting concern.
+
+```
+Any LLM-calling function (curation, deliberation, summarization)
+  |
+  v
+cost-tracker.isBudgetExhausted()
+  | [reads cost-tracker.json, checks daily/monthly totals]
+  |
+  +-- YES: Return early, degrade to template/hot-path-only
+  |
+  +-- NO: Proceed with LLM call
+         |
+         v
+       LLM response received
+         |
+         v
+       cost-tracker.trackOperation(
+         operation: 'curation' | 'deliberation' | 'synthesis' | ...,
+         model: 'haiku' | 'sonnet',
+         inputTokens: N,
+         outputTokens: M
+       )
+         |
+         v
+       cost-tracker.json updated atomically
+         { "2026-03-20": {
+             "operations": {
+               "curation": { count: 12, input_tokens: 24000,
+                             output_tokens: 6000, cost: 0.15 },
+               "deliberation": { count: 3, input_tokens: 24000,
+                                 output_tokens: 6000, cost: 0.81 }
+             },
+             "total_cost": 0.96
+           }
+         }
+```
+
+**Where cost checks are inserted:**
+
+| Module | Function | What it gates |
+|--------|----------|---------------|
+| `curation.cjs` | `callHaiku()` wrapper | All Haiku LLM calls |
+| `dual-path.cjs` | `executeHotPath()` | Haiku formatting calls on hot path |
+| `dual-path.cjs` | `queueDeliberation()` | Subagent spawning or API calls |
+| `handlers/stop.cjs` | REM Tier 3 | Session synthesis via Sonnet |
+| `handlers/pre-compact.cjs` | REM Tier 1 | Compact summary via Haiku |
+| `backfill.cjs` | `processTranscript()` | Backfill entity extraction |
+
+**Subscription vs API plan:** Subscription users track subagent operations at $0 (included in subscription) but still track Haiku calls. API users track everything. The `billing_model` config determines pricing.
+
+### 4.4 Memory Backfill Batch Processing
+
+Backfill is an on-demand batch job invoked explicitly by the user.
+
+```
+dynamo backfill [--project <name>] [--limit N] [--dry-run]
+  |
+  v
+backfill.cjs.run()
+  |
+  +-- 1. Discover transcripts
+  |      Scan ~/.claude/projects/{project}/*.jsonl
+  |      Filter: sessions not already backfilled (check marker)
+  |
+  +-- 2. Estimate cost (if --dry-run)
+  |      Count tokens across transcripts
+  |      Apply model pricing, report estimate and exit
+  |
+  +-- 3. Process each transcript
+  |      For each .jsonl file:
+  |        a. Parse JSON lines (role, content, tool_calls)
+  |        b. Extract entities, relationships, decisions
+  |           (via Sonnet subagent or direct API)
+  |        c. Write episodes through Ledger's addEpisode()
+  |        d. Track cost through cost-tracker.cjs
+  |        e. Mark transcript as backfilled
+  |
+  +-- 4. Report results
+         { processed: N, episodes_created: M, cost: $X.XX }
+```
 
 ---
 
-## 10. Sources
+## 5. Modified Modules (Existing Files That Change)
 
-- Anthropic Messages API: [platform.claude.com/docs/en/api/messages](https://platform.claude.com/docs/en/api/messages)
-- Claude Code Subagents: [code.claude.com/docs/en/sub-agents](https://code.claude.com/docs/en/sub-agents)
-- Node.js built-in SQLite: [nodejs.org/api/sqlite.html](https://nodejs.org/api/sqlite.html)
-- Node.js SQLite guide: [betterstack.com/community/guides/scaling-nodejs/nodejs-sqlite](https://betterstack.com/community/guides/scaling-nodejs/nodejs-sqlite/)
-- SQLite in Node.js (InfoWorld): [infoworld.com/article/3537050/intro-to-nodes-built-in-sqlite-module.html](https://www.infoworld.com/article/3537050/intro-to-nodes-built-in-sqlite-module.html)
-- Codebase inspection: `dynamo/dynamo.cjs`, `dynamo/core.cjs`, `dynamo/hooks/dynamo-hooks.cjs`, `ledger/mcp-client.cjs`, `ledger/curation.cjs` (all read directly from repo)
-- Existing specifications: DYNAMO-PRD.md, TERMINUS-SPEC.md, SWITCHBOARD-SPEC.md, ASSAY-SPEC.md, LEDGER-SPEC.md (all read directly)
+### 5.1 Files Modified
+
+| File | Change | Reason |
+|------|--------|--------|
+| `cc/hooks/dynamo-hooks.cjs` | Add `reverie.mode` routing, SubagentStart/SubagentStop dispatch | Dual-mode routing (MGMT-05/10) |
+| `cc/settings-hooks.json` | Add SubagentStart/SubagentStop entries | Register new hook events |
+| `dynamo/config.json` | Add `reverie` section | Configuration for all Reverie features |
+| `dynamo.cjs` | Add `voice`, `cost`, `backfill` commands | CLI surface for CORTEX-01/03 |
+| `lib/layout.cjs` | Add `cc/agents/` to sync pair excludes or verify reverie pair | Ensure agent definitions sync |
+| `lib/core.cjs` | Add `reverie` defaults to `loadConfig()` | Config defaults for new section |
+| `subsystems/switchboard/install.cjs` | Deploy `cc/agents/`, new prompts, bare CLI shim | Install pipeline for new files |
+| `subsystems/switchboard/sync.cjs` | Verify sync pairs cover agents directory | Bidirectional sync for agent defs |
+
+### 5.2 Files NOT Modified (Boundary Preserved)
+
+| File | Why Not Modified |
+|------|-----------------|
+| `subsystems/assay/search.cjs` | Reverie uses existing search API as-is |
+| `subsystems/assay/sessions.cjs` | Reverie uses existing session API as-is |
+| `subsystems/ledger/episodes.cjs` | Reverie uses existing addEpisode API as-is |
+| `subsystems/ledger/hooks/capture-change.cjs` | Stays in Ledger (write-side extraction logic) |
+| `subsystems/terminus/mcp-client.cjs` | Reverie accesses graph through Assay/Ledger |
+| `subsystems/terminus/health-check.cjs` | No new stages for M2 |
+| `lib/resolve.cjs` | Already maps `reverie` subsystem path |
+| `lib/scope.cjs` | No new scope types needed |
 
 ---
 
-*Architecture document created: 2026-03-19*
-*Project: Dynamo v1.3-M1 Foundation and Infrastructure Refactor*
-*Confidence: HIGH -- based on existing specs, direct codebase inspection, and verified technology capabilities*
-*Key constraint: Every commit leaves 374+ tests green and deployed layout functional*
+## 6. Build Order and Dependency Analysis
+
+### 6.1 Dependency Graph
+
+```
+                        +------------------+
+                        | Config extension |  (reverie section in config.json)
+                        +--------+---------+
+                                 |
+              +------------------+------------------+
+              |                  |                  |
+    +---------v------+  +-------v--------+  +------v---------+
+    | activation.cjs |  | cost-tracker   |  | inner-voice    |
+    | (CORTEX-01)    |  | (CORTEX-03)    |  | state schema   |
+    +--------+-------+  +-------+--------+  +-------+--------+
+             |                  |                    |
+             +--------+---------+--------------------+
+                      |
+            +---------v----------+
+            | inner-voice.cjs    |  (core orchestrator)
+            | (CORTEX-01)        |
+            +---------+----------+
+                      |
+         +------------+------------+
+         |                         |
+  +------v--------+      +--------v--------+
+  | dual-path.cjs |      | curation.cjs    |
+  | (CORTEX-02)   |      | (migrated)      |
+  +------+--------+      +--------+--------+
+         |                         |
+         +------------+------------+
+                      |
+            +---------v-----------+
+            | handlers/*.cjs      |  (all 7 handlers)
+            | (CORTEX-01/02)      |
+            +---------+-----------+
+                      |
+         +------------+------------+
+         |                         |
+  +------v-----------+    +-------v-----------+
+  | dispatcher mods  |    | cc/agents/        |
+  | (MGMT-05/10)     |    | inner-voice.md    |
+  +---------+--------+    | (CORTEX-01/02)    |
+            |             +-------+-----------+
+            |                     |
+  +---------v-----------+  +------v-----------+
+  | settings-hooks.json |  | prompts/*.md     |
+  | (MGMT-05)           |  | (CORTEX-01)      |
+  +---------------------+  +------------------+
+
+Independent (can be built at any point):
+  +-------------------+    +------------------+
+  | backfill.cjs      |    | bare CLI shim    |
+  +-------------------+    +------------------+
+```
+
+### 6.2 Recommended Phase Order
+
+**Phase A: Foundation (no user-facing changes yet)**
+
+1. **Config extension** -- Add `reverie` section to config.json with defaults. Update `loadConfig()` defaults in core.cjs. All downstream modules depend on config.
+2. **State schema** -- Define `inner-voice-state.json` schema and `loadState()`/`persistState()` in inner-voice.cjs. Foundational for all handlers.
+3. **activation.cjs** -- Activation map management, domain classification, threshold scoring. Core cognitive component. Only external dependency is Assay search.
+4. **cost-tracker.cjs** (CORTEX-03) -- Budget tracking module. Independent of cognitive processing. Every LLM-calling function needs this.
+
+**Rationale:** Config and state are prerequisites for everything. Activation and cost tracking are leaf modules that everything else depends on.
+
+**Phase B: Core Orchestration**
+
+5. **curation.cjs migration** -- Move LLM functions from Ledger to Reverie. Wrap initially (re-export from Ledger), then move. Integrate cost-tracker.
+6. **dual-path.cjs** (CORTEX-02) -- Path selection logic. Depends on activation.cjs for signals, curation.cjs for formatting, cost-tracker for budget gates.
+7. **inner-voice.cjs orchestrator** (CORTEX-01) -- Core pipeline tying together activation, dual-path, curation, cost-tracker. All processing pipelines defined here.
+
+**Rationale:** Curation migration unblocks dual-path. Dual-path depends on activation for signals. Inner-voice orchestrator ties everything together.
+
+**Phase C: Hook Integration (user-facing changes begin)**
+
+8. **Reverie handlers** (all 7) -- Implement handler modules in `handlers/`. Each delegates to inner-voice.cjs. Test individually against existing test patterns.
+9. **Dispatcher modification** (MGMT-05, MGMT-10) -- Add `reverie.mode` routing and SubagentStart/SubagentStop dispatch. Feature flag provides instant rollback.
+10. **settings-hooks.json update** (MGMT-05) -- Register SubagentStart/SubagentStop events. Update install.cjs to deploy new hook entries.
+
+**Rationale:** Handlers must exist before dispatcher can route to them. Dispatcher modification is the "go live" switch.
+
+**Phase D: Subagent and Platform**
+
+11. **cc/agents/inner-voice.md** -- Custom subagent definition. Markdown file, independent of CJS code.
+12. **Prompt templates** (iv-system-prompt.md, session-briefing.md, adversarial-counter.md) -- Prompts for subagent and hot-path formatting. Quality here is critical.
+13. **SubagentStart/SubagentStop handler wiring** -- Connect the state bridge pattern end-to-end.
+
+**Rationale:** Subagent definition needs handlers from Phase C. Prompts are the most tunable component.
+
+**Phase E: Operational**
+
+14. **CLI extensions** (dynamo voice, dynamo cost, dynamo backfill) -- Management surface.
+15. **backfill.cjs** -- Batch transcript processing. Independent of real-time IV processing.
+16. **Bare CLI shim** -- Symlink/wrapper for `dynamo` without `node` prefix.
+17. **Install/sync/update pipeline updates** -- Deploy new files, verify sync pairs, update install steps.
+
+**Rationale:** Operational tooling builds on working intelligence.
+
+### 6.3 Requirement-to-Phase Mapping
+
+| Requirement | Phases | Dependencies |
+|-------------|--------|-------------|
+| CORTEX-01 (Inner Voice basic) | A3 (activation), B7 (orchestrator), C8 (handlers), D11-13 (subagent) | Config, state schema |
+| CORTEX-02 (Dual-path routing) | B6 (dual-path.cjs) | activation.cjs, curation.cjs |
+| CORTEX-03 (Cost monitoring) | A4 (cost-tracker.cjs), integrated into B+C | Config |
+| MGMT-05 (Hooks as primary behavior) | C9-10 (dispatcher mods, settings-hooks) | Handlers exist |
+| MGMT-10 (Modular injection control) | C9 (reverie.mode feature flag) | Config |
+
+---
+
+## 7. Bare CLI Shim Integration
+
+**Goal:** Allow `dynamo` command without `node ~/.claude/dynamo/dynamo.cjs` prefix.
+
+**Approach:** A shell wrapper script installed to a PATH-visible location during `dynamo install`.
+
+```bash
+#!/bin/sh
+# ~/.claude/dynamo/bin/dynamo
+# Bare CLI shim for Dynamo
+exec node "$HOME/.claude/dynamo/dynamo.cjs" "$@"
+```
+
+**Installation:** `dynamo install` creates `~/.claude/dynamo/bin/dynamo`, makes it executable, and symlinks it to `~/.local/bin/dynamo` (or `~/bin/dynamo`). The installer adds `~/.local/bin` to PATH if not already present (by appending to `~/.zshrc`).
+
+**Why not /usr/local/bin:** Requires sudo. User-space bin directories are the correct location for user tools.
+
+**Integration with existing CLI router:** Zero changes to dynamo.cjs. The shim is a transparent wrapper that passes all arguments through.
+
+---
+
+## 8. State Management Architecture
+
+### 8.1 State File Locations and Lifecycles
+
+| File | Location | Size | Lifecycle | Owner |
+|------|----------|------|-----------|-------|
+| `inner-voice-state.json` | `~/.claude/dynamo/` | 10-50KB | Loaded every hook, persisted after every processing cycle | Reverie (inner-voice.cjs) |
+| `inner-voice-deliberation-result.json` | `~/.claude/dynamo/` | 1-5KB | Written by SubagentStop, consumed+deleted by next UserPromptSubmit | Reverie (handlers/) |
+| `cost-tracker.json` | `~/.claude/dynamo/` | 5-50KB | Appended per LLM operation, daily rollover, monthly aggregation | Reverie (cost-tracker.cjs) |
+
+### 8.2 Concurrency and Corruption Prevention
+
+**Atomic writes:** All state file writes use temp-file-then-rename pattern (consistent with existing Dynamo conventions):
+
+```javascript
+function persistState(state, filePath) {
+  const tmpPath = filePath + '.' + crypto.randomUUID().slice(0, 8) + '.tmp';
+  fs.writeFileSync(tmpPath, JSON.stringify(state, null, 2));
+  fs.renameSync(tmpPath, filePath);  // Atomic on same filesystem
+}
+```
+
+**Corruption recovery:** If state file fails to parse, create fresh default state and log warning. System degrades to "no history" mode.
+
+**Deliberation result race condition:** Hooks run as foreground synchronous processes. SubagentStop writes the result file. The next UserPromptSubmit reads and deletes it. No concurrent access is possible within a single session.
+
+**Cross-session state:** `self_model` and `relationship_model` persist across sessions. `activation_map` is preserved but decayed. `injection_history` cleared at session boundaries. `predictions` reset.
+
+### 8.3 State Bridge Pattern (SubagentStop -> UserPromptSubmit)
+
+```
+SubagentStop writes:       inner-voice-deliberation-result.json
+  { status: "complete", injection: "...", agent_id: "...", timestamp: "..." }
+
+Next UserPromptSubmit reads:
+  if (file exists AND status === "complete"):
+    -> consume injection, delete file, inject via additionalContext
+  if (file exists AND status === "processing"):
+    -> skip, check again on next prompt
+  if (file missing):
+    -> no pending results, proceed normally
+```
+
+---
+
+## 9. Subsystem Boundary Compliance Audit
+
+| Rule | Status | Evidence |
+|------|--------|----------|
+| Ledger never reads | COMPLIANT | Reverie calls Assay for reads, Ledger for writes. |
+| Assay never writes | COMPLIANT | Reverie calls Assay's combinedSearch() (read-only). All writes through Ledger. |
+| Reverie delegates both | COMPLIANT | Imports from Assay (reads) and Ledger (writes). Never imports Terminus for graph ops. Owns state files via direct filesystem I/O. |
+| Switchboard dispatches, does not handle | COMPLIANT | Dispatcher gains mode check + routing table. All logic in handlers. |
+| Terminus provides pipes, does not decide | COMPLIANT | No Terminus modifications. Graph access through Assay/Ledger. |
+| Dynamo routes, does not implement | COMPLIANT | CLI gains `voice`, `cost`, `backfill` commands that delegate to Reverie modules. |
+| No cross-subsystem imports (except Reverie) | COMPLIANT | Reverie imports from Assay and Ledger (by design). These are one-directional. Assay/Ledger do not import from Reverie. |
+
+---
+
+## 10. Anti-Patterns to Avoid
+
+### Anti-Pattern 1: Reverie Importing from Terminus Directly
+**What:** Reverie calls MCPClient directly for graph queries.
+**Why bad:** Bypasses the Assay read-side abstraction. Breaks boundary rules.
+**Instead:** Always use `require(resolve('assay', 'search.cjs'))` for graph queries.
+
+### Anti-Pattern 2: Dispatcher Implementing Handler Logic
+**What:** Adding cognitive processing (entity extraction, activation update) to dynamo-hooks.cjs.
+**Why bad:** Dispatcher should route, not process. Violates Switchboard boundary.
+**Instead:** Dispatcher checks mode, resolves handler, calls handler. All logic in handler.
+
+### Anti-Pattern 3: Hot Path Making Synchronous Sonnet Calls
+**What:** Blocking on a Sonnet API call during UserPromptSubmit hot path.
+**Why bad:** Sonnet latency (2-8s) would blow the 500ms budget and block Claude Code.
+**Instead:** Hot path uses templates or Haiku (<200ms). Sonnet goes through deliberation path (async subagent).
+
+### Anti-Pattern 4: Shared Mutable State Between Handler Invocations
+**What:** Assuming in-memory state persists between hook invocations.
+**Why bad:** Each hook invocation is a separate process. No shared memory.
+**Instead:** Load state from file at start, persist at end. File is the coordination mechanism.
+
+### Anti-Pattern 5: Backfill Running Automatically
+**What:** Auto-backfilling transcripts on SessionStart or install.
+**Why bad:** Potentially expensive. User should opt in.
+**Instead:** `dynamo backfill` is explicit with `--dry-run` for cost estimation.
+
+---
+
+## 11. Sources
+
+- [Create custom subagents - Claude Code Docs](https://code.claude.com/docs/en/sub-agents) -- Verified 2026-03-20. Confirms YAML frontmatter, agent storage, SubagentStart/SubagentStop hooks, additionalContext injection.
+- [Intercept and control agent behavior with hooks - Claude Code Docs](https://code.claude.com/docs/en/hooks) -- Verified 2026-03-20. Confirms complete hook event input schemas including SubagentStart/SubagentStop.
+- [SubagentStart Hook Feature Request - GitHub](https://github.com/anthropics/claude-code/issues/14859) -- Context on SubagentStart/SubagentStop capabilities.
+- REVERIE-SPEC.md (1,463 lines) -- Internal specification for module structure, processing pipelines, state schemas, cost model.
+- INNER-VOICE-ABSTRACT.md -- Internal specification for platform-agnostic cognitive architecture and theory mappings.
+- DYNAMO-PRD.md -- Internal specification for subsystem boundaries and interface patterns.
+- Live codebase analysis of all 27 production modules -- Verified against codebase maps (2026-03-20).
+
+---
+*Architecture research for: Dynamo v1.3-M2 Core Intelligence*
+*Date: 2026-03-20*
+*Confidence: HIGH -- verified platform docs, detailed internal specs, complete codebase analysis*

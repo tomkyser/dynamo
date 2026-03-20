@@ -1,499 +1,572 @@
-# Domain Pitfalls: v1.3-M1 Foundation and Infrastructure Refactor
+# Domain Pitfalls: v1.3-M2 Core Intelligence
 
-**Domain:** CJS application restructure with transport abstraction, SQLite migration, and security hardening
-**Researched:** 2026-03-19
-**System:** Dynamo -- 9,253 LOC CJS, 374 tests, zero npm deps, dual-layout (repo + ~/.claude/dynamo/)
-**Overall confidence:** HIGH (based on codebase analysis + verified technical constraints)
+**Domain:** Adding cognitive intelligence layer (Inner Voice, dual-path routing, cost monitoring) to existing hook-based memory system
+**Researched:** 2026-03-20
+**System:** Dynamo -- ~5,335 LOC CJS, 515 tests, zero npm deps, six-subsystem architecture, deployed at ~/.claude/dynamo/
+**Overall confidence:** HIGH (based on codebase analysis, existing spec review, platform documentation verification, and M1 pitfalls precedent)
+
+**Key constraint:** The existing system works. Hooks fire, memories persist, sessions are tracked. M2 must enhance without regressing. The `reverie.mode` feature flag must enable instant rollback to classic Haiku curation.
 
 ---
 
 ## Critical Pitfalls
 
-Mistakes that cause rewrites, broken deployments, or user-impacting failures. These are the ones that can take days to recover from.
+Mistakes that cause regressions in the working system, cost explosions, or silent quality degradation. These are the ones where the existing system gets WORSE, not just where the new system fails to work.
 
 ---
 
-### CP-01: Circular Dependency Time Bomb During Restructure
+### CP-01: Timing Regression -- New Reverie Handlers Exceed Hook Latency Budget
 
-**What goes wrong:** Moving ~20 files across 6 subsystems creates new `require()` chains that weren't tested together. CJS circular dependencies don't throw errors -- they silently return empty objects for the partially-loaded module. A function that was `undefined` shows up only at runtime, often in a hook handler at 2 AM when the user is trying to work.
+**What goes wrong:** The current hook handlers (Ledger-owned, ~5 handlers) are fast because they do one thing: search Graphiti, curate with Haiku, emit. The new Reverie handlers add processing steps that individually seem cheap but compound: load inner-voice-state.json (5ms), domain classification (1ms), semantic shift detection (5ms), activation map update (10-50ms), threshold evaluation (1ms), path selection (1ms), format injection (50-200ms), persist state (5ms). The total approaches or exceeds the 500ms hot path budget. Add any network latency variance to the Assay graph query (the 10-50ms step), and the hook regularly times out.
 
-**Why it happens in THIS system:** The current `core.cjs` already contains a deliberate circular dependency mitigation pattern (lines 319-355). It exports base utilities first, THEN requires from ledger modules, THEN extends `module.exports` with re-exports. This pattern works because `core.cjs` is loaded first. But the restructure introduces new dependency paths:
+**Why it happens in THIS system:** The current `prompt-augment.cjs` handler (lines 18-53) does exactly three things: search, curate, emit. Its typical latency is dominated by two network calls (Graphiti search + Haiku curation). The Reverie pipeline adds 6 NEW local processing steps around those same two network calls. Each step is cheap in isolation, but the pipeline is sequential -- every step must complete before the next starts. The spec (REVERIE-SPEC.md Section 4.2) budgets 500ms total, but the budget assumes best-case timing for every step simultaneously.
 
-```
-Current (working):
-  core.cjs -> ledger/mcp-client.cjs -> core.cjs (handled by split export)
-  core.cjs -> ledger/scope.cjs -> (no back-dependency)
-  core.cjs -> ledger/sessions.cjs -> core.cjs (handled by split export)
+The real danger: the `inner-voice-state.json` file grows over a session. At session start, it might be 2KB. After 50 prompts with an active activation map, it could be 50KB. JSON.parse of 50KB takes measurably longer than 2KB. The "5ms state load" budget was calibrated against the initial file size, not the steady-state size.
 
-After restructure (danger zone):
-  lib/core.cjs -> subsystems/terminus/mcp-client.cjs -> lib/core.cjs
-  lib/core.cjs -> subsystems/assay/sessions.cjs -> lib/core.cjs
-  subsystems/switchboard/install.cjs -> subsystems/terminus/health-check.cjs -> ???
-  subsystems/terminus/stages.cjs -> lib/core.cjs -> subsystems/terminus/mcp-client.cjs
-```
+**Consequences:** UserPromptSubmit hooks time out. Claude Code kills the hook process (default command hook timeout is 600s, but the UX degrades at anything over 1s). User perceives lag on every prompt submission. Worse: if the hook times out AFTER persisting a partial state update but BEFORE emitting the injection, the state file is corrupted for the next invocation.
 
-Every new cross-subsystem `require()` path is a potential cycle. And because CJS circular deps are silent, tests pass until the exact code path that triggers the cycle runs in production.
-
-**Consequences:** Hook handlers return `undefined` instead of expected functions. Hooks exit 0 (as designed for safety) but do nothing. User loses memory injection for an entire session without any visible error. The `hook-errors.log` might capture "TypeError: xxx is not a function" but the user doesn't check that proactively.
+**Warning signs:**
+- p95 hook latency exceeds 400ms during testing
+- State file size exceeds 20KB in extended sessions
+- Activation map has more than 100 entities active simultaneously
+- Graph queries return slowly (>200ms) due to dense entity relationships
 
 **Prevention:**
-1. Map every `require()` chain BEFORE moving files. Create a dependency graph (even hand-drawn) of all current imports and verify the restructured graph has no cycles.
-2. The existing split-export pattern in `core.cjs` (export base, then require, then extend) MUST be replicated in any new shared module that subsystems depend on.
-3. Add a boundary test (extend `boundary.test.cjs`) that statically parses all `require()` calls across all subsystems and builds a directed graph, then asserts no cycles exist. This is the single highest-ROI test to write before any restructure work begins.
-4. Move files in dependency order: shared `lib/` first, then leaf subsystems (Terminus, Assay, Ledger), then hub subsystems (Switchboard, Dynamo). Never move a file that is depended upon before its dependents are ready.
+1. Instrument the pipeline from day one. Every handler must log per-step timing (not just total time). Use `performance.now()` before and after each step. Write timing data to a lightweight log or to the state file itself.
+2. Set a hard 400ms abort threshold in the handler. If cumulative time exceeds 400ms, skip remaining steps and return whatever injection is available (or empty). This preserves the 100ms buffer before Claude Code notices.
+3. Cap the activation map size at 50 entities. When a 51st entity would be added, evict the lowest-activation entity. This bounds both JSON size and processing time.
+4. Stream-parse the state file if it exceeds 10KB. Or better: split the state into a small "hot" file (self_model, predictions, processing flags -- always loaded, <2KB) and a larger "cold" file (activation_map, injection_history, pending_associations -- loaded only when needed).
+5. Make the graph query via Assay asynchronous-with-timeout: if the graph query hasn't returned in 100ms, proceed with cached activation data from the state file. The cache is stale but the hook completes on time.
 
-**Detection:** The boundary cycle test catches this statically. Additionally, run the full 374-test suite after EVERY file move (not batch moves). If a test starts failing with "X is not a function" or "Cannot read properties of undefined", you hit a cycle.
+**Detection:** Add timing assertions to the handler test suite: `assert.ok(elapsed < 400, 'Handler exceeded 400ms budget: ' + elapsed + 'ms')`. Run these tests with realistic state file sizes (20KB, 50KB).
 
-**Phase:** Must be addressed as the FIRST task in the restructure phase. The cycle detection test is prerequisite infrastructure.
+**Phase to address:** First phase of M2 (Reverie handler implementation). The timing harness is prerequisite infrastructure -- build it before writing any handler logic.
 
 ---
 
-### CP-02: Dual-Layout Resolution Breaks During Restructure
+### CP-02: Quality Regression -- Intelligent Curation Worse Than Simple Haiku
 
-**What goes wrong:** Every module in the system has a `resolveCore()` or `resolveSibling()` function that resolves paths for both repo layout and deployed layout. When you move files to new locations, these resolution functions still point at old paths. The repo works fine (you updated it), but the deployed `~/.claude/dynamo/` has the old structure. First deploy after restructure either breaks entirely or resolves to stale files.
+**What goes wrong:** The current Haiku curation pipeline (curation.cjs, 119 LOC) works. It takes raw Graphiti search results, sends them to Haiku with a curation prompt, and gets back a relevance-filtered summary. It's not smart, but it's consistent and users have calibrated their expectations to it. Reverie replaces this with a multi-stage pipeline: domain frame classification, activation-weighted entity selection, threshold-based filtering, cognitive-load-adjusted formatting. The new pipeline is more sophisticated but produces WORSE results because:
 
-**Why it happens in THIS system:** The dual-layout pattern is spread across 7+ files, each with its own resolution logic:
+1. **Activation map cold start:** New sessions start with an empty activation map. No entities are activated, no thresholds are crossed, nothing sublimates. The first 5-10 prompts of every session get NO injection -- a massive regression from the current system where even the first prompt gets curated search results.
 
-| File | Resolution Pattern | Repo Resolution | Deployed Resolution |
-|------|-------------------|-----------------|---------------------|
-| `core.cjs` | `resolveLedger()` | `../ledger/MODULE` | `ledger/MODULE` |
-| `dynamo.cjs` | `resolveSibling()` | `../switchboard/FILE` | `switchboard/FILE` |
-| `dynamo-hooks.cjs` | `resolveHandlers()` | `../../ledger/hooks/` | `../ledger/hooks/` |
-| `mcp-client.cjs` | `resolveCore()` | `../dynamo/core.cjs` | `../core.cjs` |
-| `sessions.cjs` | `resolveCore()` | `../dynamo/core.cjs` | `../core.cjs` |
-| `curation.cjs` | `resolveCore()` | `../dynamo/core.cjs` | `../core.cjs` |
-| `sync.cjs` | `resolveCore()` | `../dynamo/core.cjs` | `../core.cjs` |
-| `install.cjs` | `resolveCore()` | `../dynamo/core.cjs` | `../core.cjs` |
+2. **False-negative silence:** The predictive processing model (inject when surprised, not on schedule) means the system stays silent when the conversation proceeds as expected. But "as expected" is calibrated by the self-model, which starts generic. The system is silent when it should be speaking because it hasn't learned when this user needs context.
 
-Every one of these changes when files move to `subsystems/` layout. And the deployed layout changes too -- the installer (`install.cjs`) copies the repo tree into `~/.claude/dynamo/`, so the deployed paths mirror the new structure.
+3. **Over-filtering:** The composite sublimation threshold requires high scores across MULTIPLE dimensions (activation, surprise, relevance, cognitive load). Any one dimension scoring low vetoes the injection. The current system has no such multi-dimensional gate -- if Graphiti returns results and Haiku says they're relevant, they're injected.
 
-**Consequences:** Two failure modes: (1) Hook dispatcher can't find handler modules -- hooks silently fail, user loses all memory operations. (2) CLI commands crash with MODULE_NOT_FOUND errors -- user can't run `dynamo health-check`, `dynamo install`, etc.
+**Why it happens in THIS system:** The INNER-VOICE-ABSTRACT.md explicitly warns about this (Section 9.4): "The initial implementation should be a subset that proves the pattern works." But the M2 spec (REVERIE-SPEC.md) defines the full pipeline for UserPromptSubmit with all 11 steps. If implemented as-specified on day one, the system is too sophisticated for its own data quality. Spreading activation needs graph density (>100 entities, >200 relationships per the spec). Predictive processing needs observation history. The sublimation threshold needs calibration data. None of this exists on day one.
+
+**Consequences:** The user's first experience with M2 is WORSE than M1. Memory injections disappear or become sparse. The user explicitly notices ("where did my memory context go?") and loses trust in the system. The `reverie.mode = classic` rollback becomes the permanent setting rather than an emergency fallback.
+
+**Warning signs:**
+- Injection frequency drops below 50% compared to classic mode in the same session
+- Session start briefings are empty or generic
+- The activation map stays sparse (< 5 entities) after 10+ prompts
+- Users toggle back to `reverie.mode = classic` and leave it there
 
 **Prevention:**
-1. Centralize ALL path resolution into `lib/core.cjs` with a single `resolveModule(subsystem, module)` function. No more per-file `resolveCore()` patterns. Every module calls `core.resolveModule('terminus', 'mcp-client')` and the central resolver knows about both layouts.
-2. The deployed layout structure MUST be documented as a test fixture. Add a test that verifies `install.cjs` produces the correct directory tree (it already partially does this, but not for the new layout).
-3. Update `install.cjs` SYNC_PAIRS / copy logic and `sync.cjs` SYNC_PAIRS simultaneously with the file moves. These are the mechanisms that CREATE the deployed layout -- they must reflect the new structure.
-4. After every restructure phase, run `dynamo install` to a temp directory and verify the deployed tree matches expectations.
+1. **Graduated rollout, not big-bang replacement.** Phase 1: Reverie runs IN PARALLEL with classic curation but does not replace it. Classic curation still provides the injection. Reverie's output is logged but not shown. This provides comparison data without quality regression.
+2. **Phase 2: Reverie augments classic.** Reverie adds additional context when its pipeline produces output, but classic curation is still the baseline. If Reverie has nothing to add, classic output appears unmodified.
+3. **Phase 3: Reverie replaces classic.** Only after comparison data shows Reverie matches or exceeds classic quality. The `reverie.mode` flag controls the transition: `classic` -> `hybrid` -> `cortex`.
+4. **Seed the activation map from classic curation results.** When classic mode returns curated results, extract entities and feed them into Reverie's activation map. This gives the activation map data to work with even before Reverie controls the pipeline.
+5. **Lower the sublimation threshold initially.** Start at 0.3 instead of 0.6. Let the system over-inject rather than under-inject during calibration. Users tolerate noise better than silence -- they can ignore irrelevant context, but they can't conjure missing context.
 
-**Detection:** A test that runs `install.cjs` with `_returnOnly = true` against a tmpdir and verifies the output directory structure matches the expected layout. Also: run `dynamo sync status` after restructure to verify sync pairs are correct.
+**Detection:** A/B comparison test: run both classic and Reverie pipelines on the same prompt corpus, measure injection frequency and content overlap. If Reverie produces <70% of classic's injection frequency, the threshold is too aggressive.
 
-**Phase:** Must be addressed in every restructure task. The centralized resolver should be built as part of the `lib/` extraction.
+**Phase to address:** This shapes the entire M2 phase structure. The graduated rollout (parallel -> augment -> replace) should be the organizing principle of M2's phases, not the individual Reverie modules.
 
 ---
 
-### CP-03: Sync and Install Path Drift
+### CP-03: Cost Monitoring Tracks the Wrong Thing on Max Subscription
 
-**What goes wrong:** The sync system (`sync.cjs`) and install system (`install.cjs`) both maintain hardcoded directory mappings. Sync has `SYNC_PAIRS` (3 pairs mapping repo dirs to deployed dirs). Install has `copyTree()` calls with explicit source paths. These are separate codebases that must agree on the same directory structure. When the restructure changes paths, one gets updated and the other doesn't.
+**What goes wrong:** CORTEX-03 specifies per-operation/per-day/per-month budget tracking with hard enforcement. The spec estimates subscription users at ~$0.37/day and API users at ~$1.98/day. But Max subscription users pay a flat monthly fee ($100 or $200). The "cost" they care about is not dollars -- it's rate limit consumption. Tracking dollar costs for subscription users is meaningless. The real constraint is the weekly usage cap that Anthropic introduced in August 2025, which affects fewer than 5% of subscribers but can halt Claude Code entirely when hit.
 
-**Why it happens in THIS system:** The current sync system maps three pairs:
+**Why it happens in THIS system:** The Dynamo platform decision (PROJECT.md: "Claude Code (Max subscription) as platform") means the primary user is on a Max plan. The cost model in REVERIE-SPEC.md Section 4.5 describes rate limit degradation but frames cost monitoring as budget tracking in dollars. For the actual target user, the useful metrics are:
 
-```javascript
-// sync.cjs lines 32-36
-const SYNC_PAIRS = [
-  { repo: path.join(REPO_ROOT, 'dynamo'), live: LIVE_DIR, ... },
-  { repo: path.join(REPO_ROOT, 'ledger'), live: path.join(LIVE_DIR, 'ledger'), ... },
-  { repo: path.join(REPO_ROOT, 'switchboard'), live: path.join(LIVE_DIR, 'switchboard'), ... },
-];
-```
+- **Subagent invocations per session** (each subagent spawn costs against rate limits)
+- **Total tokens consumed** (affects weekly usage cap)
+- **Deliberation path frequency** (each deliberation = subagent spawn = rate limit pressure)
+- **Session length in tokens** (additionalContext injections add to context window, which adds to tokens billed against the cap)
 
-The install system copies from three separate directories:
+Tracking dollars gives the user a number they cannot act on (they've already paid the subscription). Tracking rate limit proximity gives them actionable information.
 
-```javascript
-// install.cjs lines 297-301
-fileCount += copyTree(path.join(REPO_ROOT, 'dynamo'), LIVE_DIR, ...);
-fileCount += copyTree(path.join(REPO_ROOT, 'ledger'), path.join(LIVE_DIR, 'ledger'), ...);
-fileCount += copyTree(path.join(REPO_ROOT, 'switchboard'), path.join(LIVE_DIR, 'switchboard'), ...);
-```
+**Consequences:** The cost monitoring system is built, tested, and shipped -- but nobody uses it because the numbers don't mean anything to subscription users. The "hard enforcement" (degrade to hot-path-only when budget exhausted) never triggers because the dollar budget is set to $5/day and subscription users spend $0 incremental. Meanwhile, the user hits their weekly rate limit because the deliberation path spawned too many subagents, and the cost monitor didn't warn them because it was tracking the wrong metric.
 
-After restructure, the repo has `subsystems/terminus/`, `subsystems/switchboard/`, `subsystems/ledger/`, `subsystems/assay/`, `lib/`, `cc/`, etc. Both sync and install must be updated to map ALL new directories. Miss one? That subsystem never deploys. Miss the cleanup of an old mapping? Stale files persist in `~/.claude/dynamo/ledger/` when ledger moved to `~/.claude/dynamo/subsystems/ledger/`.
-
-**Consequences:** Partial deployment -- some subsystems deploy, others don't. Or worse: both old and new paths exist in deployed layout, causing the dual-layout resolver to find the wrong (stale) version. User has a system that appears to work but uses old code for some subsystems.
+**Warning signs:**
+- Cost dashboard shows $0.00/day for subscription users
+- Deliberation path fires on >10% of prompts (should be ~5%)
+- User reports "Claude Code rate limited" without cost monitor warning
+- Budget enforcement never triggers in testing because no dollars are spent
 
 **Prevention:**
-1. Extract directory mapping into a single shared data structure (e.g., `lib/layout.cjs`) that both sync and install reference. No hardcoded paths in either module.
-2. Add a "stale directory cleanup" step to install that removes known-obsolete directories (`ledger/`, `switchboard/` at the root of `~/.claude/dynamo/`) after copying to new locations. The existing install Step 6 ("Clean stale lib/") is the precedent.
-3. Write an install integration test that verifies EVERY subsystem's files exist in the deployed layout after install. Currently `stages.cjs` checks deployment in the diagnose flow, but it checks the old paths.
-4. Update sync and install in the SAME commit as the file moves. Never let them diverge.
+1. **Dual metric tracking:** Track both token consumption (universal) and dollar cost (API users only). The budget enforcement system uses token consumption for subscription users and dollar cost for API users.
+2. **Subagent spawn counter with configurable daily maximum.** Default: 20 deliberation subagent spawns per day. When exhausted, degrade to hot-path-only. This directly controls rate limit pressure.
+3. **Token injection budget per session.** Track cumulative tokens injected via `additionalContext` across all hooks in a session. Each injection adds to the user's context window, which counts against rate limits. Cap cumulative injection at 10,000 tokens per session (configurable).
+4. **Simplify the cost model for v1.3-M2.** Don't build the full per-operation/per-day/per-month budget system in M2. Build: (a) a subagent spawn counter with daily limit, (b) a deliberation frequency tracker, (c) rate limit detection (when a subagent spawn fails with rate limit, set a degradation flag). Save the dollar-denominated budget system for API users in M4.
+5. **Expose metrics via `dynamo voice status`.** Show: deliberation count today, subagent spawns remaining, injection tokens this session. Actionable numbers.
 
-**Detection:** Integration test: run install to tmpdir, then verify every `.cjs` file in the repo has a corresponding file in the deployed tree (modulo excludes like tests). A second test: run sync status and verify zero diff between repo and freshly-installed deployment.
+**Detection:** Monitor deliberation-to-prompt ratio. If it exceeds 10% over a rolling window of 20 prompts, log a warning. If a subagent spawn returns a rate limit error, immediately set the hot-path-only flag and log the event.
 
-**Phase:** Addressed when building the new layout mapping module. Should be among the first tasks after the cycle detection test.
+**Phase to address:** CORTEX-03 implementation. Reframe the requirement from "budget tracking" to "rate limit awareness" for subscription users.
 
 ---
 
-### CP-04: 374 Tests Break Silently Due to Hardcoded __dirname Assumptions
+### CP-04: Feature Flag Complexity Creates Untestable Code Paths
 
-**What goes wrong:** Tests use `__dirname` to locate test fixtures, the repo root, and modules under test. When the test directory moves (from `dynamo/tests/` to wherever tests live in the new layout), every `path.join(__dirname, '..', '..')` breaks. Tests that appear to pass are actually testing the wrong files or no files at all (e.g., `getAllCjsFiles()` in `boundary.test.cjs` returns an empty array because the path doesn't exist, and the test passes because "no files found" means "no violations found").
+**What goes wrong:** The `reverie.mode` flag has three states: `classic` (old Haiku curation), `cortex` (new Inner Voice), and (from CP-02 prevention) `hybrid` (both running). Each state changes the behavior of 4 hook handlers (SessionStart, UserPromptSubmit, PreCompact, Stop). That's 12 code paths (4 hooks x 3 modes). But the flag also interacts with other configuration: `reverie.enabled` (master switch), `cost.hot_path_only_on_budget_exhaust` (degradation), and rate limit state. The actual combination matrix is:
 
-**Why it happens in THIS system:** The boundary test uses:
+| Flag | Enabled | Budget OK | Rate Limited | Effective Behavior |
+|------|---------|-----------|--------------|-------------------|
+| classic | true | - | - | Legacy Haiku curation |
+| cortex | true | true | false | Full Reverie pipeline |
+| cortex | true | true | true | Hot path only (degraded Reverie) |
+| cortex | true | false | - | Hot path only (budget enforced) |
+| cortex | false | - | - | No processing |
+| hybrid | true | true | false | Classic + Reverie in parallel |
+| hybrid | true | true | true | Classic + Reverie hot-path-only |
+| ... | ... | ... | ... | 12+ combinations |
 
-```javascript
-// boundary.test.cjs line 9
-const REPO_ROOT = path.join(__dirname, '..', '..');
-```
+Each combination must be tested. Each must degrade gracefully. Each must produce correct output. The test matrix explodes.
 
-This assumes tests are exactly 2 levels deep from repo root. If tests move to `subsystems/terminus/tests/` (3 levels deep) or to a top-level `tests/` directory (1 level deep), REPO_ROOT resolves to the wrong directory. The `getAllCjsFiles()` function (line 12-24) returns empty arrays for non-existent directories, and the `assert.ok(files.length > 0, ...)` catches this -- but only for Ledger and Switchboard directories. The directory structure assertions (line 82-96) will fail outright.
+**Why it happens in THIS system:** Dynamo already has a toggle gate (`isEnabled()`) and the `DYNAMO_DEV=1` bypass. Adding `reverie.mode` as a second dimension of configuration doubles the state space. Adding budget/rate-limit degradation as a third dimension triples it. The current system has exactly ONE code path per hook (enabled or disabled). M2 proposes 3+ code paths per hook with multiple degradation modes.
 
-**Consequences:** Tests pass but validate nothing (false passes). Or tests fail but for the wrong reason (path resolution, not code quality). Worst case: you ship a restructure that passes all tests but has boundary violations because the boundary test was checking an empty directory.
+**Consequences:** Bugs hide in rarely-exercised code paths. The `hybrid` mode path works in testing but breaks when combined with rate limiting because nobody tested that combination. A user who hits rate limits while in hybrid mode gets double-injected (both classic and degraded Reverie fire but the deduplication logic doesn't handle the degraded case). Or worse: neither fires because both check the rate limit flag and both skip, producing zero injection.
+
+**Warning signs:**
+- Test coverage reports show untested branches in handler functions
+- Bug reports only occur for specific flag combinations
+- "It works for me" (developer) but not in production (different flags)
+- Handler functions have deeply nested if/else chains for mode/state combinations
 
 **Prevention:**
-1. Introduce a `test-helpers.cjs` module that exports `REPO_ROOT` computed from a reliable anchor (e.g., find the directory containing `dynamo.cjs` or a sentinel file like `.planning/`). All tests import from this helper instead of computing their own paths.
-2. Every test file that uses `__dirname` for path computation must be audited during the restructure. Create a checklist of all 21+ test files.
-3. The boundary test MUST be updated to check the new 6-subsystem boundaries, not the old 3-directory boundaries. This is not just a path fix -- the assertion logic changes entirely.
-4. Run the test suite with `--verbose` after each move to catch empty-set-passes (tests that pass with 0 assertions).
+1. **Mode determines the handler module, not a branch within one handler.** Don't write `if (mode === 'classic') { ... } else if (mode === 'cortex') { ... }` inside `user-prompt.cjs`. Instead, the dispatcher routes to DIFFERENT handler modules based on mode:
+   ```javascript
+   const HANDLER_ROUTES = {
+     classic: {
+       UserPromptSubmit: 'ledger/hooks/prompt-augment',  // existing handler
+       SessionStart: 'ledger/hooks/session-start',        // existing handler
+     },
+     cortex: {
+       UserPromptSubmit: 'reverie/handlers/user-prompt',  // new handler
+       SessionStart: 'reverie/handlers/session-start',    // new handler
+     },
+     hybrid: {
+       UserPromptSubmit: 'reverie/handlers/user-prompt-hybrid', // runs both
+       SessionStart: 'reverie/handlers/session-start-hybrid',
+     }
+   };
+   ```
+   This keeps each handler focused on one behavior. The mode decision happens once in the dispatcher, not in every handler.
 
-**Detection:** Node.js test runner reports assertion counts. A test with 0 assertions that passes is suspicious. Add explicit minimum-count assertions: `assert.ok(files.length >= 5, 'Expected at least 5 CJS files in subsystem')`.
+2. **Degradation is a separate concern from mode.** Rate limit degradation and budget enforcement should be a wrapper/middleware that the dispatcher applies, not logic inside each handler. The wrapper checks budget/rate-limit state and either (a) calls the handler normally, (b) calls the hot-path-only variant, or (c) skips entirely.
 
-**Phase:** Test infrastructure update should happen immediately after the directory mapping module, before any files move.
+3. **Test the matrix explicitly.** Write a test fixture that generates all valid (mode x enabled x budget x rate-limit) combinations and verifies each produces expected behavior. Use parameterized tests (node:test `describe` + loop).
+
+4. **Keep mode transitions atomic.** Changing `reverie.mode` takes effect on the NEXT hook invocation, not mid-session. The state file records which mode was active when state was last written. If mode changes mid-session, the handler detects the mismatch and reinitializes state.
+
+**Detection:** A "mode coverage" test that asserts every valid combination of (mode, enabled, budget, rateLimit) is exercised by at least one test case.
+
+**Phase to address:** Dispatcher modification phase (early M2). The routing-by-mode pattern must be established before any Reverie handlers are written.
 
 ---
 
-### CP-05: settings.json Hook Paths Become Stale on Live System
+### CP-05: Subagent State Bridge Pattern Is Fragile and Racy
 
-**What goes wrong:** The `settings.json` file in `~/.claude/settings.json` contains the absolute path to the hook dispatcher:
+**What goes wrong:** The deliberation path relies on the "SubagentStop -> state file -> next UserPromptSubmit" bridge pattern (REVERIE-SPEC.md Section 4.3). The inner-voice subagent writes results to `inner-voice-deliberation-result.json`. The next UserPromptSubmit reads and deletes the file. This pattern has multiple race conditions:
 
-```json
-"command": "node ~/.claude/dynamo/hooks/dynamo-hooks.cjs"
-```
+1. **Two prompts before the subagent finishes.** User submits prompt A (triggers deliberation). User submits prompt B before the subagent completes. Prompt B's handler checks for the result file, finds nothing (subagent still running), and proceeds. The subagent finishes. User submits prompt C. Prompt C picks up the result -- but the result was generated for prompt A's context, which may be irrelevant to prompt C.
 
-After restructure, the dispatcher moves to `~/.claude/dynamo/cc/hooks/dynamo-hooks.cjs`. If the user's `settings.json` isn't updated, Claude Code invokes the old path, gets MODULE_NOT_FOUND, the hook fails, and Claude Code silently continues without Dynamo.
+2. **Subagent crashes without writing the result file.** The `processing.deliberation_pending = true` flag is set in state, but the result file never appears. Every subsequent UserPromptSubmit checks for the file, finds nothing, and skips. The pending flag stays set forever, blocking future deliberation requests.
 
-**Why it happens in THIS system:** The dispatcher path is registered in `settings.json` by the install system. But users don't run `dynamo install` on every update -- they run `dynamo update` which does backup/pull/migrate/verify. If the migration doesn't include a settings.json path update, the stale path persists.
+3. **Concurrent subagent invocations.** If two deliberations are queued (e.g., two large semantic shifts in rapid succession), two subagents could write to the same result file. The second write overwrites the first, losing results.
 
-This is the SWITCHBOARD-SPEC.md Section 6.4 "Breaking Change" -- it's called out explicitly but easily missed during implementation.
+4. **File system race.** UserPromptSubmit reads the result file and then deletes it. If the read-delete is not atomic, another hook invocation could read the same file between read and delete, causing double-injection.
 
-**Consequences:** Total loss of hook functionality. All 5 hook events stop firing. User gets no memory injection, no session summaries, no change capture. Because hooks exit silently on failure, the user may not notice for hours or days.
+**Why it happens in THIS system:** Claude Code's SubagentStop hook CANNOT inject content into the parent context (GitHub issue #5812, confirmed closed as NOT_PLANNED). The file-based bridge is the only available workaround. But file I/O between independent processes (the subagent process and the main hook process) is inherently racy. The spec acknowledges the one-turn delay but underestimates the race conditions.
+
+**Consequences:** Stale deliberation results injected into wrong context (confusing). Deliberation permanently stuck in pending state (reduced intelligence). Double-injection of the same result (noise). Lost results from crashed subagents (wasted computation).
+
+**Warning signs:**
+- `processing.deliberation_pending = true` in state file for more than 30 seconds
+- Result file exists but has a timestamp more than 60 seconds old
+- Same deliberation content appears in two consecutive injections
+- Subagent spawn errors in hook-errors.log without corresponding result files
 
 **Prevention:**
-1. Write a migration script (in Terminus's migration harness) that runs during `dynamo update` and patches `settings.json` to reference the new dispatcher path.
-2. The migration must use the same safe write pattern as `mergeSettings()`: backup before modify, atomic write via tmp+rename.
-3. Add a diagnostic stage to `stages.cjs` that validates the hook command path actually exists on disk. If `settings.json` references a path that doesn't exist, flag it as FAIL.
-4. Keep a re-export shim at the old location (`hooks/dynamo-hooks.cjs`) that `require()`s the new location. This provides backward compatibility during the transition period. Remove the shim in a later phase.
+1. **Add a correlation ID and timestamp to the result file.** Each deliberation request gets a UUID. The result file includes the correlation ID and the prompt context hash. UserPromptSubmit checks whether the correlation ID matches the pending request AND whether the prompt context is still relevant (simple string similarity).
+2. **Add a TTL to the pending state.** If `deliberation_pending = true` for more than 60 seconds, clear the flag and log a warning. The subagent either crashed or was killed. Do not block future deliberations indefinitely.
+3. **Rename-based atomic consumption.** Instead of read-then-delete, use `fs.renameSync()` to atomically move the result file to a `.consumed` path, then read from the consumed path. `rename` is atomic on POSIX filesystems. This prevents double-reads.
+4. **One deliberation at a time.** If `deliberation_pending = true` when a new deliberation would be queued, skip the new request. Queue depth of 1. This eliminates concurrent subagent write races.
+5. **Log every state bridge transition.** Write to hook-errors.log (or a dedicated deliberation log): "DELIBERATION_QUEUED id=X", "DELIBERATION_COMPLETE id=X", "DELIBERATION_CONSUMED id=X", "DELIBERATION_EXPIRED id=X ttl=60s". This makes debugging the bridge pattern tractable.
 
-**Detection:** `dynamo diagnose` should check that every hook command path in `settings.json` resolves to an existing file. Add this as diagnostic stage 14.
+**Detection:** A test that simulates the race: queue deliberation, submit 3 prompts before it completes, verify only one prompt consumes the result and it's contextually relevant. A second test: queue deliberation, simulate subagent crash (no result file), verify pending flag is cleared after TTL.
 
-**Phase:** Migration script written as part of the restructure. Shim created simultaneously. Shim removed in a cleanup task at the end of M1.
+**Phase to address:** Deliberation path implementation phase. The state bridge pattern and its safety mechanisms must be designed and tested before any subagent integration.
+
+---
+
+### CP-06: Shell Shim for Bare `dynamo` Command Breaks Across macOS Environments
+
+**What goes wrong:** M2 targets bare `dynamo` CLI invocation (without `node` prefix or full path). This requires either a shell shim (symlink/script in a PATH directory) or a shell alias. Each approach has environment-specific failure modes on macOS:
+
+1. **Symlink in /usr/local/bin:** Requires `sudo` or admin rights. Conflicts with Homebrew, which owns `/usr/local/`. Apple Silicon Macs use `/opt/homebrew/bin` instead. macOS SIP (System Integrity Protection) may prevent modifications.
+
+2. **PATH modification in ~/.zshrc or ~/.zprofile:** The macOS `path_helper` utility (run from `/etc/zprofile`) reorders PATH on every login shell. Your PATH addition may be moved to the end, behind system directories. Users with custom shell configs, oh-my-zsh, or alternative shells (fish, bash) need different configuration.
+
+3. **Shell alias in ~/.zshrc:** Only works in interactive shells. Does not work in scripts, subprocesses, or when Claude Code runs hooks (hooks run as non-interactive command invocations).
+
+4. **npm global install (`npm link`):** Adds node_modules complexity, violates zero-dep constraint philosophy, requires `package.json` with a `bin` field, and global npm installs can conflict with nvm/fnm version managers.
+
+**Why it happens in THIS system:** The core value is self-management -- "Claude Code must be able to fully manage the tool lifecycle without requiring manual user intervention in config files." A shell shim that requires the user to manually add a PATH entry or run `sudo` violates this core value. But there is no universally reliable way to add a command to PATH on macOS without some form of user action or elevated privilege.
+
+**Consequences:** The `dynamo install` command creates the shim, but it doesn't work for the user because their PATH configuration differs from what was assumed. The user reports "dynamo: command not found." The self-management promise is broken on the very first visible feature of M2. Worse: a poorly implemented shim that modifies `~/.zshrc` can break the user's shell configuration if they have a non-standard setup.
+
+**Warning signs:**
+- `which dynamo` returns nothing after install
+- Shell profile changes are overridden by oh-my-zsh or path_helper
+- Different behavior between terminal.app, iTerm2, VS Code integrated terminal
+- Shim works interactively but not when Claude Code invokes `dynamo` as a subprocess
+
+**Prevention:**
+1. **Don't modify the user's shell profile.** Instead, create a standalone executable script and tell the user where it is. The install output can SUGGEST a PATH addition but must not make it automatically.
+2. **Create the shim at `~/.claude/bin/dynamo`.** This is inside the Dynamo-managed directory tree. The shim is a shell script:
+   ```bash
+   #!/bin/sh
+   exec node ~/.claude/dynamo/dynamo.cjs "$@"
+   ```
+   Make it executable with `chmod +x`. Claude Code can use `~/.claude/bin/dynamo` directly (it controls its own hook commands).
+3. **For hooks and internal use, continue using `node ~/.claude/dynamo/dynamo.cjs`.** The bare `dynamo` command is a convenience for interactive user use, not a system requirement. Hooks, install scripts, and automated processes should use the full `node` path.
+4. **Optionally offer PATH integration with explicit user consent.** `dynamo install --add-to-path` appends to `~/.zprofile` (the correct file for macOS login shell PATH). But this is opt-in, documented, and reversible (`dynamo install --remove-from-path`).
+5. **Test shim detection in health-check.** Add a diagnostic stage that checks (a) `~/.claude/bin/dynamo` exists and is executable, (b) whether `dynamo` is on PATH (informational, not required).
+
+**Detection:** The health-check stage reports shim status. `dynamo diagnose` reports whether the bare `dynamo` command is available on PATH. Neither should FAIL if the command isn't on PATH -- this is a convenience feature, not a correctness requirement.
+
+**Phase to address:** Late in M2 (after core intelligence is proven). The shim is a convenience improvement, not a prerequisite for any other M2 feature. Do not block intelligence work on shell configuration.
 
 ---
 
 ## Moderate Pitfalls
 
-Issues that cause bugs, performance problems, or architectural debt but don't break the entire system.
+Issues that cause bugs, architectural debt, or degraded quality but don't break the existing system.
 
 ---
 
-### MP-01: Transport Abstraction Leaks Between OpenRouter and Anthropic API
+### MP-01: Memory Backfill From Old Transcripts Poisons the Knowledge Graph
 
-**What goes wrong:** You build a clean transport abstraction layer (`callModel(prompt, options)`) that routes to either OpenRouter or Anthropic's Messages API. The abstraction works for happy paths. Then you discover the APIs have different error formats, different rate limiting behavior, different timeout characteristics, and different response schemas.
+**What goes wrong:** M2 includes "intelligent memory backfill from past chat transcripts." The vision is mining old Claude Code session transcripts for knowledge to populate the graph. The reality is that old transcripts contain:
 
-**Why it happens in THIS system:** The current curation system (`curation.cjs`) calls OpenRouter with:
+1. **Stale information.** Decisions that were later reversed. Architecture that was refactored. Bugs that were fixed. Code paths that no longer exist. Backfilling this creates false knowledge that the Inner Voice confidently injects.
+
+2. **Noise.** Debug output, error messages, irrelevant exploration, abandoned approaches. Session transcripts include EVERYTHING Claude said, not just conclusions. The signal-to-noise ratio in raw transcripts is extremely low.
+
+3. **Duplicate information.** The same fact discussed across 10 sessions produces 10 graph entries. Spreading activation treats these as convergent evidence, amplifying a fact's perceived importance based on how many times it was discussed rather than its actual significance.
+
+4. **Contradictions.** Session 5 says "we chose CJS because...". Session 8 says "we chose CJS because..." (different reason). Both are true (multiple reasons), but naively extracting entity relationships creates contradictory edges that confuse downstream queries.
+
+**Why it happens in THIS system:** Dynamo has 22 completed phases of session transcripts. These transcripts are the raw record of decisions, designs, and debugging across v1.0-v1.3. The TEMPTATION is strong: "we have all this history, let's use it." But the knowledge graph (Graphiti) was populated incrementally during those sessions via PostToolUse and Stop hooks. The graph already contains the important knowledge -- extracted in context, with temporal edges. Backfilling from transcripts adds a second, lower-quality copy of knowledge that's already there, plus a lot of noise.
+
+**Consequences:** Graph density increases (good for spreading activation) but graph QUALITY decreases (bad for everything else). Search results include stale/contradicted facts. The Inner Voice injects context about architecture that was refactored 3 phases ago. The user corrects the system, but the stale knowledge persists in the graph and resurfaces later.
+
+**Warning signs:**
+- Graph entity count jumps dramatically after backfill (>3x)
+- Search results for current topics return information from early project phases
+- Contradictory context injected (e.g., "the system uses Python" alongside "the system uses CJS")
+- User frequently corrects the Inner Voice after backfill
+
+**Prevention:**
+1. **Don't backfill everything.** Backfill only the MOST RECENT milestone (v1.3-M1). Earlier milestones have outdated information. The value of transcript data decays rapidly with age.
+2. **Use a two-pass approach.** Pass 1: Extract candidate knowledge items using an LLM (Sonnet via subagent). Pass 2: Deduplicate against the existing graph -- if an entity/fact already exists in the graph (via existing PostToolUse/Stop ingestion), skip the backfill version. Only add genuinely NEW knowledge.
+3. **Tag backfilled knowledge with a low confidence score.** Add a `source: "backfill"` and `confidence: 0.5` (vs `confidence: 1.0` for real-time captured knowledge). The Inner Voice can weight backfilled knowledge lower in sublimation scoring.
+4. **Provide a `dynamo backfill --dry-run` that shows what WOULD be added** without writing to the graph. Let the user review before committing.
+5. **Defer backfill to late M2 or M3.** The Inner Voice should prove its value with real-time captured knowledge first. Backfill is an optimization for graph density, not a prerequisite for intelligence.
+
+**Detection:** Before/after quality comparison: run 10 test prompts against the graph before backfill, record results. Run the same prompts after backfill. If result quality decreases (more irrelevant hits, contradictions), the backfill hurt more than it helped.
+
+**Phase to address:** Last phase of M2, or defer to M3. Backfill should never be on the critical path for M2's intelligence layer.
+
+---
+
+### MP-02: Custom Subagent Reliability -- Malformed Frontmatter Causes Session-Wide Failures
+
+**What goes wrong:** The inner-voice subagent definition (`cc/agents/inner-voice.md`) uses YAML frontmatter to configure model, tools, permissions, and memory scope. Claude Code has a documented bug where malformed agent files cause API 500 errors on ALL subsequent API requests (GitHub issue #22843), not just a parse error on the malformed file. A typo in the frontmatter -- wrong field name, invalid YAML syntax, unsupported value -- can break the entire Claude Code session.
+
+**Why it happens in THIS system:** The subagent definition is deployed by Switchboard's install system (`cc/agents/inner-voice.md` -> `~/.claude/agents/inner-voice.md`). If the install deploys a malformed file, EVERY Claude Code session on the machine breaks until the file is fixed. The user sees "API Error: 500" with no indication that it's caused by an agent file. This is especially dangerous during development, where the agent definition is iterated frequently.
+
+Additionally, subagents are loaded at session start. If the inner-voice agent file is invalid, the user must restart their session after the fix -- there's no hot-reload.
+
+**Consequences:** A single bad deploy of the agent file breaks all Claude Code sessions. The error message ("API Error: 500") gives no indication of the cause. The user may not connect the error to a Dynamo update. Recovery requires manually deleting `~/.claude/agents/inner-voice.md` or fixing the YAML, then restarting Claude Code.
+
+**Warning signs:**
+- "API Error: 500" immediately after `dynamo install` or `dynamo update`
+- All Claude Code sessions fail simultaneously
+- Error persists even after restarting Claude Code (because the file is still there)
+
+**Prevention:**
+1. **Validate the agent YAML before deploying.** Add a step to `install.cjs` that parses the YAML frontmatter of every file in `cc/agents/` and verifies it against the known Claude Code schema (name, description, tools, model, permissionMode, memory, maxTurns, etc.). Fail the install step with a clear error if validation fails.
+2. **Deploy agent files as the LAST step of install,** after the health check. If the health check fails, agent files are not deployed. This prevents a half-working system from also breaking sessions via bad agent files.
+3. **Include a recovery command: `dynamo agents fix`.** This scans `~/.claude/agents/` for Dynamo-managed files (identifiable by a `# managed-by: dynamo` comment), validates each, and removes/replaces invalid ones.
+4. **Test the agent definition in CI.** Parse the YAML, verify all required fields, verify tool names match Claude Code's tool registry (Read, Write, Edit, Bash, Glob, Grep, Agent).
+5. **Keep the agent definition minimal initially.** The supported frontmatter fields as of March 2026 are: name, description, tools, disallowedTools, model, permissionMode, maxTurns, skills, mcpServers, hooks, memory, background, effort, isolation. Use only the fields you need. Avoid undocumented fields.
+
+**Detection:** The install system's final health check should verify that Claude Code can start a session without errors. If the health check passes, agent files are valid. Add a specific check: attempt to parse every `.md` file in `~/.claude/agents/` as YAML frontmatter.
+
+**Phase to address:** Subagent definition phase. Build the YAML validator before writing the agent content.
+
+---
+
+### MP-03: Handler Migration Creates a Transition Period Where Neither Classic Nor Reverie Owns a Hook
+
+**What goes wrong:** The current handlers live in `subsystems/ledger/hooks/` (5 files). M2 moves 4 of them to `subsystems/reverie/handlers/` (SessionStart, UserPromptSubmit, PreCompact, Stop). During the transition, the dispatcher (`cc/hooks/dynamo-hooks.cjs`) needs to be updated to route to the new locations. If the route update and handler creation don't happen atomically, there's a window where:
+
+1. The dispatcher routes to `reverie/handlers/user-prompt.cjs` but the file doesn't exist yet -> MODULE_NOT_FOUND -> hook fails silently -> no memory injection.
+2. The dispatcher still routes to `ledger/hooks/prompt-augment.cjs` but the handler was modified to call Reverie functions that don't exist yet -> TypeError -> hook fails silently.
+3. Both old and new handlers exist, and the dispatcher routes to the wrong one based on stale config.
+
+**Why it happens in THIS system:** The dispatcher's routing table is currently hardcoded (dynamo-hooks.cjs lines 131-149). Changing it requires modifying the dispatcher AND creating the new handler files in the same operation. But the `reverie.mode` flag means the dispatcher must route to DIFFERENT handlers based on config. The transition isn't a simple "replace old with new" -- it's "route to old OR new based on runtime state."
+
+**Consequences:** During development: hooks fail silently for every prompt. The developer (Claude Code) loses memory context while building the system that provides memory context. During deploy: if the dispatcher update and handler creation aren't synced, deployed users lose hooks.
+
+**Warning signs:**
+- hook-errors.log shows MODULE_NOT_FOUND for `reverie/handlers/*`
+- Memory injection stops during M2 development
+- `dynamo diagnose` shows hook handlers missing
+
+**Prevention:**
+1. **Create Reverie handlers as PASS-THROUGH wrappers first.** Before any intelligence is added, create `reverie/handlers/user-prompt.cjs` that simply calls the existing `ledger/hooks/prompt-augment.cjs`. This proves the routing works before any behavior changes.
+2. **Update the dispatcher to use mode-based routing (CP-04 prevention #1) as the FIRST commit of M2.** All three modes (classic, hybrid, cortex) initially route to the existing Ledger handlers. Then, one handler at a time, replace the Reverie route with actual Reverie logic.
+3. **Keep the Ledger handlers unchanged.** Do not modify the existing handlers. The classic mode path should always route to the ORIGINAL, unmodified handlers. Reverie handlers are new files that may call Ledger code internally but don't modify it.
+4. **Add a handler existence check in the dispatcher.** Before `require(handlerPath)`, check `fs.existsSync(handlerPath)`. If the handler doesn't exist, fall back to the classic handler and log a warning. This prevents MODULE_NOT_FOUND from killing the hook.
+
+**Detection:** A smoke test that verifies every handler path in every mode resolves to an existing, loadable module. Run this test in CI and as a diagnostic stage.
+
+**Phase to address:** First phase of M2 handler work. Establish the routing infrastructure before writing any Reverie logic.
+
+---
+
+### MP-04: Hooks-as-Primary-Behavior (MGMT-05) Reduces CLAUDE.md to an Empty Shell
+
+**What goes wrong:** MGMT-05 specifies that hooks replace static CLAUDE.md as the primary behavior mechanism. The intent is good: dynamic hook-injected context is more relevant than static CLAUDE.md text. But if CLAUDE.md is stripped too aggressively:
+
+1. **Bootstrap failure.** SessionStart hook depends on a running Graphiti stack and working Dynamo. If either is down (Docker not running, health check fails, toggle disabled), the hook returns nothing. CLAUDE.md was the fallback that at least gave Claude Code basic Dynamo awareness. Without it, Claude Code doesn't know Dynamo exists.
+
+2. **New session cold start.** The SessionStart hook takes time to generate a briefing (2-4s for deliberation path). CLAUDE.md loads instantly. If CLAUDE.md has no Dynamo instructions, the first few seconds of every session have zero Dynamo awareness.
+
+3. **Development mode.** When `DYNAMO_DEV=1` or `dynamo toggle off`, hooks don't fire. If CLAUDE.md has been gutted, Claude Code has no knowledge of Dynamo commands, troubleshooting steps, or memory system behavior during development or maintenance.
+
+**Consequences:** Users who install Dynamo but have Docker down (common on laptop restart) get a Claude Code session with zero Dynamo awareness. They can't even run `dynamo start` because CLAUDE.md no longer tells Claude about the `dynamo` CLI.
+
+**Warning signs:**
+- Claude Code doesn't know about `dynamo` commands when hooks are disabled
+- SessionStart hook failure leaves Claude with no Dynamo context
+- Users reporting "Claude doesn't know about Dynamo" after restart
+
+**Prevention:**
+1. **CLAUDE.md is the minimum viable awareness layer, not a deprecated artifact.** Keep essential content in CLAUDE.md: the `dynamo` CLI exists, how to start/stop, how to troubleshoot. This is ~50 lines, not the current ~200 lines.
+2. **Hooks AUGMENT CLAUDE.md, they don't replace it.** CLAUDE.md provides the floor (always available). Hooks provide the ceiling (dynamic, context-aware). The SessionStart hook can inject richer context that builds on CLAUDE.md's baseline.
+3. **Test the "no hooks" scenario.** Disable all hooks (toggle off). Verify that a Claude Code session still has basic Dynamo awareness from CLAUDE.md alone. This is the degraded-but-functional state.
+
+**Detection:** A test that loads the CLAUDE.md template with hooks disabled and verifies it contains: (a) `dynamo` CLI reference, (b) basic troubleshooting, (c) memory system description. Minimum viable awareness checklist.
+
+**Phase to address:** MGMT-05 implementation. Define the CLAUDE.md "floor" content before moving any behavior to hooks.
+
+---
+
+### MP-05: Activation Map Grows Unbounded Across Long Sessions
+
+**What goes wrong:** The activation map tracks entity activation levels. Each prompt adds new entities (from entity extraction) and propagates to neighbors. The decay function reduces activation over time, but decay doesn't REMOVE entries -- it sets them to low values. Over a 100-prompt session, the activation map accumulates hundreds of entities, all with near-zero activation. This has three costs:
+
+1. **State file bloat.** The activation map is serialized in `inner-voice-state.json`. 200 entities at ~100 bytes each = 20KB just for the map. Combined with injection history and pending associations, the state file exceeds the "5ms load" budget.
+
+2. **Processing overhead.** Every prompt iterates the full activation map for decay, threshold checking, and propagation. O(n) where n is total entities ever seen, not active entities.
+
+3. **False convergence.** Many near-zero entities create background noise. Two unrelated topics both briefly mentioned in early conversation have residual activation. Later, if the conversation touches either topic, the other's residual activation creates a false convergence signal.
+
+**Prevention:**
+1. **Eviction policy.** Remove entities below a minimum threshold (0.05) from the map entirely. Evict on every persist cycle.
+2. **Hard cap.** Maximum 50 active entities. When adding a 51st, evict the lowest.
+3. **Separate "hot" and "cold" maps.** Hot map: entities above 0.2, always loaded. Cold map: entities 0.05-0.2, loaded only for propagation queries. Evicted: entities below 0.05.
+4. **Measure map size in the timing harness.** Log entity count alongside per-step timing. Correlate map size with processing latency.
+
+**Phase to address:** Activation map implementation (activation.cjs). Build with size management from the start; don't add it later.
+
+---
+
+### MP-06: Replacing Working Haiku Curation Without Benchmarking Creates an Invisible Regression
+
+**What goes wrong:** The current Haiku curation in `curation.cjs` calls OpenRouter with a prompt template. The curation.md template has been refined across 22 phases of actual use. It works because it was tested against real Graphiti output over hundreds of sessions. The new Reverie curation (absorbed into `reverie/curation.cjs`) replaces the template with activation-weighted, frame-classified formatting. The new template is untested against real data.
+
+**Prevention:**
+1. **Benchmark before replacing.** Run 50 real prompts through both pipelines. Score outputs for: relevance (does it help?), conciseness (is it short enough?), accuracy (is it correct?).
+2. **Keep the existing curation.md template available.** Even in cortex mode, the hot path may use the template for fallback formatting. Don't delete it.
+3. **Version the prompt templates.** `curation-v1.md` (current), `curation-v2.md` (Reverie). The mode flag selects which template to use.
+
+**Phase to address:** Curation migration phase. Benchmark BEFORE writing the new template.
+
+---
+
+## Technical Debt Patterns
+
+Shortcuts that seem reasonable but create long-term problems.
+
+| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
+|----------|-------------------|----------------|-----------------|
+| Hardcode sublimation threshold at 0.6 | Ship faster, tune later | Threshold is wrong for this user's graph density; requires manual recalibration | Acceptable for M2 if calibration mechanism is designed (even if not implemented) |
+| Skip embedding-based semantic shift detection, use simple string diff | Avoid embedding API dependency | Semantic shifts detected unreliably; false positives on rephrased prompts | Acceptable for M2 v1; switch to embeddings when local embedding (MENH-08, M4) is available |
+| Store activation map in a single JSON file | Simple, no new dependencies | File I/O becomes bottleneck at >50 entities; no concurrent access safety | Acceptable for M2 with 50-entity cap; reevaluate in M4 |
+| Implement cost monitoring as token counting only | Simpler than full dollar-based budgeting | Doesn't help API users understand actual spend | Acceptable for M2 subscription users; extend for API in M4 |
+| Skip the hybrid mode, go directly classic -> cortex | One less mode to maintain | No comparison data; can't prove Reverie is better | Never acceptable -- hybrid is essential for quality validation |
+| Use synchronous file I/O for state persistence | Simpler code, deterministic behavior | Blocks the event loop during write; adds latency | Acceptable -- state files are small (<50KB) and writes are infrequent (once per hook) |
+
+---
+
+## Integration Gotchas
+
+Common mistakes when connecting Reverie to existing Dynamo subsystems.
+
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| Reverie -> Assay (graph reads) | Calling Assay functions directly from Reverie handler without timeout | Wrap every Assay call in Promise.race with 100ms timeout; return cached data on timeout |
+| Reverie -> Ledger (graph writes) | Writing to graph from the hot path, adding latency | Graph writes happen only in Stop/PreCompact hooks (no latency constraint), never in UserPromptSubmit |
+| Reverie -> Terminus (transport) | Importing Terminus MCP client directly into Reverie | Go through Assay/Ledger interfaces; Reverie never imports from Terminus directly (REVERIE-SPEC.md Section 2.3) |
+| Switchboard dispatcher -> Reverie handlers | Passing the raw stdin data instead of the enriched context object | Dispatcher must add project, scope, config to context before routing to handler |
+| Reverie state files -> Switchboard install/sync | Sync system tries to sync state files between repo and deploy | Add state files (inner-voice-state.json, inner-voice-deliberation-result.json) to sync EXCLUDE list -- they're runtime-generated, not repo-managed |
+| Inner-voice subagent -> Dynamo CLI | Subagent tries to run `dynamo` commands but `node` path isn't available | Subagent uses `node ~/.claude/dynamo/dynamo.cjs` explicitly; do not depend on bare `dynamo` command from subagent context |
+| Config additions -> existing config.json | New `reverie` section overwrites or conflicts with existing config keys | Config merge during install must be additive (deep merge), not replacement. Test with existing config files from M1 |
+
+---
+
+## Performance Traps
+
+Patterns that work in testing but fail in real usage.
+
+| Trap | Symptoms | Prevention | When It Breaks |
+|------|----------|------------|----------------|
+| Loading full state file on every hook | p50 latency creeps up over session length | Split into hot/cold state files (see CP-01) | After ~30 prompts when state exceeds 20KB |
+| Graph query for activation propagation on every prompt | Latency spikes on dense graphs | Cache propagation results; only re-query on semantic shift | When graph exceeds 500 entities |
+| Subagent spawn for session briefing every SessionStart | 2-4s delay on every session start | Cache recent briefing; only regenerate if last session was >1hr ago | When user opens many short sessions |
+| JSON.stringify of full state for atomic write | CPU spike on large state objects | Only write changed sections; use streaming writer | When state exceeds 50KB |
+| Exhaustive entity extraction from every prompt | NER processing adds 10-50ms per prompt | Extract from first 500 chars only; skip prompts < 20 chars | When users paste large code blocks as prompts |
+
+---
+
+## Security Mistakes
+
+Domain-specific security issues for a cognitive memory system.
+
+| Mistake | Risk | Prevention |
+|---------|------|------------|
+| Subagent with `bypassPermissions` | Inner-voice subagent could modify user code or system files | Use `permissionMode: dontAsk` (auto-deny unpermitted operations), never `bypassPermissions` |
+| Inner Voice state file contains user secrets | State file at ~/.claude/dynamo/ could be read by other processes | Don't store prompt content in state; store only entity UUIDs, activation scores, and metadata hashes |
+| Deliberation result file left on disk after crash | Contains injection text derived from user's knowledge graph | TTL-based cleanup: delete result files older than 5 minutes on every handler invocation |
+| Backfill extracts PII from old transcripts | Old transcripts may contain API keys, passwords, personal info typed in prompts | PII scrubbing pass before graph ingestion; regex-based pattern detection for common secret formats |
+| Subagent memory at ~/.claude/agent-memory/ accumulates sensitive context | Memory persists across sessions and is readable as plain text | Limit what the subagent writes to memory; instruction in system prompt to avoid storing secrets |
+
+---
+
+## UX Pitfalls
+
+Common user experience mistakes when adding intelligence to a working system.
+
+| Pitfall | User Impact | Better Approach |
+|---------|-------------|-----------------|
+| Inner Voice injects on every prompt during initial enthusiasm | User overwhelmed with context they didn't ask for | Default to conservative injection; increase as calibration data accumulates |
+| No visibility into what Reverie is doing | User doesn't know if the system is working or broken | `dynamo voice status` showing: mode, injection count today, deliberation count, last injection preview |
+| Mode changes require restart | User can't quickly test classic vs cortex | Mode changes take effect on next hook invocation (no restart needed) |
+| Injection format radically different from classic | User's mental model breaks; they expect [RELEVANT MEMORY] format | Keep familiar formatting in Reverie output; add Inner Voice insights as additional context, not replacement format |
+| No way to tell the Inner Voice "stop talking about X" | User frustrated by persistent irrelevant injections | `dynamo voice suppress <topic>` adds a negative weight to specific entities in the activation map |
+
+---
+
+## "Looks Done But Isn't" Checklist
+
+Things that appear complete but are missing critical pieces.
+
+- [ ] **Reverie handlers exist:** Often missing timeout enforcement -- verify every handler has a cumulative timeout check that aborts before 400ms
+- [ ] **Feature flag works:** Often missing the mode-change-mid-session case -- verify that changing `reverie.mode` in config.json takes effect on the next hook without restart and without corrupting state
+- [ ] **Subagent definition deploys:** Often missing YAML validation -- verify `dynamo install` validates the YAML frontmatter before copying to `~/.claude/agents/`
+- [ ] **Cost monitoring tracks tokens:** Often missing the subscription-vs-API distinction -- verify that subscription users see rate limit metrics, not dollar amounts
+- [ ] **Activation map updates:** Often missing eviction policy -- verify that the map is bounded at 50 entities and evicts on every persist
+- [ ] **State file persists across hooks:** Often missing atomic write -- verify tmp+rename pattern is used, not direct writeFileSync to the target path
+- [ ] **Deliberation results consumed:** Often missing TTL cleanup -- verify stale result files (>60s old) are deleted, not consumed
+- [ ] **Backfill deduplicates:** Often missing graph comparison -- verify that backfilled knowledge is checked against existing graph entities before insertion
+- [ ] **Classic mode still works:** Often missing regression test -- verify that `reverie.mode = classic` produces IDENTICAL output to pre-M2 behavior
+- [ ] **Shell shim works:** Often missing non-interactive shell test -- verify the shim works from `node -e "require('child_process').execSync('dynamo version')"`, not just interactive zsh
+- [ ] **Update notes workflow works:** Often missing the "first run" case -- verify that the update notes work for users who have never seen M2 (not just upgrades from M1)
+
+---
+
+## Recovery Strategies
+
+When pitfalls occur despite prevention, how to recover.
+
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| CP-01: Timing regression | LOW | Set `reverie.mode = classic` via config.json; restart session. Hot fix: increase timeout or reduce pipeline steps. |
+| CP-02: Quality regression | LOW | Set `reverie.mode = classic` via config.json. This is the entire purpose of the rollback flag. |
+| CP-03: Cost monitoring wrong metric | LOW | The system still functions; cost monitoring is advisory. Update the metric type in config; redeploy. |
+| CP-04: Feature flag bug in one mode | MEDIUM | Force mode to a known-working state. Fix the handler for the broken mode. Test all combinations before re-enabling. |
+| CP-05: Subagent state bridge race | MEDIUM | Delete `inner-voice-deliberation-result.json` and set `processing.deliberation_pending = false` in state file. Clear the jam manually. |
+| CP-06: Shell shim broken | LOW | Use `node ~/.claude/dynamo/dynamo.cjs` directly. The shim is convenience, not required. |
+| MP-01: Backfill poisons graph | HIGH | No easy undo for graph writes. Must identify and delete backfilled entities (if tagged with source: backfill). If not tagged, restore from graph backup. |
+| MP-02: Malformed agent file | MEDIUM | Delete `~/.claude/agents/inner-voice.md`. Restart Claude Code. Redeploy with `dynamo install` after fixing the file. |
+| MP-03: Handler routing broken | LOW | Revert dispatcher to M1 version (all routes point to Ledger handlers). Hooks resume immediately. |
+
+---
+
+## Pitfall-to-Phase Mapping
+
+How roadmap phases should address these pitfalls.
+
+| Pitfall | Prevention Phase | Verification |
+|---------|------------------|--------------|
+| CP-01: Timing regression | Phase 1 (Reverie infrastructure) | Timing harness running; p95 < 400ms on realistic state sizes |
+| CP-02: Quality regression | Phase 1-3 (graduated rollout) | A/B comparison shows Reverie >= classic injection quality |
+| CP-03: Cost monitoring wrong metric | CORTEX-03 phase | Subscription users see rate limit metrics; spawn counter enforced |
+| CP-04: Feature flag complexity | Phase 1 (dispatcher modification) | Parameterized test covers all (mode x enabled x budget x rateLimit) combinations |
+| CP-05: Subagent state bridge race | Deliberation path phase | Race condition tests pass; TTL cleanup verified; correlation IDs match |
+| CP-06: Shell shim portability | Late M2 phase | Shim exists at ~/.claude/bin/dynamo; health-check reports shim status |
+| MP-01: Backfill quality | Last M2 phase (or defer) | Dry-run shows backfill candidates; dedup against existing graph verified |
+| MP-02: Subagent reliability | Subagent definition phase | YAML validator in install; recovery command exists |
+| MP-03: Handler migration gap | Phase 1 (dispatcher modification) | Pass-through wrappers work before any Reverie logic |
+| MP-04: CLAUDE.md gutted | MGMT-05 phase | "No hooks" scenario test passes; minimum viable awareness verified |
+| MP-05: Activation map unbounded | activation.cjs implementation | 50-entity cap; eviction on every persist; map size logged |
+| MP-06: Curation regression | Curation migration phase | 50-prompt benchmark shows new >= old quality |
+
+---
+
+## Rollback Strategies Beyond `reverie.mode`
+
+The `reverie.mode = classic` flag is the primary rollback mechanism. But it only covers the curation/injection pipeline. Other M2 features need their own rollback paths.
+
+| Feature | Rollback Mechanism | Rollback Scope |
+|---------|-------------------|----------------|
+| Inner Voice processing pipeline | `reverie.mode = classic` | Full rollback to Haiku curation |
+| Dual-path routing | `reverie.mode = classic` | Falls through to classic (no path selection) |
+| Cost monitoring | `reverie.cost.enabled = false` | Disables monitoring; no enforcement |
+| Subagent spawning | `reverie.deliberation.enabled = false` | Hot-path-only mode; no subagent spawns |
+| Activation map | `reverie.activation.enabled = false` | Skip activation entirely; classic search only |
+| Shell shim | Delete `~/.claude/bin/dynamo` | Use `node ~/.claude/dynamo/dynamo.cjs` |
+| MGMT-05 hooks-as-primary | Restore CLAUDE.md from template | Full CLAUDE.md content restored |
+| Backfill data | `dynamo backfill --undo` (if tagged) | Remove backfill-tagged graph entities |
+| Subagent definition | Delete `~/.claude/agents/inner-voice.md` | No subagent; deliberation path disabled |
+| State files | Delete `inner-voice-state.json` | Fresh state on next hook invocation; no corruption |
+
+**Principle:** Every new feature should have a config flag that disables it independently. The `reverie` config section should look like:
 
 ```javascript
-// OpenRouter format
-headers: { 'Authorization': 'Bearer ' + apiKey }
-body: { model: 'anthropic/claude-haiku-4.5', messages: [...], max_tokens: 500 }
-// Response: { choices: [{ message: { content: "..." } }] }
+{
+  "reverie": {
+    "enabled": true,                     // Master switch (existing pattern)
+    "mode": "cortex",                    // classic | hybrid | cortex
+    "activation": { "enabled": true },   // Can disable spreading activation alone
+    "deliberation": { "enabled": true }, // Can disable subagent deliberation alone
+    "cost": { "enabled": true },         // Can disable cost monitoring alone
+    "backfill": { "enabled": false }     // Opt-in backfill
+  }
+}
 ```
 
-The Anthropic Messages API uses:
-
-```javascript
-// Anthropic format
-headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }
-body: { model: 'claude-haiku-4-5-20250514', messages: [...], max_tokens: 500 }
-// Response: { content: [{ type: "text", text: "..." }] }
-```
-
-Key differences that leak through any abstraction:
-- **Auth header:** `Authorization: Bearer` vs `x-api-key`
-- **Model naming:** `anthropic/claude-haiku-4.5` vs `claude-haiku-4-5-20250514`
-- **Response schema:** `choices[0].message.content` vs `content[0].text`
-- **Rate limits:** OpenRouter has per-model quotas; Anthropic has per-key quotas
-- **Error format:** OpenRouter returns standard HTTP errors; Anthropic returns structured `error` objects with `type` field
-- **Timeout behavior:** Anthropic has a known 1-minute Cloudflare gateway timeout; OpenRouter may have different limits
-
-**Consequences:** The abstraction works for curation (text in, text out) but breaks for structured responses, streaming, or error handling. Error recovery logic that works with OpenRouter fails silently with Anthropic (or vice versa). Model selection routing sends the wrong model name format to the wrong provider.
-
-**Prevention:**
-1. The transport abstraction should be a thin adapter, NOT a full abstraction. Two concrete implementations (OpenRouterTransport, AnthropicTransport) that share an interface (`sendMessage(messages, options) -> { text, metadata }`), not a generic HTTP wrapper.
-2. Normalize the response at the adapter boundary: both adapters return `{ text: string, model: string, inputTokens: number, outputTokens: number }`. Consumers never see provider-specific response formats.
-3. Normalize errors at the adapter boundary: both adapters throw `TransportError` with standardized error codes (TIMEOUT, RATE_LIMIT, AUTH_FAILURE, SERVER_ERROR). The provider-specific error details go in a `cause` field.
-4. Model name mapping lives in the adapter, not in consumers. Consumer says "haiku" or "sonnet", adapter translates to the provider-specific model ID.
-5. Build the Anthropic transport FIRST (it's the strategic direction -- removing OpenRouter SPOF). Keep the OpenRouter transport as-is (already working). Don't refactor the working code until the new transport is proven.
-
-**Detection:** Integration tests that mock both providers and verify the normalized response format. Error injection tests that verify both adapters handle the same error scenarios identically.
-
-**Phase:** Transport abstraction is part of MENH-06. Build adapters before model selection (MENH-07) since MENH-07 depends on having multiple transports available.
-
----
-
-### MP-02: node:sqlite Experimental API Changes Break Session Index
-
-**What goes wrong:** You build the SQLite session index on `node:sqlite` (DatabaseSync). The module's API changes in a Node.js update (it's still experimental/release-candidate), and your code breaks. Or worse: the user upgrades Node.js and the API is different, causing Dynamo to crash on every hook invocation that touches sessions.
-
-**Why it happens in THIS system:** Verified on this machine: Node.js v24.13.1 has `node:sqlite` available with DatabaseSync, WAL mode, and busy_timeout all working. But it still emits `ExperimentalWarning`. The module reached Release Candidate status in v25.7.0 but is not yet stable.
-
-Dynamo's constraint is zero npm dependencies. The alternatives are:
-- `better-sqlite3` -- npm package (violates zero-dep constraint, requires native compilation)
-- `node:sqlite` -- built-in but experimental/RC
-- Write a custom SQLite FFI using `node:ffi` -- massive complexity for no gain
-- Keep flat-file JSON -- current approach, performance limited
-
-**Consequences:** If the API changes, any Dynamo version that uses `node:sqlite` breaks on the affected Node.js version. Since hooks fire on every Claude Code event, a crash in the session index path crashes every hook invocation. The `try/catch` safety pattern (hooks exit 0) prevents blocking Claude Code, but all memory operations stop.
-
-**Prevention:**
-1. Wrap ALL `node:sqlite` calls in a single `lib/sqlite.cjs` module that exports Dynamo-specific functions (`openSessionDb()`, `querySessions()`, etc.). No raw DatabaseSync usage outside this module.
-2. The wrapper must catch and handle the case where `node:sqlite` is NOT available (Node.js < 22.5.0 or compiled without SQLite support). Fallback to the existing `sessions.json` flat-file approach.
-3. Pin the minimum Node.js version in documentation and in the health check. Add a diagnostic stage that verifies `node:sqlite` availability.
-4. Suppress the ExperimentalWarning in the wrapper (via `process.removeAllListeners('warning')` scoped to the import, or by accepting the warning on stderr).
-5. Keep the flat-file `sessions.json` as a functioning fallback, not just a legacy path. The SQLite index is an optimization, not a hard requirement.
-
-**Detection:** Health check stage that verifies `require('node:sqlite')` succeeds and DatabaseSync is constructable. If it fails, fall back gracefully and log a warning.
-
-**Phase:** SQLite session index (MGMT-11) should be implemented after the directory restructure is stable. The wrapper module goes in `lib/sqlite.cjs`.
-
----
-
-### MP-03: SQLite Concurrent Access from Parallel Hook Invocations
-
-**What goes wrong:** Multiple Claude Code hooks fire in rapid succession (e.g., user submits a prompt, tool runs, another tool runs). Each hook invocation is a separate Node.js process. Each process opens the SQLite database, reads/writes, and closes. Without WAL mode and proper busy_timeout, the second process gets SQLITE_BUSY and the write fails.
-
-**Why it happens in THIS system:** Claude Code fires hooks as separate process invocations. The hook dispatcher (`dynamo-hooks.cjs`) is a fresh Node.js process each time. If PostToolUse fires while UserPromptSubmit is still running (both touch the session index), they're two independent processes accessing the same SQLite file.
-
-The current `sessions.json` approach has the same fundamental problem (two processes writing JSON simultaneously can corrupt the file), but atomic write (tmp+rename) mitigates it for JSON. SQLite has better built-in concurrency support -- but only if configured correctly.
-
-**Consequences:** Intermittent SQLITE_BUSY errors cause session writes to fail silently (caught by the hook error handler). Session index becomes stale or missing entries. User's session list is incomplete. Over time, the session index diverges from reality.
-
-**Prevention:**
-1. Open every database connection with WAL mode enabled (`PRAGMA journal_mode=WAL`) and busy_timeout set (`PRAGMA busy_timeout=5000` or constructor option `timeout: 5000`). Verified these both work on Node.js v24.13.1 with `node:sqlite`.
-2. Keep transactions short. Open, write, close. Do not hold the database connection open for the duration of hook processing -- open it, execute the query/write, close immediately.
-3. Wrap all write operations in explicit transactions (`BEGIN IMMEDIATE; ... COMMIT;`). IMMEDIATE transactions acquire a write lock immediately rather than upgrading from a read lock, avoiding deadlock scenarios.
-4. Design the schema so most hook invocations are READ-ONLY (checking session exists, reading metadata). Only SessionStart and Stop need writes. This minimizes write contention.
-5. Test concurrent access explicitly: spawn 5 parallel Node.js processes that all write to the same SQLite DB simultaneously, verify all writes succeed.
-
-**Detection:** A stress test that simulates rapid hook firing: 10 concurrent processes opening, writing, and closing the session DB. Verify zero SQLITE_BUSY errors and all writes persist.
-
-**Phase:** Part of MGMT-11 (SQLite session index). Must be validated before any hook handler touches the SQLite DB.
-
----
-
-### MP-04: Schema Migration Without ORM Becomes Fragile
-
-**What goes wrong:** You create SQLite schema v1 for the session index. Later milestones need to add columns, change types, or add tables. Without an ORM's migration framework, you're writing raw `ALTER TABLE` statements. A migration that works on a fresh database fails on an existing one because the column already exists, or because SQLite doesn't support dropping columns (before SQLite 3.35.0).
-
-**Why it happens in THIS system:** Dynamo already has a migration harness (`migrate.cjs`) that tracks version state via the VERSION file and runs CJS migration scripts. But this harness was designed for configuration migrations, not schema migrations. The existing pattern:
-
-```javascript
-module.exports = {
-  version: '1.3.0',
-  up: async (config) => { /* modify config.json */ },
-  down: async (config) => { /* revert config.json */ }
-};
-```
-
-Schema migrations are different because:
-- SQLite `ALTER TABLE` has limited capabilities (add column: yes; drop column: only in SQLite >= 3.35.0; change type: no)
-- Schema state lives in the database itself, not in a version file
-- Failed schema migration can leave the database in an inconsistent state
-
-**Consequences:** A user who updates from v1.3.0 to v1.3.5 needs schema changes applied. If the migration fails midway, the database is corrupted and the session index is unusable. Unlike config files, there's no simple "restore from .bak" for a half-migrated database.
-
-**Prevention:**
-1. Use `PRAGMA user_version` to track schema version independently from the app VERSION file. Check it on every database open.
-2. Wrap every schema migration in a transaction. SQLite supports transactional DDL (`CREATE TABLE`, `ALTER TABLE` inside transactions). If any statement fails, the whole migration rolls back.
-3. Design the initial schema with room to grow. Add a `metadata TEXT` column (JSON blob) that can hold future fields without schema changes.
-4. Create a backup of the SQLite file before running migrations: `cp sessions.db sessions.db.bak`. This is the same pattern used for `settings.json`.
-5. Prefer additive migrations (add column, add table) over destructive ones (drop column, rename column). SQLite's limitations actually help here -- they force you toward safe patterns.
-6. Keep the schema simple. The session index is a denormalization for performance. If the schema gets complicated, you've gone too far.
-
-**Detection:** Migration test that creates a v1 database, runs all migrations to latest, and verifies the final schema matches expectations. Run this in CI with every schema change.
-
-**Phase:** Schema migration infrastructure built alongside the initial SQLite implementation in MGMT-11. First migration is the initial schema creation.
-
----
-
-### MP-05: Jailbreak Protection False Positives Block Legitimate Hooks
-
-**What goes wrong:** You add input validation to the hook dispatcher to detect prompt injection attempts in the stdin JSON. The validation is too aggressive: it flags legitimate user prompts that happen to contain code blocks, system-prompt-like patterns, or instructions that look like injection attempts. The hook blocks the event, and the user's prompt loses its memory augmentation.
-
-**Why it happens in THIS system:** Claude Code sends the full user prompt in the hook event JSON for `UserPromptSubmit`. A developer working on prompt engineering, LLM security research, or writing CLAUDE.md files will routinely write prompts that contain:
-
-- "You are a..." (system prompt pattern)
-- "Ignore previous instructions" (jailbreak pattern)
-- Code blocks with `process.exit`, `require`, `eval` (code injection patterns)
-- JSON structures that contain nested hook event fields (structure injection)
-
-All of these are legitimate user activities. But a naive jailbreak detector flags them.
-
-Additionally, Claude Code's hook event JSON includes `transcript_path` and `cwd` fields that could be used as file path injection vectors. The REAL threat model is:
-
-1. **JSON structure injection:** Malicious content in a user prompt that, when parsed as part of the hook event JSON, alters the event's structure (e.g., overwriting `hook_event_name`).
-2. **Path traversal:** Content that causes hook handlers to read/write files outside expected directories.
-3. **Content injection into knowledge graph:** Malicious content that gets stored in the knowledge graph and then injected into future sessions.
-
-**Consequences:** False positives: legitimate prompts get blocked or stripped, breaking the memory augmentation flow. Users notice degraded behavior and lose trust. False negatives: actual injection attempts pass through because the validator was tuned to reduce false positives.
-
-**Prevention:**
-1. Validate the JSON STRUCTURE, not the JSON CONTENT. Verify that `hook_event_name` is one of the expected values, that `session_id` matches expected format, that `cwd` is a real directory. Do NOT scan `prompt` or `data` content for injection patterns -- that's the LLM's job.
-2. Use allowlist validation, not blocklist. Define what valid hook events look like (field types, value ranges) and reject anything that doesn't match. Don't try to enumerate all possible attacks.
-3. Sanitize paths: verify `cwd` resolves to a real directory, verify `transcript_path` is under a Claude Code-managed directory. This prevents path traversal.
-4. For knowledge graph injection: sanitize BEFORE writing, not when reading. Strip or escape control characters, limit content length, validate that episode content is a reasonable string. This is Ledger's responsibility, not the dispatcher's.
-5. Keep validation fast. The hot path budget is <500ms total. Jailbreak validation should add <10ms. Use regex-based structure checks, not LLM-based content analysis, for the hook dispatcher.
-
-**Detection:** Test with a corpus of legitimate prompts that LOOK like injection attempts (prompts about LLM security, prompts containing code, prompts with markdown, etc.) and verify none are blocked.
-
-**Phase:** MGMT-08 (Jailbreak protection). Should be implemented AFTER the restructure is stable, as restructure + security hardening simultaneously creates too much change surface.
-
----
-
-### MP-06: Model Selection Routing Adds Latency to Hot Path
-
-**What goes wrong:** MENH-07 (model selection) adds per-path model routing: Haiku for hot path, Sonnet for deliberation. The routing logic itself -- loading config, evaluating conditions, selecting model, constructing the right transport call -- adds overhead to every hook invocation. Combined with the transport abstraction setup (MENH-06), the cumulative overhead pushes UserPromptSubmit past the 500ms budget.
-
-**Why it happens in THIS system:** The current system has a single code path for LLM calls (OpenRouter, Haiku, fixed config). Model selection introduces branching logic:
-
-```
-1. Load config (which model for this event type?)
-2. Check event type (hot path or deliberation?)
-3. Select transport (OpenRouter or Anthropic API?)
-4. Construct request (provider-specific format)
-5. Send request
-6. Parse response (provider-specific format)
-7. Return normalized result
-```
-
-Steps 1-4 and 6 are new overhead. If implemented naively (re-reading config on every call, constructing new transport instances, etc.), each adds 5-20ms. That's 25-100ms of overhead before the actual LLM call even starts.
-
-**Consequences:** UserPromptSubmit exceeds 500ms budget. User perceives lag in prompt processing. In extreme cases, Claude Code's hook timeout kills the process before it completes.
-
-**Prevention:**
-1. Cache config and transport instances. Don't re-read `config.json` or create new transport objects on every hook invocation. Load once at module require time.
-2. Model selection should be a simple lookup table, not a decision tree. Map event type to model at configuration time, not at call time.
-3. Benchmark the overhead of model selection independently before integrating it into the hook path. Target: <5ms for the entire selection + transport setup.
-4. If the Anthropic API path has higher latency than OpenRouter (cold start, TLS negotiation, etc.), default to OpenRouter for the hot path and reserve Anthropic API for background/deliberation paths only.
-5. The hot path (UserPromptSubmit) should have zero LLM calls in v1.3-M1. The current curation call via Haiku is an existing cost -- model selection shouldn't add new LLM calls, just change which model an existing call targets.
-
-**Detection:** Latency logging in the hook dispatcher. Track time from stdin parse to stdout write. Alert if p95 exceeds 400ms (leaving 100ms buffer before the 500ms budget).
-
-**Phase:** MENH-07 follows MENH-06. Benchmark after MENH-06 to establish baseline before adding model selection.
-
----
-
-## Minor Pitfalls
-
-Issues that cause friction, tech debt, or minor bugs but have bounded impact.
-
----
-
-### mP-01: Test Directory Structure Doesn't Match New Subsystem Layout
-
-**What goes wrong:** Tests currently live in `dynamo/tests/ledger/` and `dynamo/tests/switchboard/`. After restructure, modules move to `subsystems/terminus/`, `subsystems/assay/`, etc. but tests may stay in the old structure. This creates a mismatch between code and test organization that makes it hard to find tests, and the `dynamo test` command's glob pattern breaks.
-
-**Prevention:** Move test directories to mirror subsystem structure. Update the `dynamo test` command glob: `subsystems/*/tests/*.test.cjs` or a centralized test runner that discovers tests by convention.
-
-**Phase:** Part of the directory restructure task. Tests move with their modules.
-
----
-
-### mP-02: ExperimentalWarning Noise from node:sqlite
-
-**What goes wrong:** Every hook invocation that uses SQLite prints `ExperimentalWarning: SQLite is an experimental feature` to stderr. Claude Code may capture this as error output or display it in verbose mode.
-
-**Prevention:** Suppress the warning using `process.removeAllListeners('warning')` scoped to the SQLite import, or use `node --no-warnings` in the hook command (if Claude Code allows command flags). Alternatively, accept the warning and document that it's expected.
-
-**Phase:** Address during MGMT-11 implementation. Low priority.
-
----
-
-### mP-03: Dependency Management Bootstrap Problem
-
-**What goes wrong:** MGMT-01 (dependency management) makes Dynamo manage its own dependencies. But the dependency manager itself has to work before dependencies are resolved. If the first-run experience requires dependencies that aren't yet available, the system can't bootstrap.
-
-**Prevention:** The dependency manager must have zero dependencies itself (already satisfied by the zero-dep constraint). First-run detection should use only Node.js built-ins. The dependency system should be additive -- it manages OPTIONAL dependencies (like checking for specific Node.js features), not hard requirements.
-
-**Phase:** MGMT-01 early in M1, designed as a feature-detection system rather than a package manager.
-
----
-
-### mP-04: Graphiti Docker Directory Reference Changes
-
-**What goes wrong:** The `graphiti/` directory currently lives under `ledger/graphiti/`. The restructure moves it to top-level `graphiti/` (per TERMINUS-SPEC.md Section 6.4). Every reference to `ledger/graphiti/docker-compose.yml` breaks.
-
-**Prevention:** Reference the graphiti directory through config (`config.json -> graphiti.docker_compose_path`) rather than hardcoded paths. Update all references in one pass: `stack.cjs`, `install.cjs`, `health-check.cjs`, `stages.cjs`.
-
-**Phase:** Part of the Terminus extraction task. Low risk if done atomically.
-
----
-
-### mP-05: CLAUDE.md Template References Old Paths
-
-**What goes wrong:** The `CLAUDE.md.template` (deployed to `~/.claude/CLAUDE.md`) contains hardcoded paths like `~/.claude/dynamo/hooks/dynamo-hooks.cjs` and instructions referencing the old directory structure. After restructure, the template is stale.
-
-**Prevention:** Update the template as part of the restructure. Add a checklist item to the per-phase checklist (already documented in PROJECT.md).
-
-**Phase:** Documentation update at the end of each restructure phase.
-
----
-
-## Phase-Specific Warnings
-
-| Phase Topic | Likely Pitfall | Mitigation | Severity |
-|-------------|---------------|------------|----------|
-| Directory restructure | CP-01 (circular deps), CP-02 (dual-layout), CP-04 (test paths) | Build cycle detection test first, centralize path resolution | Critical |
-| Sync/install update | CP-03 (path drift), CP-05 (settings.json) | Shared layout mapping, migration script | Critical |
-| Transport abstraction (MENH-06) | MP-01 (leaky abstraction), MP-06 (latency) | Thin adapter pattern, cache transport instances | Moderate |
-| Model selection (MENH-07) | MP-06 (latency on hot path) | Lookup table, benchmark overhead | Moderate |
-| SQLite session index (MGMT-11) | MP-02 (experimental API), MP-03 (concurrent access), MP-04 (schema migration) | Wrapper module with fallback, WAL mode, PRAGMA user_version | Moderate |
-| Jailbreak protection (MGMT-08) | MP-05 (false positives) | Structure validation not content scanning, allowlist approach | Moderate |
-| Dependency management (MGMT-01) | mP-03 (bootstrap problem) | Feature detection, not package management | Minor |
-
----
-
-## Integration Pitfalls: Restructuring a Live System
-
-These pitfalls are specific to the fact that Dynamo is actively deployed at `~/.claude/dynamo/` and hooks fire on every Claude Code event while the restructure is underway.
-
----
-
-### IP-01: Development Breaks Live Deployment During Restructure
-
-**What goes wrong:** The developer (Claude Code agent) is restructuring files in the repo. They run `dynamo sync repo-to-live` to test. The sync deploys a half-restructured repo to `~/.claude/dynamo/`. Now hooks fire against the half-restructured code and crash. Every Claude Code session (including the development session) loses memory functionality until the restructure is complete.
-
-**Prevention:**
-1. Never run `dynamo sync` or `dynamo install` during active restructure development. Only deploy once a restructure phase is complete and all tests pass.
-2. Use `DYNAMO_DEV=1` environment variable during development to bypass the toggle gate, but understand this doesn't prevent sync/install from deploying broken code.
-3. Consider adding a `dynamo toggle off` step at the start of restructure work and `dynamo toggle on` at the end. This prevents hooks from firing against stale code during development.
-4. All restructure development should be done on the `dev` branch with no deploys. Deploy only when merging to `master` at milestone completion.
-
-**Detection:** If hooks start failing during development, check `hook-errors.log` for MODULE_NOT_FOUND errors. This indicates a bad sync deployed half-restructured code.
-
----
-
-### IP-02: Migration Path from Old Layout to New Layout
-
-**What goes wrong:** When the user runs `dynamo update` after the restructure ships, the update system tries to apply changes to the old deployed layout. The update pulls new code (new layout) but the migration/verification steps expect the new layout to already be deployed.
-
-**Prevention:**
-1. The update system must handle the layout transition as a special migration. This migration:
-   a. Backs up the old layout
-   b. Copies the new layout (using the NEW install logic)
-   c. Runs the settings.json path migration (CP-05)
-   d. Verifies the new layout
-   e. Cleans up old directories
-2. This "layout migration" should be a dedicated migration script, not baked into install.cjs changes. The migration harness runs it during `dynamo update`.
-3. Test the upgrade path: start with a deployed v1.2.1 layout, run `dynamo update`, verify the result is a working v1.3-M1 layout.
-
-**Detection:** The update system's auto-rollback mechanism (backup + restore on failure) is the safety net. If the layout migration fails, the old layout is restored automatically.
-
----
-
-### IP-03: Multiple Claude Code Sessions Share Deployed Code
-
-**What goes wrong:** The user has multiple Claude Code windows open (different projects). All share the same `~/.claude/dynamo/` deployment. A deploy that's correct for one session may break another if the sessions have different expectations about the code.
-
-**Prevention:** This is already mitigated by Dynamo's design -- all sessions share the same deployed code, and updates are atomic (copy tree, then rename). The risk during restructure is a partial deploy (sync interrupted, install failed midway). Keep the atomic write pattern: copy everything to a staging directory, then swap. The existing `dynamo-backup` mechanism provides rollback.
-
-**Detection:** If one session works and another doesn't, the issue is likely a stale cached module in Node's require cache (which is per-process, so not actually shared). More likely: timing issue where one session triggered a hook between the old code being removed and the new code being copied. The solution is atomic deployment.
+Each sub-feature degrades gracefully when disabled: the system falls back to the next simpler behavior, never to no behavior.
 
 ---
 
@@ -501,51 +574,94 @@ These pitfalls are specific to the fact that Dynamo is actively deployed at `~/.
 
 | Risk | Probability | Impact | Priority |
 |------|-------------|--------|----------|
-| CP-01: Circular dependencies | HIGH | HIGH | Address first |
-| CP-02: Dual-layout breaks | HIGH | HIGH | Address first |
-| CP-03: Sync/install drift | MEDIUM | HIGH | Address with layout mapping |
-| CP-04: Test path breakage | HIGH | MEDIUM | Address before file moves |
-| CP-05: Settings.json stale paths | MEDIUM | HIGH | Migration script required |
-| MP-01: Transport leaky abstraction | MEDIUM | MEDIUM | Thin adapter pattern |
-| MP-02: node:sqlite experimental | LOW | MEDIUM | Wrapper with fallback |
-| MP-03: SQLite concurrent access | MEDIUM | MEDIUM | WAL + busy_timeout |
-| MP-04: Schema migration fragility | LOW | MEDIUM | Transactional DDL |
-| MP-05: Jailbreak false positives | MEDIUM | MEDIUM | Structure validation only |
-| MP-06: Model selection latency | LOW | MEDIUM | Cache + benchmark |
-| IP-01: Live system breaks during dev | MEDIUM | HIGH | Toggle off during restructure |
-| IP-02: Old-to-new layout migration | MEDIUM | HIGH | Dedicated migration script |
+| CP-01: Timing regression | HIGH | HIGH | Address first (pipeline timing harness) |
+| CP-02: Quality regression | HIGH | HIGH | Address first (graduated rollout strategy) |
+| CP-03: Cost monitoring wrong metric | MEDIUM | MEDIUM | Reframe requirement before implementation |
+| CP-04: Feature flag complexity | HIGH | MEDIUM | Address first (mode-based routing) |
+| CP-05: Subagent state bridge race | MEDIUM | HIGH | Address during deliberation path phase |
+| CP-06: Shell shim portability | LOW | LOW | Address last; convenience, not critical |
+| MP-01: Backfill quality | MEDIUM | HIGH | Defer or address last with extreme caution |
+| MP-02: Subagent reliability | MEDIUM | HIGH | YAML validation before deploy |
+| MP-03: Handler migration gap | MEDIUM | MEDIUM | Pass-through wrappers first |
+| MP-04: CLAUDE.md gutted | LOW | MEDIUM | Define floor content before moving behavior |
+| MP-05: Activation map unbounded | HIGH | MEDIUM | Build with size management from day one |
+| MP-06: Curation quality regression | MEDIUM | MEDIUM | Benchmark before replacing |
 
 ---
 
 ## Recommended Phase Ordering Based on Pitfalls
 
-Based on the dependency chain of pitfalls, the restructure should proceed in this order:
+Based on the dependency chain of pitfalls, M2 should proceed in this order:
 
-1. **Infrastructure tests first:** Build cycle detection test, centralize path resolution in `lib/core.cjs`, create test helper for REPO_ROOT resolution. (Addresses CP-01, CP-02, CP-04)
-2. **Layout mapping module:** Extract directory structure into `lib/layout.cjs` shared by sync, install, and tests. (Addresses CP-03)
-3. **File moves in dependency order:** `lib/` first, then `subsystems/terminus/` (leaf), then `subsystems/assay/` (leaf), then `subsystems/ledger/` (leaf), then `cc/` (platform adapter), then `subsystems/switchboard/` (hub), then update `dynamo.cjs` (entry point). (Minimizes CP-01 risk)
-4. **Sync/install update:** Update both simultaneously with new layout mapping. (Addresses CP-03)
-5. **Migration script for settings.json:** Write and test the hook path migration. (Addresses CP-05)
-6. **Transport abstraction (MENH-06):** Build Anthropic adapter alongside existing OpenRouter. (Addresses MP-01)
-7. **Model selection (MENH-07):** Lookup table routing on top of transport layer. (Addresses MP-06)
-8. **SQLite session index (MGMT-11):** Wrapper module, fallback support, concurrent access tests. (Addresses MP-02, MP-03, MP-04)
-9. **Jailbreak protection (MGMT-08):** Structure validation in dispatcher. (Addresses MP-05)
-10. **Dependency management (MGMT-01):** Feature detection system. (Addresses mP-03)
+1. **Timing harness and dispatcher mode-routing** (Addresses CP-01, CP-04, MP-03)
+   - Build per-step timing instrumentation
+   - Implement mode-based handler routing in dispatcher
+   - Create Reverie handler pass-throughs that delegate to existing Ledger handlers
+   - All three modes work identically (all route to classic) -- zero regression risk
+
+2. **Reverie infrastructure modules** (Addresses CP-01, MP-05)
+   - `activation.cjs` with 50-entity cap and eviction
+   - `dual-path.cjs` with deterministic path selection
+   - `inner-voice.cjs` pipeline orchestrator with 400ms abort
+   - State file management with hot/cold split
+   - All tested independently, not wired into hooks yet
+
+3. **Graduated rollout: hybrid mode** (Addresses CP-02, MP-06)
+   - Hybrid handlers that run classic AND Reverie in parallel
+   - Classic output goes to stdout (user sees it)
+   - Reverie output goes to log (developer compares)
+   - A/B quality comparison framework
+
+4. **Deliberation path and subagent** (Addresses CP-05, MP-02)
+   - Subagent YAML definition with validation
+   - State bridge pattern with correlation IDs and TTL
+   - Race condition tests
+   - Rate limit detection and hot-path degradation
+
+5. **Cost monitoring** (Addresses CP-03)
+   - Token counting and spawn counter
+   - Rate limit awareness for subscription users
+   - `dynamo voice status` command
+
+6. **Graduated rollout: cortex mode** (Addresses CP-02)
+   - Reverie handlers wired to cortex mode routing
+   - Only enabled after hybrid mode comparison data confirms quality
+
+7. **Hooks-as-primary-behavior** (Addresses MP-04)
+   - Define CLAUDE.md floor content
+   - Move dynamic content to hook injection
+   - Test degraded scenario (hooks disabled)
+
+8. **Shell shim and convenience features** (Addresses CP-06)
+   - Shim at ~/.claude/bin/dynamo
+   - Health-check diagnostic for shim
+   - Update notes workflow
+
+9. **Memory backfill** (Addresses MP-01) -- defer to M3 if possible
+   - Dry-run mode first
+   - Dedup against existing graph
+   - Tag with source and confidence
+   - Before/after quality comparison
 
 ---
 
 ## Sources
 
-- Codebase analysis: `core.cjs`, `dynamo.cjs`, `dynamo-hooks.cjs`, `sync.cjs`, `install.cjs`, `mcp-client.cjs`, `sessions.cjs`, `curation.cjs`, `boundary.test.cjs`
-- Architecture specs: `DYNAMO-PRD.md`, `TERMINUS-SPEC.md`, `SWITCHBOARD-SPEC.md`
-- [Node.js SQLite Documentation](https://nodejs.org/api/sqlite.html) -- node:sqlite API reference, DatabaseSync class, experimental/RC status
-- [Claude Code Hooks Reference](https://code.claude.com/docs/en/hooks) -- hook event types, JSON format, timeout limits, output structure
-- [Node.js CJS Circular Dependencies](https://nodejs.org/api/modules.html) -- official docs on how CJS handles circular require()
-- [Circular Dependencies in JavaScript](https://medium.com/visual-development/how-to-fix-nasty-circular-dependency-issues-once-and-for-all-in-javascript-typescript-a04c987cf0de) -- patterns for fixing cycles
-- [Anthropic API Overview](https://platform.claude.com/docs/en/api/overview) -- Messages API format, headers, authentication
-- [OpenRouter Quickstart](https://openrouter.ai/docs/quickstart) -- OpenRouter API format for comparison
-- [SQLite WAL Mode](https://sqlite.org/wal.html) -- WAL concurrency characteristics
-- [CVE-2025-54794: Claude AI Prompt Injection](https://github.com/AdityaBhatt3010/CVE-2025-54794-Hijacking-Claude-AI-with-a-Prompt-Injection-The-Jailbreak-That-Talked-Back) -- real-world prompt injection in Claude
-- [Mitigate Jailbreaks - Claude API Docs](https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/mitigate-jailbreaks) -- Anthropic's guidance on jailbreak mitigation
-- [SQLite Schema Migration Strategies](https://sqlite.org/forum/forumpost/0f9dd8806f) -- pragmatic migration approaches without ORMs
-- Local verification: `node:sqlite` DatabaseSync, WAL mode, and busy_timeout all confirmed working on Node.js v24.13.1
+- Codebase analysis: `dynamo-hooks.cjs` (167 LOC, current dispatcher), `prompt-augment.cjs` (84 LOC, current UserPromptSubmit handler), `session-start.cjs` (72 LOC, current SessionStart handler), `curation.cjs` (119 LOC, current Haiku pipeline)
+- Architecture specs: `REVERIE-SPEC.md` (Reverie subsystem specification), `SWITCHBOARD-SPEC.md` (dispatcher and handler routing), `INNER-VOICE-ABSTRACT.md` (platform-agnostic cognitive architecture)
+- [Claude Code Hooks Reference](https://code.claude.com/docs/en/hooks) -- hook types, timeout defaults (command: 600s, SessionEnd: 1.5s), async behavior, additionalContext injection, exit code semantics, error handling
+- [Claude Code Custom Subagents](https://code.claude.com/docs/en/sub-agents) -- YAML frontmatter fields (name, description, tools, disallowedTools, model, permissionMode, maxTurns, skills, mcpServers, hooks, memory, background, effort, isolation), permission modes, persistent memory scopes
+- [Malformed agent files cause API 500 errors](https://github.com/anthropics/claude-code/issues/22843) -- confirmed bug: invalid YAML frontmatter breaks all API requests
+- [SubagentStop cannot inject parent context](https://github.com/anthropics/claude-code/issues/5812) -- confirmed NOT_PLANNED: additionalParentContext field does not exist
+- [Subagent YAML Frontmatter documentation gaps](https://github.com/anthropics/claude-code/issues/8501) -- undocumented fields and syntax
+- [Per-subagent effortLevel missing](https://github.com/anthropics/claude-code/issues/31536) -- no per-agent effort control in frontmatter
+- [Claude Code Rate Limits 2026](https://maxtechera.dev/en/blog/claude-code-rate-limits-2026) -- Max plan rate limits, weekly caps, usage patterns
+- [macOS PATH configuration and path_helper](https://gist.github.com/Linerre/f11ad4a6a934dcf01ee8415c9457e7b2) -- PATH reordering, zprofile vs zshrc, Homebrew conflicts
+- [Feature Flag Best Practices](https://octopus.com/devops/feature-flags/feature-flag-best-practices/) -- flag lifecycle, testing matrix, cleanup strategies
+- [Hidden AI Cost Explosion](https://www.chronoinnovation.com/resources/hidden-cost-explosion-in-ai) -- LLM cost multipliers, unpredictable token usage, retry overhead
+- M1 PITFALLS.md (previous milestone pitfalls document, same repository) -- established pitfall documentation patterns and lessons learned
+
+---
+*Pitfalls research for: v1.3-M2 Core Intelligence*
+*Researched: 2026-03-20*
+*Confidence: HIGH -- based on deep codebase analysis, spec review, platform documentation verification, and established M1 precedent*

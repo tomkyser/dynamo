@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 22-03-PLAN.md
-last_updated: "2026-03-20T16:33:50.017Z"
+stopped_at: Completed 22-04-PLAN.md
+last_updated: "2026-03-20T16:53:11.387Z"
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 13
-  completed_plans: 12
+  completed_plans: 13
 ---
 
 # Project State
@@ -92,6 +92,8 @@ Recent decisions affecting current work:
 - [Phase 22]: Remove all re-exports except MCPClient -- SCOPE moved to direct imports from scope.cjs
 - [Phase 22]: core<->sessions allowlist entry removed since cycle no longer exists after re-export cleanup
 - [Phase 22]: Auto-approved checkpoint: real fresh install verified, kept fresh install over backup
+- [Phase 22-m1-verification-and-cleanup]: Fixed loadPrompt path bug in core.cjs (cc/prompts instead of prompts)
+- [Phase 22-m1-verification-and-cleanup]: Updated regression.test.cjs and core.test.cjs for six-subsystem deployed paths
 
 ### Blockers/Concerns
 
@@ -99,6 +101,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T16:33:50.014Z
-Stopped at: Completed 22-03-PLAN.md
+Last session: 2026-03-20T16:53:11.385Z
+Stopped at: Completed 22-04-PLAN.md
 Resume file: None

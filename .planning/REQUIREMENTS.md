@@ -10,17 +10,17 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 ### Inner Voice (CORTEX-01)
 
 - [x] **IV-01**: Inner Voice state file loads, processes, and persists atomically with corruption recovery to fresh defaults
-- [ ] **IV-02**: Entity extraction identifies project names, file paths, function names, and technical terms from prompts via deterministic pattern matching (<5ms)
-- [ ] **IV-03**: Activation map tracks entity relevance with time-based decay and 1-hop spreading activation from anchor entities via Assay graph queries
-- [ ] **IV-04**: Sublimation threshold evaluates composite score (activation * surprise * relevance * (1 - cognitive_load) * confidence) to determine what surfaces
+- [x] **IV-02**: Entity extraction identifies project names, file paths, function names, and technical terms from prompts via deterministic pattern matching (<5ms)
+- [x] **IV-03**: Activation map tracks entity relevance with time-based decay and 1-hop spreading activation from anchor entities via Assay graph queries
+- [x] **IV-04**: Sublimation threshold evaluates composite score (activation * surprise * relevance * (1 - cognitive_load) * confidence) to determine what surfaces
 - [ ] **IV-05**: Injection formatting respects token limits by context (500 session start, 150 mid-session, 50 urgent) following Cognitive Load Theory
 - [ ] **IV-06**: Self-model persists across sessions (attention state, injection mode, confidence, working patterns) with session-scoped fields that reset
 - [ ] **IV-07**: Curation functions migrate from Ledger to Reverie as subagent-based processing; Ledger retains only deterministic formatting
 - [ ] **IV-08**: Curation templates use adversarial counter-prompting to evaluate from user's experience, not canonical definitions
 - [ ] **IV-09**: Semantic shift detection triggers injection on topic changes using keyword overlap (embedding-based deferred to M4/MENH-08)
-- [ ] **IV-10**: Domain frame classification categorizes prompts into engineering/debugging/architecture/social/general via keyword/regex heuristic (<1ms)
+- [x] **IV-10**: Domain frame classification categorizes prompts into engineering/debugging/architecture/social/general via keyword/regex heuristic (<1ms)
 - [ ] **IV-11**: Explicit recall bypass skips sublimation threshold when user asks "do you remember X?" — all entities above 0.2 activation considered
-- [ ] **IV-12**: Predictions state tracks expected topic and activity; surprise factor provides principled reason for silence when expectations are met
+- [x] **IV-12**: Predictions state tracks expected topic and activity; surprise factor provides principled reason for silence when expectations are met
 
 ### Dual-Path Routing (CORTEX-02)
 
@@ -33,8 +33,8 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 
 ### Operational Monitoring (CORTEX-03)
 
-- [ ] **OPS-MON-01**: Subagent spawn tracking enforces daily cap (configurable, default 20); tracks rate limit proximity
-- [ ] **OPS-MON-02**: Rate limit detection sets runtime flag on spawn failure; system degrades to hot-path-only until cleared
+- [x] **OPS-MON-01**: Subagent spawn tracking enforces daily cap (configurable, default 20); tracks rate limit proximity
+- [x] **OPS-MON-02**: Rate limit detection sets runtime flag on spawn failure; system degrades to hot-path-only until cleared
 
 > **Deferred (no compelling need on Max subscription):**
 > - ~~COST-01: Per-operation cost tracking~~ — Dynamo has zero marginal cost on Max subscription; Graphiti infrastructure costs are outside Dynamo's scope
@@ -97,17 +97,17 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | IV-01 | Phase 23 | Complete |
-| IV-02 | Phase 23 | Pending |
-| IV-03 | Phase 23 | Pending |
-| IV-04 | Phase 23 | Pending |
+| IV-02 | Phase 23 | Complete |
+| IV-03 | Phase 23 | Complete |
+| IV-04 | Phase 23 | Complete |
 | IV-05 | Phase 24 | Pending |
 | IV-06 | Phase 24 | Pending |
 | IV-07 | Phase 24 | Pending |
 | IV-08 | Phase 24 | Pending |
 | IV-09 | Phase 24 | Pending |
-| IV-10 | Phase 23 | Pending |
+| IV-10 | Phase 23 | Complete |
 | IV-11 | Phase 24 | Pending |
-| IV-12 | Phase 23 | Pending |
+| IV-12 | Phase 23 | Complete |
 | PATH-01 | Phase 24 | Pending |
 | PATH-02 | Phase 24 | Pending |
 | PATH-03 | Phase 24 | Pending |
@@ -118,8 +118,8 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 | COST-02 | -- | Deferred (no budget to enforce with native subagents) |
 | COST-03 | Phase 23 | Revised → OPS-MON-01 (subagent spawn tracking) |
 | COST-04 | -- | Deferred (no cost data; spawn counts via `dynamo voice status`) |
-| OPS-MON-01 | Phase 23 | Pending |
-| OPS-MON-02 | Phase 23 | Pending |
+| OPS-MON-01 | Phase 23 | Complete |
+| OPS-MON-02 | Phase 23 | Complete |
 | HOOK-01 | Phase 23 | Pending |
 | HOOK-02 | Phase 23 | Pending |
 | HOOK-03 | Phase 23 | Pending |

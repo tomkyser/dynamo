@@ -6,7 +6,9 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 const resolve = require('../../lib/resolve.cjs');
-const { output, error, loadConfig, fetchWithTimeout, DYNAMO_DIR, MCPClient, SCOPE, validateGroupId, loadSessions, listSessions } = require(resolve('lib', 'core.cjs'));
+const { output, error, loadConfig, fetchWithTimeout, DYNAMO_DIR, MCPClient } = require(resolve('lib', 'core.cjs'));
+const { SCOPE } = require(resolve('lib', 'scope.cjs'));
+const { loadSessions, listSessions } = require(resolve('assay', 'sessions.cjs'));
 
 // --- Check implementations ---
 

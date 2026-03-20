@@ -17,11 +17,7 @@ const ALLOWLIST = [
     path.join(REPO_ROOT, 'lib', 'core.cjs'),
     path.join(REPO_ROOT, 'subsystems', 'terminus', 'mcp-client.cjs'),
   ],
-  // core.cjs <-> sessions.cjs (logError)
-  [
-    path.join(REPO_ROOT, 'lib', 'core.cjs'),
-    path.join(REPO_ROOT, 'subsystems', 'assay', 'sessions.cjs'),
-  ],
+  // core.cjs <-> sessions.cjs cycle removed -- core.cjs no longer re-exports sessions.cjs
   // install.cjs <-> update.cjs (intra-switchboard: install calls update for migrations,
   // update calls install for copyTree -- both use deferred require() to break the cycle at runtime)
   [

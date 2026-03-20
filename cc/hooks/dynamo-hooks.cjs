@@ -5,7 +5,8 @@ const path = require('path');
 const fs = require('fs');
 // Bootstrap resolver: cc/hooks/ is at depth 2 from root
 const resolve = require('../../lib/resolve.cjs');
-const { loadEnv, detectProject, logError, SCOPE } = require(resolve('lib', 'core.cjs'));
+const { loadEnv, detectProject, logError } = require(resolve('lib', 'core.cjs'));
+const { SCOPE } = require(resolve('lib', 'scope.cjs'));
 
 // Load .env early (API keys needed by handlers)
 loadEnv();

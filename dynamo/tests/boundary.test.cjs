@@ -77,7 +77,10 @@ describe('Import boundary enforcement (six-subsystem layout)', () => {
     assert.ok(fs.existsSync(corePath), 'lib/core.cjs must exist');
     const content = fs.readFileSync(corePath, 'utf8');
     assert.ok(content.includes('MCPClient'), 'core.cjs should re-export MCPClient');
-    assert.ok(content.includes('SCOPE'), 'core.cjs should re-export SCOPE');
+    // SCOPE, parseSSE, sanitize, SCOPE_PATTERN, loadSessions, listSessions removed --
+    // consumers now import directly from scope.cjs and sessions.cjs
+    assert.ok(!content.includes('parseSSE'), 'core.cjs should not re-export parseSSE (unused)');
+    assert.ok(!content.includes('loadSessions'), 'core.cjs should not re-export loadSessions (direct import)');
   });
 
   it('six-subsystem directory structure exists', () => {

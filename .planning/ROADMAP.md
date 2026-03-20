@@ -104,7 +104,12 @@ Plans:
   3. Deliberation subagent (`cc/agents/inner-voice.md`) spawns on semantic shift or low-confidence signals; rate limit detection degrades to hot-path-only when spawn fails
   4. State bridge writes deliberation results via SubagentStop with correlation ID and 60s TTL; next UserPromptSubmit atomically consumes the result via `fs.renameSync`; stale or crashed results are detected and discarded
   5. Injection formatting respects token limits (500 session start, 150 mid-session, 50 urgent) and uses adversarial counter-prompting templates
-**Plans**: TBD
+**Plans:** 4 plans
+Plans:
+- [ ] 24-01-PLAN.md -- Dual-path routing module (path selection, semantic shift, recall detection, token management, injection formatting) and inner-voice subagent definition
+- [ ] 24-02-PLAN.md -- Reverie curation module (template-based formatting, token limits, adversarial framing) and 5 Inner Voice prompt templates
+- [ ] 24-03-PLAN.md -- Pipeline orchestrator (inner-voice.cjs) with per-hook cognitive pipelines, state bridge, and hot-path timing instrumentation
+- [ ] 24-04-PLAN.md -- All 7 handler rewrites replacing pass-through stubs with cognitive pipeline delegation
 
 ### Phase 25: Graduated Rollout
 **Goal**: The Inner Voice proves it equals or exceeds classic curation quality through a hybrid comparison mode before any user switches to cortex mode, and users can inspect and manage Inner Voice state
@@ -156,6 +161,6 @@ Phases execute in numeric order: 23 -> 24 -> 25 -> 26
 | 21. SQLite Session Index | v1.3-M1 | 2/2 | Complete | 2026-03-20 |
 | 22. M1 Verification and Cleanup | v1.3-M1 | 4/4 | Complete | 2026-03-20 |
 | 23. Foundation and Routing | v1.3-M2 | 3/3 | Complete    | 2026-03-20 |
-| 24. Cognitive Pipeline | v1.3-M2 | 0/TBD | Not started | - |
+| 24. Cognitive Pipeline | v1.3-M2 | 0/4 | Not started | - |
 | 25. Graduated Rollout | v1.3-M2 | 0/TBD | Not started | - |
 | 26. Operational Completion | v1.3-M2 | 0/TBD | Not started | - |

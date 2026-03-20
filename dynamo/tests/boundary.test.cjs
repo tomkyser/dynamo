@@ -107,6 +107,18 @@ describe('Import boundary enforcement (six-subsystem layout)', () => {
       'lib/ must exist at repo root');
     assert.ok(fs.existsSync(path.join(REPO_ROOT, 'lib', 'resolve.cjs')),
       'lib/resolve.cjs must exist');
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'lib', 'layout.cjs')),
+      'lib/layout.cjs must exist');
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'lib', 'core.cjs')),
+      'lib/core.cjs must exist');
+  });
+
+  it('reverie/ is a stub directory', () => {
+    const reverieDir = path.join(REPO_ROOT, 'subsystems', 'reverie');
+    assert.ok(fs.existsSync(reverieDir), 'subsystems/reverie/ must exist');
+    assert.ok(fs.existsSync(path.join(reverieDir, '.gitkeep')), 'subsystems/reverie/.gitkeep must exist');
+    const cjsFiles = fs.readdirSync(reverieDir).filter(f => f.endsWith('.cjs'));
+    assert.strictEqual(cjsFiles.length, 0, 'reverie/ should contain no .cjs files (stub only)');
   });
 
   it('no production file contains ad-hoc resolveCore/resolveSibling/resolveHandlers functions', () => {
@@ -120,6 +132,9 @@ describe('Import boundary enforcement (six-subsystem layout)', () => {
     ];
     const files = [];
     for (const dir of dirs) files.push(...getAllCjsFiles(dir));
+    // Also check repo-root dynamo.cjs
+    const dynamoCjs = path.join(REPO_ROOT, 'dynamo.cjs');
+    if (fs.existsSync(dynamoCjs)) files.push(dynamoCjs);
     for (const file of files) {
       const content = fs.readFileSync(file, 'utf8');
       const rel = path.relative(REPO_ROOT, file);

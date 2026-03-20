@@ -73,6 +73,20 @@ describe('walkDir', () => {
     assert.ok(entry.mtime > 0);
     assert.ok(entry.size > 0);
   });
+
+  it('filesOnly mode skips subdirectories', () => {
+    const files = sync.walkDir(tmpDir, [], [], undefined, true);
+    assert.ok('a.txt' in files, 'root file should be included');
+    assert.ok(!('sub/b.txt' in files), 'nested file should be excluded');
+    assert.ok(!('sub/deep/c.txt' in files), 'deeply nested file should be excluded');
+  });
+
+  it('filesOnly=false or undefined recurses into subdirectories', () => {
+    const files = sync.walkDir(tmpDir, [], [], undefined, false);
+    assert.ok('a.txt' in files, 'root file should be included');
+    assert.ok('sub/b.txt' in files, 'nested file should be included');
+    assert.ok('sub/deep/c.txt' in files, 'deeply nested file should be included');
+  });
 });
 
 // --- diffTrees tests ---
@@ -268,5 +282,18 @@ describe('sync six-subsystem layout', () => {
   it('dynamo-meta pair excludes tests directory', () => {
     const dynamoPair = sync.SYNC_PAIRS.find(p => p.label === 'dynamo-meta');
     assert.ok(dynamoPair.excludes.includes('tests'), 'dynamo-meta pair should exclude tests');
+  });
+
+  it('root pair has filesOnly flag set to true', () => {
+    const rootPair = sync.SYNC_PAIRS.find(p => p.label === 'root');
+    assert.ok(rootPair, 'should have root pair');
+    assert.strictEqual(rootPair.filesOnly, true, 'root pair should have filesOnly=true');
+  });
+
+  it('non-root pairs do not have filesOnly flag', () => {
+    const nonRootPairs = sync.SYNC_PAIRS.filter(p => p.label !== 'root');
+    for (const pair of nonRootPairs) {
+      assert.ok(!pair.filesOnly, `${pair.label} pair should not have filesOnly=true`);
+    }
   });
 });

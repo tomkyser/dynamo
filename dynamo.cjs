@@ -69,7 +69,7 @@ Dynamo — Unified CLI for the Dynamo memory system
 Usage: node dynamo.cjs <command> [options]
 
 Commands:
-  health-check   Run 6-stage health check (Docker, Neo4j, API, MCP, env, canary)
+  health-check   Run 8-stage health check (Docker, Neo4j, API, MCP, env, canary, Node.js, sessions)
   diagnose       Run all 13 diagnostic stages (deep system inspection)
   verify-memory  Run 6 pipeline checks (write, read, scope isolation, sessions)
   sync           Bidirectional sync between repo and live deployment
@@ -110,7 +110,7 @@ Examples:
 // --- Command-specific help ---
 
 const COMMAND_HELP = {
-  'health-check': 'Usage: dynamo health-check [--pretty] [--verbose]\n  Run 6-stage health check.',
+  'health-check': 'Usage: dynamo health-check [--pretty] [--verbose]\n  Run 8-stage health check.',
   'diagnose':     'Usage: dynamo diagnose [--pretty] [--verbose]\n  Run all 13 diagnostic stages.',
   'verify-memory':'Usage: dynamo verify-memory [--pretty] [--verbose]\n  Run 6 pipeline checks.',
   'sync':         'Usage: dynamo sync <repo-to-live|live-to-repo|status> [--dry-run] [--pretty]\n  Bidirectional sync.',
@@ -392,9 +392,13 @@ async function main() {
           sessions.labelSession(restArgs[1], restArgs[2]);
           output({ command: 'session', subcommand: 'label', status: 'ok' });
           break;
-        case 'backfill':
-          await sessions.backfillSessions();
-          output({ command: 'session', subcommand: 'backfill', status: 'ok' });
+        case 'backfill': {
+          const { generateSessionName } = require(resolve('ledger', 'curation.cjs'));
+          const count = await sessions.backfillSessions(
+            async (entry) => generateSessionName(entry.project || 'unnamed session')
+          );
+          output({ command: 'session', subcommand: 'backfill', status: 'ok', backfilled: count });
+        }
           break;
         default:
           error('Usage: dynamo session <list|view|label|backfill>');

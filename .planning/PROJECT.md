@@ -77,6 +77,10 @@ Phase 19 complete — codebase restructured from 3-directory layout (dynamo/ledg
 - ✓ MGMT-01: Install and health-check verify Node.js version and Graphiti status — Validated in Phase 20: Management Hardening
 - ✓ MGMT-08a: Hook dispatcher validates JSON structure and enforces field length limits — Validated in Phase 20: Management Hardening
 - ✓ MGMT-08b: additionalContext injection includes boundary markers against prompt injection — Validated in Phase 20: Management Hardening
+- ✓ DATA-01: Session data stored in SQLite via node:sqlite DatabaseSync API — Validated in Phase 21: SQLite Session Index
+- ✓ DATA-02: Session query functions maintain identical interface — Validated in Phase 21: SQLite Session Index
+- ✓ DATA-03: One-time migration converts sessions.json to SQLite database — Validated in Phase 21: SQLite Session Index
+- ✓ DATA-04: Graceful fallback to JSON file if node:sqlite unavailable — Validated in Phase 21: SQLite Session Index
 
 ### Active
 
@@ -108,8 +112,9 @@ Phase 17 complete — Deploy pipeline fixes: hook dispatcher dual-layout resolut
 Phase 18 complete — Restructure prerequisites: centralized dual-layout resolver (`lib/resolve.cjs`) with logical name API for 8 subsystems, dependency graph cycle detector (`lib/dep-graph.cjs`), all 23 production files migrated from ad-hoc resolution patterns, deploy pipeline updated for `lib/`. Validated in Phase 18: ARCH-02 (centralized resolver), ARCH-03 (circular dep detection). 397 tests passing.
 Phase 19 complete — Six-subsystem directory restructure: 27 production files moved via `git mv` from 3-dir to 6-subsystem layout (`subsystems/`, `cc/`, `lib/`). `lib/layout.cjs` extracted as unified layout source of truth. Resolver simplified (no dual-layout detection). SYNC_PAIRS, install.cjs, settings-hooks.json all updated. 405 tests passing, zero regressions. Validated: ARCH-01, ARCH-04, ARCH-05, ARCH-06, ARCH-07.
 Phase 20 complete — Management hardening: Node.js >= 22 version check in health-check (7th stage) and install (Step 0, WARN-only). Hook dispatcher input validation with field type checks and length limits (MGMT-08a). Stdout boundary markers (`<dynamo-memory-context>`) wrap all hook injection output (MGMT-08b). 35 new dispatcher tests. Validated: MGMT-01, MGMT-08a, MGMT-08b.
+Phase 21 complete — SQLite session index: `subsystems/terminus/session-store.cjs` (232 LOC) provides SQLite-backed session storage via `node:sqlite` DatabaseSync. `sessions.cjs` delegates to SQLite when available, dual-writes JSON for backward compatibility, falls back transparently to JSON when `node:sqlite` unavailable. `dynamo install` migrates `sessions.json` to SQLite (idempotent, transaction-safe). Health-check reports storage backend type (8th stage). 30 new session-store tests. 479 total tests passing. Validated: DATA-01, DATA-02, DATA-03, DATA-04.
 Tech stack: Node/CJS (subsystems/, cc/, lib/), Docker (Graphiti stack), Claude Haiku (session naming via OpenRouter).
-Total project: ~9,800 LOC CJS, 447 tests passing, across 20 phases and 52 plans.
+Total project: ~10,000 LOC CJS, 479 tests passing, across 21 phases and 54 plans.
 Python/Bash legacy retired to `~/.claude/graphiti-legacy/`.
 v1.2.1 shipped with all 10 STAB requirements complete.
 v1.3 architecture specification complete (260319-fzc task, 5 plans across 4 waves):
@@ -508,4 +513,4 @@ These items must be assessed during every phase's planning and execution. Not al
 - [ ] **Dynamo toggle awareness**: If a global on/off or dev mode toggle exists, ensure phase work respects it and updates toggle behavior if scope changes.
 
 ---
-*Last updated: 2026-03-20 after Phase 20 completion*
+*Last updated: 2026-03-20 after Phase 21 completion*

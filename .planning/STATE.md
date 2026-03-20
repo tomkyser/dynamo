@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 20-02-PLAN.md
-last_updated: "2026-03-20T02:41:31.721Z"
+stopped_at: Completed 20-01-PLAN.md (both plans now done)
+last_updated: "2026-03-20T02:40:18Z"
 progress:
   total_phases: 5
   completed_phases: 3
@@ -76,8 +76,9 @@ Recent decisions affecting current work:
 - [Phase 19]: settings-hooks.json hook command paths updated to cc/hooks/dynamo-hooks.cjs
 - [Phase 19-03]: SYNC_PAIRS count is 8 (not 7) -- dynamo-meta pair needed for VERSION/migrations sync
 - [Phase 19-03]: filesOnly flag added to walkDir for root sync pair to skip subdirectory recursion
-- [Phase 20]: XML-style boundary markers chosen for LLM-native semantic clarity over bracket-style delimiters
-- [Phase 20]: Centralized input validation in dispatcher (not per-handler) with early return on missing event name
+- [Phase 20-01]: stageNodeVersion appended at HEALTH_STAGE_DEFS index 6 with dependsOn: [] to avoid shifting existing indices
+- [Phase 20-01]: Install dependency check uses WARN (never FAIL) to avoid blocking emergency deployments
+- [Phase 20-01]: Node.js version check uses process.version parsing, not node:test smoke test
 
 ### Blockers/Concerns
 
@@ -85,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T02:41:31.718Z
-Stopped at: Completed 20-02-PLAN.md
+Last session: 2026-03-20T02:40:18Z
+Stopped at: Completed 20-01-PLAN.md (Phase 20 complete -- both plans done)
 Resume file: None

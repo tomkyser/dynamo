@@ -19,7 +19,7 @@ Requirements for Foundation and Infrastructure Refactor. Each maps to roadmap ph
 
 ### Management
 
-- [ ] **MGMT-01**: Install and health-check verify Node.js minimum version and Graphiti dependency status
+- [x] **MGMT-01**: Install and health-check verify Node.js minimum version and Graphiti dependency status
 - [x] **MGMT-08a**: Hook dispatcher validates JSON structure and enforces field length limits on all input
 - [x] **MGMT-08b**: `additionalContext` injection includes boundary markers to prevent prompt injection bleed
 
@@ -74,7 +74,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ARCH-05 | Phase 19 | Complete |
 | ARCH-06 | Phase 19 | Complete |
 | ARCH-07 | Phase 19 | Complete |
-| MGMT-01 | Phase 20 | Pending |
+| MGMT-01 | Phase 20 | Complete |
 | MGMT-08a | Phase 20 | Complete |
 | MGMT-08b | Phase 20 | Complete |
 | DATA-01 | Phase 21 | Pending |

@@ -68,13 +68,12 @@
 **Milestone Goal:** Make the memory system intelligent through the Inner Voice and dual-path architecture. Reverie replaces Haiku curation with context-aware, personality-driven injection. Hybrid architecture: CJS command hooks for hot path + custom subagents for deliberation.
 
 **Phase Numbering:**
-- Integer phases (23, 24, 25, 26): Planned milestone work
+- Integer phases (23, 24, 25): Planned milestone work
 - Decimal phases (e.g., 23.1): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 23: Foundation and Routing** - Data structures, operational monitoring, feature flag, dispatcher dual-mode routing, and stub handlers (completed 2026-03-20)
 - [x] **Phase 24: Cognitive Pipeline** - Core orchestration, dual-path routing, curation migration, all 7 handlers, subagent integration, and state bridge (completed 2026-03-20)
-- [ ] **Phase 25: Graduated Rollout** - Hybrid mode A/B comparison, threshold calibration, activation seeding, and voice management CLI
-- [ ] **Phase 26: Operational Completion** - Bare CLI shim, CHANGELOG workflow, and install pipeline updates for Reverie
+- [ ] **Phase 25: Cutover & Completion** - Classic mode removal, voice CLI commands, bare CLI shim, changelog integration, and install pipeline updates
 
 ## Phase Details
 
@@ -121,7 +120,12 @@ Plans:
   3. Running `dynamo` from any terminal (without `node` prefix or full path) invokes the CLI via a symlink shim; `DYNAMO_DEV=1` overrides to the repo version
   4. CHANGELOG.md exists with well-written update notes generated from git; `dynamo check-update` and `dynamo update` display relevant changelog entries
   5. `dynamo install` and `dynamo sync` deploy all new Reverie files, `cc/agents/`, and `cc/prompts/iv-*` templates; install actively cleans up removed classic-mode files from existing deployments
-**Plans**: TBD
+**Plans:** 4 plans
+Plans:
+- [ ] 25-01-PLAN.md -- Classic mode removal (dispatcher, config, health checks, dead code deletion, test updates)
+- [ ] 25-02-PLAN.md -- Bare CLI shim and CHANGELOG.md integration
+- [ ] 25-03-PLAN.md -- Voice CLI commands (status, explain, reset)
+- [ ] 25-04-PLAN.md -- Install/sync pipeline updates with active cleanup
 
 ## Progress
 
@@ -154,4 +158,4 @@ Phases execute in numeric order: 23 -> 24 -> 25
 | 22. M1 Verification and Cleanup | v1.3-M1 | 4/4 | Complete | 2026-03-20 |
 | 23. Foundation and Routing | v1.3-M2 | 3/3 | Complete    | 2026-03-20 |
 | 24. Cognitive Pipeline | v1.3-M2 | 4/4 | Complete    | 2026-03-20 |
-| 25. Cutover & Completion | v1.3-M2 | 0/TBD | Not started | - |
+| 25. Cutover & Completion | v1.3-M2 | 0/4 | Not started | - |

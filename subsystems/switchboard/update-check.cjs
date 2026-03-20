@@ -32,6 +32,38 @@ function compareVersions(a, b) {
 }
 
 /**
+ * Read changelog entries between two versions.
+ * Extracts entries from CHANGELOG.md between latestVersion (inclusive) and currentVersion (exclusive).
+ *
+ * @param {string} currentVersion - Current installed version
+ * @param {string} latestVersion - Latest available version
+ * @param {object} [options={}] - Options
+ * @param {string} [options.changelogPath] - Override path to CHANGELOG.md
+ * @returns {string} Extracted changelog text, or empty string if not found
+ */
+function readChangelog(currentVersion, latestVersion, options = {}) {
+  const changelogPath = options.changelogPath || path.join(__dirname, '..', '..', 'CHANGELOG.md');
+  try {
+    const content = fs.readFileSync(changelogPath, 'utf8');
+    const sections = content.split(/^## /m);
+    const relevant = [];
+    let collecting = false;
+    for (const section of sections) {
+      const versionMatch = section.match(/^\[([^\]]+)\]/);
+      if (!versionMatch) continue;
+      const ver = versionMatch[1];
+      if (ver === 'Unreleased') continue;
+      if (compareVersions(ver, currentVersion) <= 0) break;
+      if (compareVersions(ver, latestVersion) <= 0) collecting = true;
+      if (collecting) relevant.push('## ' + section);
+    }
+    return relevant.join('\n').trim();
+  } catch (e) {
+    return '';
+  }
+}
+
+/**
  * Check for available updates by querying GitHub Releases API.
  *
  * @param {object} [options={}] - Options for test isolation
@@ -82,13 +114,19 @@ async function checkUpdate(options = {}) {
   const latestVersion = (release.tag_name || '').replace(/^v/, '');
   const updateAvailable = compareVersions(latestVersion, currentVersion) > 0;
 
-  return {
+  const result = {
     current: currentVersion,
     latest: latestVersion,
     update_available: updateAvailable,
     release_name: release.name || null,
     tarball_url: release.tarball_url || null
   };
+
+  if (updateAvailable) {
+    result.changelog = readChangelog(currentVersion, latestVersion, options);
+  }
+
+  return result;
 }
 
-module.exports = { checkUpdate, compareVersions };
+module.exports = { checkUpdate, compareVersions, readChangelog };

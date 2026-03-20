@@ -276,6 +276,13 @@ async function update(args = [], pretty = false, options = {}, _returnOnly = fal
     try { fs.rmSync(options._extractedDir, { recursive: true, force: true }); } catch (e) { /* no-op */ }
   }
 
+  // Display changelog for the new version
+  const { readChangelog } = require(path.join(__dirname, 'update-check.cjs'));
+  const changelog = readChangelog(check.current, check.latest, options);
+  if (changelog) {
+    process.stderr.write('\nWhat\'s new:\n' + changelog + '\n');
+  }
+
   const result = {
     command: 'update',
     status: 'updated',

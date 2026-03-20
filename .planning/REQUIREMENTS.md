@@ -15,7 +15,7 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 - [ ] **IV-04**: Sublimation threshold evaluates composite score (activation * surprise * relevance * (1 - cognitive_load) * confidence) to determine what surfaces
 - [ ] **IV-05**: Injection formatting respects token limits by context (500 session start, 150 mid-session, 50 urgent) following Cognitive Load Theory
 - [ ] **IV-06**: Self-model persists across sessions (attention state, injection mode, confidence, working patterns) with session-scoped fields that reset
-- [ ] **IV-07**: LLM-calling curation functions migrate from Ledger to Reverie; Ledger retains only deterministic formatting
+- [ ] **IV-07**: Curation functions migrate from Ledger to Reverie as subagent-based processing; Ledger retains only deterministic formatting
 - [ ] **IV-08**: Curation templates use adversarial counter-prompting to evaluate from user's experience, not canonical definitions
 - [ ] **IV-09**: Semantic shift detection triggers injection on topic changes using keyword overlap (embedding-based deferred to M4/MENH-08)
 - [ ] **IV-10**: Domain frame classification categorizes prompts into engineering/debugging/architecture/social/general via keyword/regex heuristic (<1ms)
@@ -27,16 +27,19 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 - [ ] **PATH-01**: Deterministic path selection (hot/deliberation/skip) based on signal thresholds without LLM call — the path decision itself is always cheap
 - [ ] **PATH-02**: Hot path executes under 500ms with per-step timing instrumentation via performance.now() and a 400ms abort threshold
 - [ ] **PATH-03**: Deliberation path spawns custom `inner-voice` subagent (Sonnet model, read-only tools, permissionMode: dontAsk) for Max subscription users
-- [ ] **PATH-04**: Deliberation path falls back to direct Anthropic API call for API plan users when subagent is unavailable
+- [ ] **PATH-04**: Deliberation path degrades gracefully to hot-path-only when subagent spawn fails or daily cap reached
 - [ ] **PATH-05**: State bridge pattern uses SubagentStop file write with correlation ID and 60s TTL, consumed atomically by next UserPromptSubmit via fs.renameSync
-- [ ] **PATH-06**: Rate limit detection sets runtime flag on 429 or spawn failure; system degrades to hot-path-only until cleared
+- [ ] **PATH-06**: Rate limit detection sets runtime flag on spawn failure or daily cap; system degrades to hot-path-only until cleared
 
-### Cost Monitoring (CORTEX-03)
+### Operational Monitoring (CORTEX-03)
 
-- [ ] **COST-01**: Per-operation cost tracking stores events in SQLite (same pattern as session-store.cjs) with operation type, token count, and timestamp
-- [ ] **COST-02**: Daily budget enforcement checks budget before each LLM call and blocks deliberation path when exhausted
-- [ ] **COST-03**: Subagent spawn tracking enforces daily cap (configurable, default 20) for subscription users; tracks rate limit proximity
-- [ ] **COST-04**: CLI surface exposes cost visibility via `dynamo cost today/month/budget` commands
+- [ ] **OPS-MON-01**: Subagent spawn tracking enforces daily cap (configurable, default 20); tracks rate limit proximity
+- [ ] **OPS-MON-02**: Rate limit detection sets runtime flag on spawn failure; system degrades to hot-path-only until cleared
+
+> **Deferred (no compelling need on Max subscription):**
+> - ~~COST-01: Per-operation cost tracking~~ — Dynamo has zero marginal cost on Max subscription; Graphiti infrastructure costs are outside Dynamo's scope
+> - ~~COST-02: Daily budget enforcement~~ — No budget to enforce when all LLM ops use native subagents
+> - ~~COST-04: Cost CLI~~ — No cost data to display; subagent spawn counts can surface through `dynamo voice status` instead
 
 ### Hook Architecture (MGMT-05)
 
@@ -111,10 +114,12 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 | PATH-04 | Phase 24 | Pending |
 | PATH-05 | Phase 24 | Pending |
 | PATH-06 | Phase 24 | Pending |
-| COST-01 | Phase 23 | Pending |
-| COST-02 | Phase 23 | Pending |
-| COST-03 | Phase 23 | Pending |
-| COST-04 | Phase 26 | Pending |
+| COST-01 | -- | Deferred (no cost to track on Max subscription) |
+| COST-02 | -- | Deferred (no budget to enforce with native subagents) |
+| COST-03 | Phase 23 | Revised → OPS-MON-01 (subagent spawn tracking) |
+| COST-04 | -- | Deferred (no cost data; spawn counts via `dynamo voice status`) |
+| OPS-MON-01 | Phase 23 | Pending |
+| OPS-MON-02 | Phase 23 | Pending |
 | HOOK-01 | Phase 23 | Pending |
 | HOOK-02 | Phase 23 | Pending |
 | HOOK-03 | Phase 23 | Pending |
@@ -127,9 +132,9 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 | OPS-03 | Phase 26 | Pending |
 
 **Coverage:**
-- v1.3-M2 requirements: 30 total
-- Mapped to phases: 30
-- Unmapped: 0
+- v1.3-M2 requirements: 28 active (COST-01, COST-02, COST-04 deferred; COST-03 revised to OPS-MON-01; OPS-MON-02 added)
+- Mapped to phases: 28
+- Deferred: 3 (no cost to track on Max subscription)
 
 ---
 *Requirements defined: 2026-03-20*

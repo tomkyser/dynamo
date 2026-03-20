@@ -17,7 +17,7 @@ The current system (v1.2.1) provides automatic context injection, prompt augment
 
 ### 1.2 The Evolution
 
-Dynamo evolves from a hook-driven memory pipeline (search, curate with Haiku, inject) into a six-subsystem cognitive architecture. This evolution is not a rewrite -- it is an incremental transformation where each subsystem emerges from existing code through restructuring, boundary enforcement, and capability addition.
+Dynamo evolves from a hook-driven memory pipeline (search, curate, inject) into a six-subsystem cognitive architecture. This evolution is not a rewrite -- it is an incremental transformation where each subsystem emerges from existing code through restructuring, boundary enforcement, and capability addition.
 
 The six subsystems are:
 
@@ -201,7 +201,7 @@ Terminus is stateless. It provides transport functions that Ledger and Assay cal
 
 #### Reverie (Inner Voice)
 
-Reverie is the cognitive processing engine. It replaces Haiku curation with context-aware, personality-driven memory injection. See INNER-VOICE-ABSTRACT.md for the platform-agnostic concept definition.
+Reverie is the cognitive processing engine. It replaces the classic curation pipeline with context-aware, personality-driven memory injection. See INNER-VOICE-ABSTRACT.md for the platform-agnostic concept definition.
 
 Reverie owns:
 
@@ -237,11 +237,11 @@ What Dynamo provides today:
 What Dynamo will provide with the six-subsystem architecture and Reverie:
 
 - **Intelligent context injection** -- the Inner Voice replaces mechanical curation with context-aware, personality-driven injection. Injections are timed by surprise (semantic shift detection), not by schedule. Content is integrated with relational context, not formatted as search results.
-- **Dual-path cost control** -- 95% of operations stay on the fast, cheap hot path. Expensive reasoning fires only when genuine complexity demands it.
+- **Dual-path architecture** -- 95% of operations stay on the fast, deterministic hot path. Subagent-powered reasoning fires only when genuine complexity demands it.
 - **Self-model persistence** -- the system maintains an evolving model of the user's attention state, communication preferences, and working patterns across sessions.
 - **Session-start briefings** -- narrative context (factual in v1.3, relational in later milestones) that primes the AI session to behave as if it genuinely remembers.
 - **Session-end synthesis** -- REM consolidation that transforms raw session data into consolidated knowledge, improving future sessions.
-- **Cost monitoring** -- per-operation, per-day, per-month tracking with hard budget enforcement.
+- **Operational monitoring** -- subagent spawn tracking with rate limit awareness and graceful degradation.
 
 ### 4.3 Future Value (Post-v1.3)
 
@@ -265,7 +265,7 @@ The roadmap uses v1.3 as the sole planned version with milestoned iterations (1.
 | Milestone | Theme | Key Deliverables |
 |-----------|-------|-----------------|
 | **1.3-M1** | Foundation and Infrastructure Refactor | Directory restructure to 6-subsystem architecture; transport flexibility (MENH-06/07); dependency management (MGMT-01); jailbreak protection (MGMT-08); SQLite session index (MGMT-11) |
-| **1.3-M2** | Core Intelligence | Inner Voice basic (CORTEX-01); dual-path routing (CORTEX-02); cost monitoring (CORTEX-03); hooks as primary behavior (MGMT-05); modular injection control (MGMT-10) |
+| **1.3-M2** | Core Intelligence | Inner Voice basic (CORTEX-01); dual-path routing (CORTEX-02); operational monitoring (CORTEX-03); hooks as primary behavior (MGMT-05); modular injection control (MGMT-10) |
 | **1.3-M3** | Management and Visibility | On-demand modules (MGMT-02); skill inference (MGMT-03); inline visibility (UI-08) |
 | **1.3-M4** | Advanced Intelligence | Inner Voice advanced (CORTEX-04); enhanced construction (CORTEX-05); IV persistence advanced (CORTEX-06); local embeddings (MENH-08); global/project preferences (MGMT-06/07) |
 | **1.3-M5** | Platform Expansion | Memory synthesis/export (MENH-03); memory inference (MENH-04); flat file support (MENH-05); agent coordination (CORTEX-07); access agent (CORTEX-08); connector framework (CORTEX-09) |
@@ -312,20 +312,21 @@ Items with no assigned target version, to be evaluated after v1.3:
 | Operation | Target | Mechanism |
 |-----------|--------|-----------|
 | Hot path (UserPromptSubmit) | <500ms | Deterministic processing + cached state + `additionalContext` injection |
-| Deliberation path | <2s | Custom subagent (subscription) or direct API call |
+| Deliberation path | <2s | Custom subagent (Max subscription) |
 | Session start briefing | <4s | Custom subagent with Sonnet model (acceptable for session start) |
 | PostToolUse capture | <200ms | Deterministic entity extraction, activation update, queue |
 | Stop synthesis (REM Tier 3) | <10s | No user-facing latency; quality over speed |
 
 ### 6.2 Cost
 
-| Billing Model | v1.3 Daily Cost | v1.3 Monthly Cost | Primary Driver |
-|--------------|----------------|-------------------|----------------|
-| **Subscription (Pro/Max)** | ~$0.37/day | ~$11/month | Hot path Haiku formatting only; deliberation and REM via subagent at zero marginal cost |
-| **API plan** | ~$1.98/day | ~$59/month | Hot path formatting + direct API calls for deliberation and REM |
-| **API plan with caching** | ~$1.21/day | ~$36/month | 40-50% reduction on cached input tokens |
+Dynamo targets the Claude Code Max subscription exclusively. All Dynamo-native LLM operations use native Claude Code subagents at zero marginal cost. The only external API costs are Graphiti's own infrastructure (embeddings, entity extraction) which runs inside the Docker stack — these are infrastructure costs, not Dynamo operational costs.
 
-The dual-path architecture is the critical cost control mechanism. Without it, costs would be 3-8x higher.
+| Component | Cost | Notes |
+|-----------|------|-------|
+| Dynamo operations | $0/day | All LLM via native subagents (subscription) |
+| Graphiti infrastructure | Variable | Embeddings + entity extraction via OpenRouter; managed through Graphiti config |
+
+**Design principle:** Do not use external API endpoints for native Dynamo systems when Claude Code subscription features serve the same function.
 
 ### 6.3 Self-Manageability
 
@@ -406,7 +407,7 @@ Every operation must be performable by Claude Code without manual user intervent
 |--------|-----------|--------|
 | **Hot path latency p95** | 95th percentile latency for UserPromptSubmit hot path | <500ms |
 | **Deliberation path latency p95** | 95th percentile latency for deliberation processing | <2s |
-| **Cost per session** | Average daily cost divided by session count | Within budget (subscription: ~$0.07/session; API: ~$0.40/session) |
+| **Subagent spawns per session** | Average subagent invocations per session | Within daily cap (default: 20/day) |
 
 ### 8.3 Operational Metrics
 
@@ -418,7 +419,7 @@ Every operation must be performable by Claude Code without manual user intervent
 
 ### 8.4 Rollback Mechanism
 
-**Feature flag: classic vs. cortex mode.** If the Inner Voice produces lower-quality injections than the current Haiku curation pipeline, a feature flag (`dynamo config set ledger.mode classic`) instantly reverts to the v1.2.1 behavior. This eliminates catastrophic risk from the intelligence layer upgrade.
+**Feature flag: classic vs. cortex mode.** If the Inner Voice produces lower-quality injections than the current classic curation pipeline, a feature flag (`dynamo config set reverie.mode classic`) instantly reverts to the v1.2.1 behavior. This eliminates catastrophic risk from the intelligence layer upgrade.
 
 ---
 

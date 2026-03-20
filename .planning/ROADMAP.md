@@ -71,17 +71,17 @@
 - Integer phases (23, 24, 25, 26): Planned milestone work
 - Decimal phases (e.g., 23.1): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 23: Foundation and Routing** - Data structures, cost tracking, feature flag, dispatcher dual-mode routing, and stub handlers
+- [ ] **Phase 23: Foundation and Routing** - Data structures, operational monitoring, feature flag, dispatcher dual-mode routing, and stub handlers
 - [ ] **Phase 24: Cognitive Pipeline** - Core orchestration, dual-path routing, curation migration, all 7 handlers, subagent integration, and state bridge
 - [ ] **Phase 25: Graduated Rollout** - Hybrid mode A/B comparison, threshold calibration, activation seeding, and voice management CLI
-- [ ] **Phase 26: Operational Completion** - Bare CLI shim, cost CLI, CHANGELOG workflow, and install pipeline updates for Reverie
+- [ ] **Phase 26: Operational Completion** - Bare CLI shim, CHANGELOG workflow, and install pipeline updates for Reverie
 
 ## Phase Details
 
 ### Phase 23: Foundation and Routing
-**Goal**: Reverie subsystem has its foundational data structures, cost tracking infrastructure, feature flag system, and a working dispatcher that routes events to stub handlers based on mode -- without changing any existing behavior
+**Goal**: Reverie subsystem has its foundational data structures, operational monitoring, feature flag system, and a working dispatcher that routes events to stub handlers based on mode -- without changing any existing behavior
 **Depends on**: Phase 22 (M1 complete)
-**Requirements**: IV-01, IV-02, IV-03, IV-04, IV-10, IV-12, COST-01, COST-02, COST-03, FLAG-01, FLAG-03, HOOK-01, HOOK-02, HOOK-03
+**Requirements**: IV-01, IV-02, IV-03, IV-04, IV-10, IV-12, OPS-MON-01, OPS-MON-02, FLAG-01, FLAG-03, HOOK-01, HOOK-02, HOOK-03
 **Success Criteria** (what must be TRUE):
   1. `dynamo config set reverie.mode classic` and `dynamo config get reverie.mode` round-trip correctly; mode defaults to `classic` on fresh install
   2. With mode set to `classic`, all existing hook behavior is identical to v1.3-M1 -- no user-visible change from the feature flag or routing modification
@@ -97,7 +97,7 @@
 **Success Criteria** (what must be TRUE):
   1. Hot path completes under 500ms end-to-end (state load through injection formatting through state persist) with per-step timing instrumentation visible in debug output; 400ms abort threshold prevents overruns
   2. Path selection (hot/deliberation/skip) is deterministic based on activation signals -- no LLM call required for the routing decision itself
-  3. Deliberation subagent (`cc/agents/inner-voice.md`) spawns on semantic shift or low-confidence signals for Max subscription users; API plan users fall back to direct Anthropic API call
+  3. Deliberation subagent (`cc/agents/inner-voice.md`) spawns on semantic shift or low-confidence signals; rate limit detection degrades to hot-path-only when spawn fails
   4. State bridge writes deliberation results via SubagentStop with correlation ID and 60s TTL; next UserPromptSubmit atomically consumes the result via `fs.renameSync`; stale or crashed results are detected and discarded
   5. Injection formatting respects token limits (500 session start, 150 mid-session, 50 urgent) and uses adversarial counter-prompting templates
 **Plans**: TBD
@@ -113,14 +113,13 @@
 **Plans**: TBD
 
 ### Phase 26: Operational Completion
-**Goal**: M2 deliverable is complete with bare CLI access, cost visibility, update notes workflow, and install pipeline that deploys all new Reverie files
+**Goal**: M2 deliverable is complete with bare CLI access, update notes workflow, and install pipeline that deploys all new Reverie files
 **Depends on**: Phase 25
-**Requirements**: COST-04, OPS-01, OPS-02, OPS-03
+**Requirements**: OPS-01, OPS-02, OPS-03
 **Success Criteria** (what must be TRUE):
   1. Running `dynamo` from any terminal (without `node` prefix or full path) invokes the CLI via a symlink shim at `~/.claude/bin/dynamo`; `DYNAMO_DEV=1` overrides to the repo version
-  2. `dynamo cost today` and `dynamo cost month` display operation counts and costs; `dynamo cost budget` shows remaining daily budget and enforcement status
-  3. CHANGELOG.md exists with well-written update notes; `dynamo check-update` and `dynamo update` display relevant changelog entries
-  4. `dynamo install` and `dynamo sync` deploy all new Reverie files, the `cc/agents/` directory, and `cc/prompts/` templates alongside existing subsystem files
+  2. CHANGELOG.md exists with well-written update notes; `dynamo check-update` and `dynamo update` display relevant changelog entries
+  3. `dynamo install` and `dynamo sync` deploy all new Reverie files, the `cc/agents/` directory, and `cc/prompts/` templates alongside existing subsystem files
 **Plans**: TBD
 
 ## Progress

@@ -25,12 +25,12 @@ Every capability must be self-manageable by Claude Code (install, configure, upd
 
 ## Current Milestone: v1.3-M2 Core Intelligence
 
-**Goal:** Make the memory system intelligent through the Inner Voice and dual-path architecture. Reverie replaces Haiku curation with context-aware, personality-driven injection. Hybrid architecture: CJS command hooks for hot path + custom subagents for deliberation.
+**Goal:** Make the memory system intelligent through the Inner Voice and dual-path architecture. Reverie replaces the classic curation pipeline with context-aware, personality-driven injection. Hybrid architecture: CJS command hooks for hot path + custom subagents for deliberation. All LLM operations use native Claude Code subagents (Max subscription) — no external API calls for Dynamo's own operations.
 
 **Target features:**
 - Inner Voice (basic) with 7 PRIMARY cognitive theories and semantic shift detection
 - Dual-path routing: hot path (<500ms, deterministic) and deliberation path (2-10s, subagent)
-- Cost monitoring with per-operation/day/month budget tracking and hard enforcement
+- Operational monitoring with subagent spawn tracking and rate limit awareness
 - Hooks as primary behavior mechanism (replacing static CLAUDE.md)
 - Modular injection control with `reverie.mode` feature flag for instant rollback
 - Intelligent memory backfill from past chat transcripts

@@ -83,17 +83,17 @@ Each milestone gates the next: a milestone must prove its value before the next 
 
 ### 1.3-M2: Core Intelligence
 
-**Goal:** Make the memory system intelligent through the Inner Voice and dual-path architecture. Reverie replaces Haiku curation with context-aware, personality-driven injection. The hybrid architecture uses CJS command hooks for the hot path and custom subagents for deliberation.
+**Goal:** Make the memory system intelligent through the Inner Voice and dual-path architecture. Reverie replaces the classic curation pipeline with context-aware, personality-driven injection. The hybrid architecture uses CJS command hooks for the hot path and custom subagents for deliberation. All LLM operations use native Claude Code subagents (Max subscription) — no external API calls for Dynamo's own operations.
 
 **Dependencies:** 1.3-M1 (six-subsystem architecture in place)
 
 | Requirement | Name | Subsystem | Description |
 |-------------|------|-----------|-------------|
-| CORTEX-01 | Inner Voice (basic) | Reverie | Semantic shift detection, smart curation replacing Haiku pipeline, self-model persistence (JSON state file). Implements 7 PRIMARY cognitive theories: Dual-Process, Global Workspace, Spreading Activation (1-hop), Predictive Processing, Working Memory, Relevance Theory, Cognitive Load Theory. Hybrid architecture: CJS hooks for hot path (<500ms) + custom `inner-voice` subagent for deliberation. Absorbs MENH-01, MENH-02, MENH-10, MENH-11, MGMT-09. |
+| CORTEX-01 | Inner Voice (basic) | Reverie | Semantic shift detection, smart curation replacing classic pipeline, self-model persistence (JSON state file). Implements 7 PRIMARY cognitive theories: Dual-Process, Global Workspace, Spreading Activation (1-hop), Predictive Processing, Working Memory, Relevance Theory, Cognitive Load Theory. Hybrid architecture: CJS hooks for hot path (<500ms) + custom `inner-voice` subagent for deliberation. All LLM ops via native subagents (Max subscription). Absorbs MENH-01, MENH-02, MENH-10, MENH-11, MGMT-09. |
 | CORTEX-02 | Dual-path routing | Reverie | Hot path (<500ms, deterministic) and deliberation path (2-10s, subagent or API). Deterministic sublimation threshold: `sublimation_score = activation_level * surprise_factor * relevance_ratio * (1 - cognitive_load_penalty) * confidence_weight`. Target: 95% hot path / 5% deliberation. |
 | CORTEX-03 | Cost monitoring | Reverie / Dynamo | Per-operation, per-day, per-month budget tracking with hard enforcement. Degrades to hot-path-only when budget exhausted. Subscription users ~$0.37/day; API users ~$1.98/day. |
 | MGMT-05 | Hooks as primary behavior | Switchboard | Hooks replace static CLAUDE.md as the primary behavior mechanism. Switchboard dispatcher routes all events. |
-| MGMT-10 | Modular injection control | Switchboard / Reverie | Refined injection control building on v1.2's CJS foundation. Reverie's `reverie.mode` feature flag enables instant rollback to classic Haiku curation. |
+| MGMT-10 | Modular injection control | Switchboard / Reverie | Refined injection control building on v1.2's CJS foundation. Reverie's `reverie.mode` feature flag enables instant rollback to classic curation pipeline. |
 
 **Absorbed requirements:**
 
@@ -244,7 +244,7 @@ All requirements are assigned to a 1.3-M* milestone, marked as shipped, absorbed
 | UI-08 | Inline visibility | 1.3-M3 | |
 | CORTEX-01 | Inner Voice (basic) | 1.3-M2 | Hybrid architecture: CJS hooks + custom subagent; 7 PRIMARY theories |
 | CORTEX-02 | Dual-path routing | 1.3-M2 | Deterministic sublimation threshold; 95/5 hot/deliberation split |
-| CORTEX-03 | Cost monitoring | 1.3-M2 | Budget tracking and enforcement |
+| CORTEX-03 | Operational monitoring | 1.3-M2 | Subagent spawn tracking and rate limit degradation |
 | CORTEX-04 | Inner Voice (advanced) | 1.3-M4 | Narrative briefings, relationship modeling; 5 SECONDARY theories |
 | CORTEX-05 | Enhanced Construction | 1.3-M4 | Observation synthesis, consolidation |
 | CORTEX-06 | IV persistence (advanced) | 1.3-M4 | Graph-backed self-model evolution |
@@ -264,7 +264,7 @@ All requirements are assigned to a 1.3-M* milestone, marked as shipped, absorbed
 - **Prove before scaling.** The Inner Voice must demonstrably improve memory quality in 1.3-M2 before investing in multi-agent coordination in 1.3-M7. Each milestone gates the next.
 - **Agents are expensive; functions are cheap.** Default to deterministic CJS functions. Escalate to LLM agents only when reasoning genuinely adds value.
 - **Dual-path is non-negotiable.** Every memory operation must route through the hot path (fast, cheap, deterministic) or deliberation path (slow, expensive, intelligent). No operation should use the deliberation path by default.
-- **Hybrid architecture for cost optimization.** CJS command hooks for hot path (deterministic, <500ms) + custom subagents for deliberation path (intelligent, 2-10s). Subscription users ~$0.37/day; API users ~$1.98/day.
+- **Hybrid architecture.** CJS command hooks for hot path (deterministic, <500ms) + custom subagents for deliberation path (intelligent, 2-10s). All LLM operations use native subagents (Max subscription) at zero marginal cost. External API calls reserved for Graphiti infrastructure only.
 - **Six-subsystem boundary integrity.** Respect read/write/transport/dispatch/cognition/system boundaries. Ledger does not read. Assay does not write. Reverie delegates both. Switchboard dispatches but does not handle.
 - **Claudia-aware, not Claudia-scoped.** Design interfaces for extensibility (connector framework, message envelopes, domain templates) but only build what Dynamo needs now.
 - **Platform adapter pattern.** The `cc/` directory isolates all Claude Code specifics. Subsystem logic is platform-agnostic where possible. Future platforms (`/web`, `/api`, `/mcp`) can be added without touching subsystem logic.

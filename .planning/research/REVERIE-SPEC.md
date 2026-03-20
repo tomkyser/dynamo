@@ -12,13 +12,13 @@
 
 ## 1. Executive Summary
 
-Reverie is the Inner Voice realized on the Claude Code platform. It is the cognitive processing engine that replaces Haiku curation with context-aware, personality-driven memory injection. Where the current Dynamo pipeline mechanically searches, curates, and injects on every prompt, Reverie processes the *experience of the conversation* -- relational state, associative resonance, temporal context -- and selectively surfaces insights only when they cross an activation threshold. Most of what Reverie processes remains invisible to the active session. This selectivity is the core design feature.
+Reverie is the Inner Voice realized on the Claude Code platform. It is the cognitive processing engine that replaces the classic curation pipeline with context-aware, personality-driven memory injection. Where the current Dynamo pipeline mechanically searches, curates, and injects on every prompt, Reverie processes the *experience of the conversation* -- relational state, associative resonance, temporal context -- and selectively surfaces insights only when they cross an activation threshold. Most of what Reverie processes remains invisible to the active session. This selectivity is the core design feature.
 
 **Conceptual foundation:** See INNER-VOICE-ABSTRACT.md for the platform-agnostic Inner Voice concept. This document applies that abstract to Dynamo's concrete architecture: Claude Code hooks, custom subagents, CJS modules, JSON state files, and the Graphiti knowledge graph.
 
 **Architectural position:** Reverie is one of six subsystems in Dynamo's architecture (see DYNAMO-PRD.md Section 3). It reads through Assay, writes through Ledger, uses Terminus for transport, receives dispatched events from Switchboard, and is routed to by Dynamo's CLI. Reverie is the only subsystem that contains intelligence -- all other subsystems are deterministic.
 
-**The hybrid architecture:** Reverie implements a dual-mode invocation pattern. The latency-critical hot path runs as deterministic CJS code within command hooks, injecting via `additionalContext`. The latency-tolerant deliberation and REM consolidation paths run through a custom `inner-voice` subagent defined in `~/.claude/agents/inner-voice.md`. For Max subscription users, subagent processing is included at zero additional marginal cost. For API plan users, direct HTTP API calls serve as the fallback.
+**The hybrid architecture:** Reverie implements a dual-mode invocation pattern. The latency-critical hot path runs as deterministic CJS code within command hooks, injecting via `additionalContext`. The latency-tolerant deliberation and REM consolidation paths run through a custom `inner-voice` subagent defined in `~/.claude/agents/inner-voice.md`. On Max subscription, subagent processing is included at zero additional marginal cost. All LLM operations use native Claude Code subagents — no external API calls for Dynamo's own operations (see Section 4.4).
 
 **Key responsibilities:**
 
@@ -53,7 +53,7 @@ Reverie is the Inner Voice realized on the Claude Code platform. It is the cogni
 **Dual-Path Routing:**
 - Deterministic path selection logic (no LLM call for the decision itself)
 - Hot path execution: deterministic processing + cached/indexed data + template-based formatting
-- Deliberation path execution: custom subagent invocation (subscription) or direct API call (API plan)
+- Deliberation path execution: custom subagent invocation (Max subscription)
 - Path selection signals: entity match confidence, result count, semantic distance, explicit recall requests
 - Rate limit degradation: fall back to hot-path-only when rate-limited
 
@@ -227,8 +227,8 @@ module.exports = {
   executeDeliberationPath(entities, state, domainFrame) ->
     { injection: string, tokens: number },
 
-  shouldUseSubagent(config) -> boolean,
-    // Check billing model preference: subscription -> subagent, API -> direct call
+  shouldSpawnSubagent(config) -> boolean,
+    // Check rate limits and spawn cap before subagent invocation
 
   formatInjection(content, context, tokenLimit) -> string
     // Apply Relevance Theory and Cognitive Load Theory constraints
@@ -298,7 +298,7 @@ module.exports = {
 
 #### curation.cjs (Intelligent Curation)
 
-Absorbed from Ledger. Contains the LLM-powered functions that decide how to format and shape content for injection. This is the intelligence that the current Haiku curation pipeline provides, enhanced with context awareness.
+Absorbed from Ledger. Contains the LLM-powered functions that decide how to format and shape content for injection. This is the intelligence that the current classic curation pipeline provides, enhanced with context awareness. All LLM operations use native Claude Code subagents (Max subscription) rather than external API calls.
 
 ```javascript
 module.exports = {
@@ -340,7 +340,7 @@ subsystems/reverie/
     imports -> ../../lib/core.cjs
   curation.cjs
     imports -> ../../lib/core.cjs
-    imports -> (native fetch or OpenRouter for API calls)
+    imports -> (subagent-based via Claude Code native features)
   handlers/*.cjs
     imports -> ../inner-voice.cjs (all handlers delegate to the orchestrator)
     imports -> ../../lib/core.cjs
@@ -370,8 +370,8 @@ Reverie reads configuration from `config.json` (shared, managed by Dynamo):
 {
   "reverie": {
     "enabled": true,                    // Master switch for Inner Voice processing
-    "mode": "cortex",                   // "classic" (Haiku curation) | "cortex" (Inner Voice)
-    "billing_model": "subscription",    // "subscription" | "api" -- determines subagent vs direct API
+    "mode": "cortex",                   // "classic" (existing curation pipeline) | "cortex" (Inner Voice)
+    // billing_model removed -- Max subscription is the platform; subagents are the deliberation mechanism
     "hot_path": {
       "max_latency_ms": 500,           // Hard latency ceiling for hot path
       "entity_confidence_threshold": 0.7,
@@ -402,9 +402,9 @@ Reverie reads configuration from `config.json` (shared, managed by Dynamo):
       "tier3_enabled": true,           // Stop hook full consolidation
       "use_subagent_for_rem": true     // Use custom subagent for REM (subscription)
     },
-    "cost": {
-      "daily_budget": 5.00,            // Hard daily budget (API plan)
-      "hot_path_only_on_budget_exhaust": true
+    "operational": {
+      "subagent_daily_cap": 20,        // Rate limit for subagent spawns (operational health, not cost)
+      "hot_path_only_on_rate_limit": true
     }
   }
 }
@@ -575,11 +575,11 @@ The hybrid approach uses CJS command hooks for the hot path (95% of operations) 
 | Semantic shift detection | <5ms | Cosine distance on cached embeddings |
 | Activation map update | 10-50ms | In-memory map update + optional 1-hop graph query via Assay |
 | Path selection | <1ms | Deterministic signal evaluation |
-| Hot path formatting | 50-200ms | Template-based formatting with optional Haiku call |
+| Hot path formatting | 50-200ms | Template-based formatting (deterministic or lightweight subagent) |
 | State persistence | <5ms | Atomic file write |
 | **Total** | **<500ms** | |
 
-**No LLM call on the pure hot path.** When cached/indexed results are sufficient, the hot path formats using templates without any LLM invocation. When a lightweight formatting call is needed, Haiku provides sub-200ms response times with prompt caching.
+**No LLM call on the pure hot path.** When cached/indexed results are sufficient, the hot path formats using templates without any LLM invocation. All LLM-powered processing uses native Claude Code subagents (included in Max subscription) rather than external API calls.
 
 ### 4.3 Deliberation Path (Custom Subagent, 2-10s)
 
@@ -614,53 +614,34 @@ Next UserPromptSubmit reads:    inner-voice-deliberation-result.json
 2. The deliberation result enriches the *next* interaction, not the current one
 3. The delay is invisible to the user -- they do not know processing is happening asynchronously
 
-### 4.4 API Plan Fallback
+### 4.4 Platform Assumption: Max Subscription
 
-For users not on Max/Pro subscription plans, the custom subagent path is replaced with direct HTTP API calls. Same processing logic, different invocation mechanism.
+Reverie is designed for Claude Code on a Max subscription. All deliberation and REM consolidation use native Claude Code subagents at zero marginal cost. There is no API plan fallback — external API calls are reserved exclusively for Graphiti's own infrastructure (embeddings, entity extraction) which runs inside the Docker stack.
+
+**Design principle:** Do not use external API endpoints for native Dynamo systems when Claude Code subscription features can serve the same function. If a future need arises for API-based deliberation (e.g., non-subscription environments), it can be added as a separate adapter in `cc/` — but it is not designed for or included in v1.3.
 
 ```javascript
 // In dual-path.cjs
 async function executeDeliberationPath(entities, state, domainFrame) {
-  if (shouldUseSubagent(config)) {
-    // Subscription path: queue for subagent processing
+  if (shouldSpawnSubagent(config)) {
+    // Max subscription: queue for subagent processing
     return queueForSubagent(entities, state, domainFrame);
   } else {
-    // API plan path: direct HTTP call
-    return callAnthropicAPI(entities, state, domainFrame);
+    // Rate limited or spawn cap reached: degrade to hot-path-only
+    return null;
   }
-}
-
-async function callAnthropicAPI(entities, state, domainFrame) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': process.env.ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: config.reverie.deliberation.model,
-      max_tokens: 500,
-      system: buildSystemPrompt(state),
-      messages: [{ role: 'user', content: buildDeliberationPrompt(entities, domainFrame) }]
-    })
-  });
-  const data = await response.json();
-  return { injection: data.content[0].text, tokens: data.usage.output_tokens };
 }
 ```
 
-No npm dependencies. Node's built-in `fetch` (available in Node 18+) for the HTTP call.
-
 ### 4.5 Rate Limit Degradation
 
-When the subscription plan hits rate limits (or API plan exhausts budget), Reverie degrades gracefully:
+When subagent spawning hits rate limits or the daily spawn cap, Reverie degrades gracefully:
 
-1. **Rate limit detected:** Subagent spawn fails or API returns 429
+1. **Rate limit detected:** Subagent spawn fails or daily cap reached
 2. **Flag set:** `config.reverie._rate_limited = true` (runtime, not persisted)
 3. **All operations fall back to hot path only:** No deliberation, no REM subagent processing
 4. **Basic REM still runs:** File I/O-based state preservation (Tier 1) still works
-5. **Recovery:** Flag cleared on next successful API call or after timeout period
+5. **Recovery:** Flag cleared after timeout period or on next session start
 
 The system never fails completely. It degrades from "intelligent" to "functional" -- which is exactly the current v1.2.1 behavior. This is the graceful degradation principle that DYNAMO-PRD.md Section 6.5 mandates.
 
@@ -724,9 +705,7 @@ These pipelines integrate surviving Synthesis v2 concepts into the mechanical de
     - Query top activated entities from previous session (via Assay)
     - Query entities relevant to detected intent, weighted by domain frame [MODIFIED - Concept 1]
     - Query recent session history (via Assay)
-    - Generate factual briefing via:
-      - Custom subagent (subscription) OR
-      - Direct Sonnet API call (API plan) [MODIFIED - Concept 7 hybrid]
+    - Generate factual briefing via custom subagent (Max subscription)
     - v1.3: factual briefing (entities, decisions, context)
     - v1.4: narrative with relational framing (how user felt, what patterns emerged)
 5.  UPDATE state for new session                                [<5ms]
@@ -740,7 +719,7 @@ These pipelines integrate surviving Synthesis v2 concepts into the mechanical de
 ```
 1.  LOAD state                                                  [<5ms]
 2.  REM TIER 3: Full consolidation                              [NEW - Concept 5]
-    a. SYNTHESIZE session observations                          [2-5s, Sonnet via subagent or API]
+    a. SYNTHESIZE session observations                          [2-5s, Sonnet subagent]
        - What happened this session?
        - What did the user work on? How did they react?
        - What patterns observed?
@@ -783,7 +762,7 @@ These pipelines integrate surviving Synthesis v2 concepts into the mechanical de
     b. Persist self-model updates since last persist             [<5ms, file I/O]
     c. Persist pending associations and cascading tags           [<5ms, file I/O]
     d. Write domain frame state (current classification)        [<5ms, file I/O] [NEW - Concept 1]
-3.  GENERATE compact summary for re-injection                   [1-2s, Haiku call or subagent]
+3.  GENERATE compact summary for re-injection                   [1-2s, subagent]
     - Include current attention state, top activated entities, active predictions
     - Format as concise re-priming text (max 200 tokens)
     - After compaction, this re-priming text enables Reverie to reconstruct
@@ -1202,8 +1181,8 @@ This section maps each surviving concept from the steel-man analysis (INNER-VOIC
 ### 9.4 Concept 5: REM Consolidation
 
 **v1.3 implementation:**
-- **Tier 1 (PreCompact):** State preservation before context compaction. No LLM call for state persistence. One Haiku call for compact summary generation (~$0.005 per event). See Section 5.4.
-- **Tier 3 basic (Stop):** Session synthesis via Sonnet (subagent for subscription, API for API plan). One Sonnet call per session end (~$0.27 per session on API plan, $0 on subscription). Self-model and relationship model updates. Basic observation extraction. See Section 5.3.
+- **Tier 1 (PreCompact):** State preservation before context compaction. No LLM call for state persistence. Compact summary generation via subagent. See Section 5.4.
+- **Tier 3 basic (Stop):** Session synthesis via Sonnet subagent (zero marginal cost on Max subscription). Self-model and relationship model updates. Basic observation extraction. See Section 5.3.
 
 **v1.4 implementation:**
 - **Full Tier 3 operations:** Retroactive evaluation, observation synthesis, cascade promotion/pruning
@@ -1212,18 +1191,18 @@ This section maps each surviving concept from the steel-man analysis (INNER-VOIC
 
 **Hook event mapping:**
 
-| Tier | Hook | Trigger | Cost (API) | Cost (Subscription) |
-|------|------|---------|------------|---------------------|
-| Tier 1 | PreCompact | Context ~95% full | ~$0.005 | ~$0.005 |
-| Tier 3 basic (v1.3) | Stop | Session end | ~$0.27 | $0 (subagent) |
-| Tier 3 full (v1.4) | Stop | Session end | ~$0.57 | $0 (subagent) |
+| Tier | Hook | Trigger | Cost (Max Subscription) |
+|------|------|---------|------------------------|
+| Tier 1 | PreCompact | Context ~95% full | $0 (subagent) |
+| Tier 3 basic (v1.3) | Stop | Session end | $0 (subagent) |
+| Tier 3 full (v1.4) | Stop | Session end | $0 (subagent) |
 
 ### 9.5 Concept 7: Hybrid Subagent Architecture
 
 Fully detailed in Section 4 (The Hybrid Architecture). Key implementation points:
 
 - Hot path: CJS command hooks with deterministic processing + `additionalContext` injection
-- Deliberation: custom `inner-voice` subagent with Sonnet (subscription) or direct API (API plan)
+- Deliberation: custom `inner-voice` subagent with Sonnet (Max subscription)
 - State bridge: SubagentStop writes to file, UserPromptSubmit reads and injects
 - Rate limit degradation: fall back to hot-path-only
 - Custom subagent defined in `cc/agents/inner-voice.md` (see Section 8)
@@ -1232,56 +1211,38 @@ Fully detailed in Section 4 (The Hybrid Architecture). Key implementation points
 
 ## 10. Cost Model
 
-### 10.1 Daily Cost Projection (API Plan Users)
+### 10.1 Platform Assumption
 
-| Operation | Model | v1.3 Frequency/Day | Tokens (in+out) | Cost/Day |
-|-----------|-------|---------------------|-----------------|----------|
-| Hot path formatting | Haiku | ~80 | 2K in + 500 out | $0.36 |
-| Domain classification | None | ~150 | -- | $0.00 |
-| Deliberation injections | Sonnet | ~15 | 8K in + 2K out | $0.81 |
-| Session start briefing | Sonnet | ~5 | 10K in + 3K out | $0.38 |
-| Stop synthesis (REM Tier 3) | Sonnet | ~5 | 8K in + 2K out | $0.27 |
-| PreCompact (REM Tier 1) | Haiku | ~2 | 2K in + 500 out | $0.01 |
-| Self-model updates | Sonnet | ~5 | 5K in + 1K out | $0.15 |
-| **v1.3 Total (API plan)** | | | | **$1.98/day** |
-| **With prompt caching** | | | | **$1.21/day** |
+Dynamo targets the Claude Code Max subscription. All Dynamo-native LLM operations (curation, deliberation, session synthesis, briefings, formatting) use native Claude Code subagents at zero marginal cost. **Dynamo does not make external API calls for its own operations.**
 
-### 10.2 Daily Cost Projection (Subscription Plan Users)
+The only external API costs are Graphiti's own infrastructure — embeddings and entity/relationship extraction that run inside the Docker stack and call OpenRouter or direct provider APIs. These costs are Graphiti's concern, not Dynamo's.
 
-| Operation | Model | v1.3 Frequency/Day | Cost/Day | Notes |
-|-----------|-------|---------------------|----------|-------|
-| Hot path formatting | Haiku | ~80 | $0.36 | CJS hook + Haiku formatting call |
-| Domain classification | None | ~150 | $0.00 | Deterministic |
-| Deliberation injections | Sonnet (subagent) | ~15 | $0.00* | Included in subscription |
-| Session start briefing | Sonnet (subagent) | ~5 | $0.00* | Included in subscription |
-| Stop synthesis (REM Tier 3) | Sonnet (subagent) | ~5 | $0.00* | Included in subscription |
-| PreCompact (REM Tier 1) | Haiku | ~2 | $0.01 | CJS hook + Haiku call |
-| Self-model updates | Sonnet (subagent) | ~5 | $0.00* | Part of Stop synthesis |
-| **v1.3 Total (subscription)** | | | **$0.37/day** | *Subject to rate limits |
+### 10.2 Dynamo Cost (Max Subscription)
 
-### 10.3 Monthly Cost Summary
+| Operation | Mechanism | Cost/Day |
+|-----------|-----------|----------|
+| Hot path processing | Deterministic CJS | $0.00 |
+| Domain classification | Deterministic CJS | $0.00 |
+| Deliberation injections | Sonnet subagent | $0.00 (subscription) |
+| Session start briefing | Sonnet subagent | $0.00 (subscription) |
+| Stop synthesis (REM) | Sonnet subagent | $0.00 (subscription) |
+| PreCompact summary | Subagent | $0.00 (subscription) |
+| **Dynamo total** | | **$0.00/day** |
 
-| Scenario | Daily | Monthly | vs. Baseline ($0.70/day) |
-|----------|-------|---------|--------------------------|
-| Current Dynamo (baseline) | $0.70 | $21 | -- |
-| **API plan** | | | |
-| v1.3 (without caching) | $1.98 | $59 | +$38 |
-| v1.3 (with caching) | $1.21 | $36 | +$15 |
-| v1.4 (full, without caching) | $3.39-6.19 | $102-186 | +$81-165 |
-| v1.4 (full, with caching) | $2.40-4.30 | $72-129 | +$51-108 |
-| **Subscription plan** | | | |
-| v1.3 | $0.37 | $11 | -$10 (cheaper than baseline) |
-| v1.4 | $0.37 | $11 | -$10 (subagent costs subscription-included) |
+### 10.3 Graphiti Infrastructure Cost (Separate)
 
-### 10.4 Key Cost Insights
+Graphiti's Docker stack makes external API calls for its own operations. These are not Dynamo's cost — they are infrastructure that exists regardless of whether Reverie is active.
 
-1. **Subscription users save money.** The hybrid architecture means subscription users pay LESS than the current Haiku curation baseline ($0.37/day vs $0.70/day) because Haiku curation calls are replaced by subagent processing at zero marginal cost. The remaining $0.37/day is hot path formatting calls only.
+| Operation | Provider | Frequency | Notes |
+|-----------|----------|-----------|-------|
+| Text embeddings | OpenRouter / provider API | Per episode ingestion | Required by Graphiti for semantic search |
+| Entity extraction | OpenRouter / provider API | Per episode ingestion | Required by Graphiti for knowledge graph construction |
 
-2. **API plan costs are manageable.** $1.98/day ($59/month) without caching, $1.21/day ($36/month) with caching. The increase over baseline is justified by the quality improvement from context-aware injection.
+These costs are managed through Graphiti's own configuration (`docker-compose.yml`, `.env`), not through Dynamo.
 
-3. **Prompt caching is important for API users.** 40-50% reduction on input tokens. The Inner Voice's system prompt (including self-model and relationship model JSON) is reused across all calls within a session.
+### 10.4 Key Design Insight
 
-4. **Budget enforcement (CORTEX-03) is critical for API plan.** Hard daily budget cap that degrades to hot-path-only when exhausted prevents runaway costs. Subscription users use rate limit monitoring instead.
+The "native features first" principle eliminates Dynamo's own operational cost entirely on Max subscription. The previous design assumed Haiku API calls for hot path formatting (~$0.37/day). By replacing all LLM operations with native subagents, Dynamo adds zero cost beyond the subscription fee. The only rate-limiting concern is subagent spawn frequency, managed through a configurable daily cap (default: 20).
 
 ---
 
@@ -1331,14 +1292,14 @@ The `reverie.mode` configuration provides instant rollback:
 ```javascript
 // In Switchboard dispatcher, before routing to Reverie:
 if (config.reverie.mode === 'classic') {
-  // Route to legacy Haiku curation pipeline (current v1.2.1 behavior)
+  // Route to classic curation pipeline (current v1.2.1 behavior)
   return classicCuration(event, context);
 }
 // Route to Reverie Inner Voice pipeline
 return reverieHandler(event, context);
 ```
 
-This feature flag eliminates catastrophic risk from the intelligence layer upgrade. If Reverie produces lower-quality injections than classic Haiku curation, a single config change (`dynamo config set reverie.mode classic`) reverts to v1.2.1 behavior.
+This feature flag eliminates catastrophic risk from the intelligence layer upgrade. If Reverie produces lower-quality injections than the classic curation pipeline, a single config change (`dynamo config set reverie.mode classic`) reverts to v1.2.1 behavior.
 
 ---
 
@@ -1366,7 +1327,7 @@ The most dangerous failure mode. It occurs when the self-model has drifted from 
 
 3. **Periodic recalibration.** After N sessions (configurable, default 50), Reverie generates a "state of understanding" summary the user can review. This is logged but does not automatically inject into sessions.
 
-4. **Classic curation fallback.** If the `reverie.mode` feature flag is set to `classic`, the entire Reverie processing pipeline is bypassed and the system reverts to Haiku curation. This eliminates catastrophic risk.
+4. **Classic curation fallback.** If the `reverie.mode` feature flag is set to `classic`, the entire Reverie processing pipeline is bypassed and the system reverts to the classic curation pipeline. This eliminates catastrophic risk.
 
 ### 12.3 Claude Code Platform Constraints
 
@@ -1419,13 +1380,13 @@ With a new or sparse knowledge graph (<100 entities), spreading activation provi
 
 ### 13.4 Evaluation Metrics
 
-No baseline measurements exist for the current Haiku curation pipeline. Establishing baselines before Reverie deployment is essential. Proposed metrics:
+No baseline measurements exist for the current classic curation pipeline. Establishing baselines before Reverie deployment is essential. Proposed metrics:
 
 | Metric | What It Measures | How |
 |--------|-----------------|-----|
 | Injection relevance rate | % of injections user references in subsequent prompts | Track injection-to-user-behavior correlation |
 | Silence accuracy | % of non-injection decisions that were correct | Track when user asks for missing context |
-| Cost efficiency | Relevance rate per unit of cost spent | Computed from above + cost tracking |
+| Operational efficiency | Relevance rate per subagent spawn | Computed from above + spawn tracking |
 | Hot path latency p95 | 95th percentile hot path latency | Timing instrumentation in handlers |
 
 ### 13.5 Prompt Engineering Quality

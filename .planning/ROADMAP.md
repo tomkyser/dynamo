@@ -116,8 +116,8 @@ Plans:
   4. Session query performance is at least as fast as JSON file reads for typical operations (list, view, label)
 **Plans**: 2 plans
 Plans:
-- [ ] 21-01-PLAN.md -- Create SQLite session storage layer in Terminus with comprehensive test suite
-- [ ] 21-02-PLAN.md -- Wire sessions.cjs delegation, install migration step, and health-check storage stage
+- [x] 21-01-PLAN.md -- Create SQLite session storage layer in Terminus with comprehensive test suite
+- [x] 21-02-PLAN.md -- Wire sessions.cjs delegation, install migration step, and health-check storage stage
 
 ### Phase 22: M1 Verification and Cleanup
 **Goal**: All M1 deliverables verified end-to-end in deployed layout with any migration shims or temporary scaffolding removed
@@ -128,7 +128,12 @@ Plans:
   2. `dynamo health-check` reports all green (Docker stack, API, memory pipeline, dependency versions, SQLite)
   3. All re-export shims from the migration waves have been removed -- no module re-exports old paths
   4. `dynamo sync` round-trips correctly between repo and deployed layout with zero silent file skips
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 22-01-PLAN.md -- Automated M1 verification (tmpdir sandbox, smoke tests, draft VERIFICATION.md)
+- [ ] 22-02-PLAN.md -- Cleanup (core.cjs re-export audit, dead code removal, stale comment fixes)
+- [ ] 22-03-PLAN.md -- Real install verification and VERIFICATION.md finalization
+- [ ] 22-04-PLAN.md -- Documentation refresh and milestone closure
 
 ## Progress
 
@@ -157,5 +162,5 @@ Phases execute in numeric order: 18 -> 19 -> 20 -> 21 -> 22
 | 18. Restructure Prerequisites | v1.3-M1 | 2/2 | Complete | 2026-03-19 |
 | 19. Six-Subsystem Directory Restructure | v1.3-M1 | 3/3 | Complete | 2026-03-20 |
 | 20. Management Hardening | v1.3-M1 | 2/2 | Complete | 2026-03-20 |
-| 21. SQLite Session Index | 2/2 | Complete    | 2026-03-20 | - |
-| 22. M1 Verification and Cleanup | v1.3-M1 | 0/TBD | Not started | - |
+| 21. SQLite Session Index | v1.3-M1 | 2/2 | Complete | 2026-03-20 |
+| 22. M1 Verification and Cleanup | v1.3-M1 | 0/4 | Not started | - |

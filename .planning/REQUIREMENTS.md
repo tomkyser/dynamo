@@ -9,7 +9,7 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 
 ### Inner Voice (CORTEX-01)
 
-- [ ] **IV-01**: Inner Voice state file loads, processes, and persists atomically with corruption recovery to fresh defaults
+- [x] **IV-01**: Inner Voice state file loads, processes, and persists atomically with corruption recovery to fresh defaults
 - [ ] **IV-02**: Entity extraction identifies project names, file paths, function names, and technical terms from prompts via deterministic pattern matching (<5ms)
 - [ ] **IV-03**: Activation map tracks entity relevance with time-based decay and 1-hop spreading activation from anchor entities via Assay graph queries
 - [ ] **IV-04**: Sublimation threshold evaluates composite score (activation * surprise * relevance * (1 - cognitive_load) * confidence) to determine what surfaces
@@ -49,9 +49,9 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 
 ### Feature Flags & Injection Control (MGMT-10)
 
-- [ ] **FLAG-01**: `reverie.mode` config flag supports classic (existing behavior), hybrid (both pipelines, Reverie logged only), and cortex (Reverie active) modes with instant rollback
+- [x] **FLAG-01**: `reverie.mode` config flag supports classic (existing behavior), hybrid (both pipelines, Reverie logged only), and cortex (Reverie active) modes with instant rollback
 - [ ] **FLAG-02**: Hybrid mode runs both classic and Reverie pipelines on each event; Reverie output logged for A/B comparison but not injected
-- [ ] **FLAG-03**: `dynamo config get/set` CLI commands manage feature flags and Reverie configuration
+- [x] **FLAG-03**: `dynamo config get/set` CLI commands manage feature flags and Reverie configuration
 - [ ] **FLAG-04**: `dynamo voice status/explain/reset` CLI commands provide visibility into Inner Voice state, last injection rationale, and state reset
 
 ### Operational Improvements
@@ -96,7 +96,7 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| IV-01 | Phase 23 | Pending |
+| IV-01 | Phase 23 | Complete |
 | IV-02 | Phase 23 | Pending |
 | IV-03 | Phase 23 | Pending |
 | IV-04 | Phase 23 | Pending |
@@ -123,9 +123,9 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 | HOOK-01 | Phase 23 | Pending |
 | HOOK-02 | Phase 23 | Pending |
 | HOOK-03 | Phase 23 | Pending |
-| FLAG-01 | Phase 23 | Pending |
+| FLAG-01 | Phase 23 | Complete |
 | FLAG-02 | Phase 25 | Pending |
-| FLAG-03 | Phase 23 | Pending |
+| FLAG-03 | Phase 23 | Complete |
 | FLAG-04 | Phase 25 | Pending |
 | OPS-01 | Phase 26 | Pending |
 | OPS-02 | Phase 26 | Pending |

@@ -75,6 +75,30 @@
           }
         ]
       }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "inner-voice",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$HOME/.claude/dynamo/cc/hooks/dynamo-hooks.cjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "inner-voice",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$HOME/.claude/dynamo/cc/hooks/dynamo-hooks.cjs\"",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }

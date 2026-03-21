@@ -131,6 +131,44 @@ describe('install.cjs', () => {
   });
 });
 
+describe('resolveRepoRoot', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = makeTmpDir('rrr');
+  });
+
+  afterEach(() => {
+    rmrf(tmpDir);
+  });
+
+  it('is exported as a function', () => {
+    const mod = require(INSTALL_PATH);
+    assert.ok(typeof mod.resolveRepoRoot === 'function', 'should export resolveRepoRoot');
+  });
+
+  it('returns a string path', () => {
+    const { resolveRepoRoot } = require(INSTALL_PATH);
+    const result = resolveRepoRoot();
+    assert.ok(typeof result === 'string', 'should return a string');
+    assert.ok(result.length > 0, 'should not be empty');
+  });
+
+  it('when running from repo (has .git), returns the repo path', () => {
+    // The test itself is running from the repo, so resolveRepoRoot should
+    // detect the .git directory and return the repo root
+    const { resolveRepoRoot } = require(INSTALL_PATH);
+    const result = resolveRepoRoot();
+    const expectedRepoRoot = path.join(__dirname, '..', '..', '..');
+    // Both should resolve to the same actual directory
+    assert.strictEqual(
+      fs.realpathSync(result),
+      fs.realpathSync(expectedRepoRoot),
+      'should resolve to the repo root when .git exists'
+    );
+  });
+});
+
 describe('copyTree helper', () => {
   let srcDir, dstDir;
 

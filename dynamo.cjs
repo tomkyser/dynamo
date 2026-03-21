@@ -130,6 +130,7 @@ const COMMAND_HELP = {
   'toggle':       'Usage: dynamo toggle <on|off>\n  Enable or disable Dynamo globally.',
   'status':       'Usage: dynamo status [--pretty]\n  Show Dynamo enabled/disabled state.',
   'session':      'Usage: dynamo session <list|view|label|backfill> [args] [--pretty]\n  Session management.',
+  'voice':        'Usage: dynamo voice <status|explain|reset>\n  Inner Voice visibility and management.\n  status  - Full state dump (entities, frame, predictions, self-model, history)\n  explain - Rationale for last injection decision\n  reset   - Clear self-model, predictions, history (preserves activation map)',
   'test':         'Usage: dynamo test\n  Run the Dynamo test suite.',
   'version':      'Usage: dynamo version\n  Show Dynamo version.',
   'config':       'Usage: dynamo config <get|set> <key> [value]\n  Get or set configuration values using dot notation.\n  Examples:\n    dynamo config get reverie.activation.sublimation_threshold\n    dynamo config set reverie.activation.sublimation_threshold 0.5\n    dynamo config set reverie.operational.subagent_daily_cap 30',
@@ -404,6 +405,36 @@ async function main() {
           break;
         default:
           error('Usage: dynamo session <list|view|label|backfill>');
+      }
+      break;
+    }
+
+    case 'voice': {
+      const voice = require(resolve('reverie', 'voice.cjs'));
+      const { loadState, persistState } = require(resolve('reverie', 'state.cjs'));
+      const subCmd = restArgs[0];
+      switch (subCmd) {
+        case 'status': {
+          const state = loadState();
+          process.stderr.write(voice.formatVoiceStatus(state) + '\n');
+          break;
+        }
+        case 'explain': {
+          const state = loadState();
+          process.stderr.write(voice.formatVoiceExplain(state) + '\n');
+          break;
+        }
+        case 'reset': {
+          const state = loadState();
+          const resetState = voice.partialReset(state);
+          persistState(resetState);
+          process.stderr.write('Inner Voice state partially reset.\n');
+          process.stderr.write('Preserved: activation map (' + Object.keys(resetState.activation_map || {}).length + ' entities), domain frame\n');
+          process.stderr.write('Cleared: self-model, predictions, injection history, processing\n');
+          break;
+        }
+        default:
+          error('Usage: dynamo voice <status|explain|reset>');
       }
       break;
     }

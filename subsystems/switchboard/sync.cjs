@@ -83,8 +83,12 @@ function walkDir(dir, excludes, globExcludes, base, filesOnly) {
  * Returns { toCopy: [], toDelete: [] }.
  * toCopy: files in src missing from dst, or with different size/newer mtime.
  * toDelete: files in dst not present in src.
+ * @param {Object} srcFiles - Source file map { relPath: { mtime, size } }
+ * @param {Object} dstFiles - Destination file map { relPath: { mtime, size } }
+ * @param {string} [srcDir] - Source directory path (enables content comparison)
+ * @param {string} [dstDir] - Destination directory path (enables content comparison)
  */
-function diffTrees(srcFiles, dstFiles) {
+function diffTrees(srcFiles, dstFiles, srcDir, dstDir) {
   const toCopy = [];
   const toDelete = [];
 
@@ -97,6 +101,18 @@ function diffTrees(srcFiles, dstFiles) {
       const dst = dstFiles[relPath];
       if (src.size !== dst.size || src.mtime > dst.mtime) {
         toCopy.push(relPath);
+      } else if (srcDir && dstDir) {
+        // Same size, dst is newer or equal mtime -- check actual content
+        try {
+          const srcBuf = fs.readFileSync(path.join(srcDir, relPath));
+          const dstBuf = fs.readFileSync(path.join(dstDir, relPath));
+          if (Buffer.compare(srcBuf, dstBuf) !== 0) {
+            toCopy.push(relPath);
+          }
+        } catch (e) {
+          // If read fails, assume different and copy
+          toCopy.push(relPath);
+        }
       }
     }
   }
@@ -238,8 +254,8 @@ async function run(args, pretty) {
     const pairs = [];
     let totalRtl = 0, totalLtr = 0;
     for (const { pair, repoFiles, liveFiles } of pairResults) {
-      const repoToLive = diffTrees(repoFiles, liveFiles);
-      const liveToRepo = diffTrees(liveFiles, repoFiles);
+      const repoToLive = diffTrees(repoFiles, liveFiles, pair.repo, pair.live);
+      const liveToRepo = diffTrees(liveFiles, repoFiles, pair.live, pair.repo);
       const rtl = repoToLive.toCopy.length + repoToLive.toDelete.length;
       const ltr = liveToRepo.toCopy.length + liveToRepo.toDelete.length;
       totalRtl += rtl;
@@ -288,7 +304,7 @@ async function run(args, pretty) {
       srcFileMap = repoFiles;  dstFileMap = liveFiles;
     }
 
-    const diff = diffTrees(srcFileMap, dstFileMap);
+    const diff = diffTrees(srcFileMap, dstFileMap, srcDir, dstDir);
 
     for (const f of diff.toCopy) {
       allToCopy.push({ relPath: f, srcDir, dstDir, label: pair.label });

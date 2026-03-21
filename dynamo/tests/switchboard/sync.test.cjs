@@ -131,6 +131,90 @@ describe('diffTrees', () => {
   });
 });
 
+// --- diffTrees content comparison tests ---
+
+describe('diffTrees content comparison', () => {
+  let srcDir, dstDir;
+
+  beforeEach(() => {
+    srcDir = makeTempDir('diff-content-src');
+    dstDir = makeTempDir('diff-content-dst');
+  });
+
+  afterEach(() => {
+    fs.rmSync(srcDir, { recursive: true, force: true });
+    fs.rmSync(dstDir, { recursive: true, force: true });
+  });
+
+  it('without srcDir/dstDir, does NOT detect same-size different-content files (backward compat)', () => {
+    // Write files with same size but different content
+    writeFile(srcDir, 'a.txt', 'hello');  // 5 bytes
+    writeFile(dstDir, 'a.txt', 'world');  // 5 bytes
+
+    const srcStat = fs.statSync(path.join(srcDir, 'a.txt'));
+    const dstStat = fs.statSync(path.join(dstDir, 'a.txt'));
+
+    // dst has newer mtime (written after src), same size
+    const srcFiles = { 'a.txt': { mtime: 100, size: srcStat.size } };
+    const dstFiles = { 'a.txt': { mtime: 200, size: dstStat.size } };
+
+    // Without dir args: mtime-only comparison, dst is newer so no copy
+    const diff = sync.diffTrees(srcFiles, dstFiles);
+    assert.strictEqual(diff.toCopy.length, 0, 'should NOT detect change without dir args');
+  });
+
+  it('with srcDir/dstDir, detects same-size different-content files', () => {
+    writeFile(srcDir, 'a.txt', 'hello');
+    writeFile(dstDir, 'a.txt', 'world');
+
+    const srcStat = fs.statSync(path.join(srcDir, 'a.txt'));
+    const dstStat = fs.statSync(path.join(dstDir, 'a.txt'));
+
+    const srcFiles = { 'a.txt': { mtime: 100, size: srcStat.size } };
+    const dstFiles = { 'a.txt': { mtime: 200, size: dstStat.size } };
+
+    // With dir args: does byte comparison
+    const diff = sync.diffTrees(srcFiles, dstFiles, srcDir, dstDir);
+    assert.ok(diff.toCopy.includes('a.txt'), 'should detect content change with dir args');
+  });
+
+  it('with srcDir/dstDir, does NOT flag identical content files', () => {
+    writeFile(srcDir, 'same.txt', 'identical content');
+    writeFile(dstDir, 'same.txt', 'identical content');
+
+    const srcStat = fs.statSync(path.join(srcDir, 'same.txt'));
+    const dstStat = fs.statSync(path.join(dstDir, 'same.txt'));
+
+    const srcFiles = { 'same.txt': { mtime: 100, size: srcStat.size } };
+    const dstFiles = { 'same.txt': { mtime: 200, size: dstStat.size } };
+
+    const diff = sync.diffTrees(srcFiles, dstFiles, srcDir, dstDir);
+    assert.strictEqual(diff.toCopy.length, 0, 'identical content should NOT be in toCopy');
+  });
+
+  it('still uses fast path for different sizes (no file read needed)', () => {
+    writeFile(srcDir, 'big.txt', 'big content here');
+    writeFile(dstDir, 'big.txt', 'small');
+
+    const srcFiles = { 'big.txt': { mtime: 100, size: 16 } };
+    const dstFiles = { 'big.txt': { mtime: 200, size: 5 } };
+
+    const diff = sync.diffTrees(srcFiles, dstFiles, srcDir, dstDir);
+    assert.ok(diff.toCopy.includes('big.txt'), 'different size should trigger copy via fast path');
+  });
+
+  it('still uses fast path when src is newer (no file read needed)', () => {
+    writeFile(srcDir, 'newer.txt', 'hello');
+    writeFile(dstDir, 'newer.txt', 'world');
+
+    const srcFiles = { 'newer.txt': { mtime: 300, size: 5 } };
+    const dstFiles = { 'newer.txt': { mtime: 100, size: 5 } };
+
+    const diff = sync.diffTrees(srcFiles, dstFiles, srcDir, dstDir);
+    assert.ok(diff.toCopy.includes('newer.txt'), 'newer src mtime should trigger copy via fast path');
+  });
+});
+
 // --- detectConflicts tests ---
 
 describe('detectConflicts', () => {

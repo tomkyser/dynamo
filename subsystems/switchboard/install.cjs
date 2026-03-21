@@ -19,6 +19,8 @@ const LEGACY_DIR = path.join(os.homedir(), '.claude', 'graphiti-legacy');
 const SETTINGS_PATH = path.join(os.homedir(), '.claude', 'settings.json');
 const SETTINGS_BACKUP = SETTINGS_PATH + '.bak';  // ~/.claude/settings.json.bak
 const HOOKS_TEMPLATE = path.join(REPO_ROOT, 'cc', 'settings-hooks.json');
+const AGENTS_DIR = path.join(os.homedir(), '.claude', 'agents');
+const REPO_AGENTS_DIR = path.join(REPO_ROOT, 'cc', 'agents');
 const INSTALL_EXCLUDES = ['tests', '.last-sync', '.git', '.DS_Store', 'node_modules'];
 
 // Classic-mode artifacts to remove during install upgrade
@@ -238,6 +240,45 @@ function mergeSettings(settingsPath, templatePath) {
   const tmpPath = settingsPath + '.tmp';
   fs.writeFileSync(tmpPath, JSON.stringify(settings, null, 2) + '\n', 'utf8');
   fs.renameSync(tmpPath, settingsPath);
+}
+
+// --- Helper: deployAgents ---
+
+/**
+ * Deploy agent definitions from cc/agents/ to ~/.claude/agents/.
+ * Claude Code discovers subagents by scanning ~/.claude/agents/ for .md files.
+ * Only copies .md files (agent definitions). Skips non-.md files.
+ * @param {object} [options={}] - Options for test isolation
+ * @param {string} [options.repoAgentsDir] - Override repo agents source directory
+ * @param {string} [options.agentsDir] - Override target agents directory
+ * @returns {{ deployed: string[], skipped: string[] }}
+ */
+function deployAgents(options = {}) {
+  const repoAgents = options.repoAgentsDir || REPO_AGENTS_DIR;
+  const targetDir = options.agentsDir || AGENTS_DIR;
+  const deployed = [];
+  const skipped = [];
+
+  if (!fs.existsSync(repoAgents)) {
+    return { deployed, skipped };
+  }
+
+  fs.mkdirSync(targetDir, { recursive: true });
+
+  const entries = fs.readdirSync(repoAgents, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+    if (!entry.name.endsWith('.md')) {
+      skipped.push(entry.name);
+      continue;
+    }
+    const srcPath = path.join(repoAgents, entry.name);
+    const dstPath = path.join(targetDir, entry.name);
+    fs.copyFileSync(srcPath, dstPath);
+    deployed.push(entry.name);
+  }
+
+  return { deployed, skipped };
 }
 
 // --- Helper: retirePython ---
@@ -460,7 +501,19 @@ async function run(args = [], pretty = false, _returnOnly = false) {
     steps.push({ name: 'Deploy CLAUDE.md', status: 'WARN', detail: e.message });
   }
 
-  // Step 6: Verify lib/ shared substrate deployed
+  // Step 6: Deploy agents to ~/.claude/agents/
+  try {
+    const agentResult = deployAgents();
+    if (agentResult.deployed.length > 0) {
+      steps.push({ name: 'Deploy agents', status: 'OK', detail: agentResult.deployed.length + ' agent(s) deployed to ~/.claude/agents/: ' + agentResult.deployed.join(', ') });
+    } else {
+      steps.push({ name: 'Deploy agents', status: 'OK', detail: 'No agent definitions found in cc/agents/' });
+    }
+  } catch (e) {
+    steps.push({ name: 'Deploy agents', status: 'WARN', detail: e.message });
+  }
+
+  // Step 7: Verify lib/ shared substrate deployed (renumbered from original Step 6)
   try {
     const libDir = path.join(LIVE_DIR, 'lib');
     if (fs.existsSync(path.join(libDir, 'resolve.cjs'))) {
@@ -472,7 +525,7 @@ async function run(args = [], pretty = false, _returnOnly = false) {
     steps.push({ name: 'Verify lib/', status: 'WARN', detail: e.message });
   }
 
-  // Step 7: Retire Python
+  // Step 8: Retire Python
   try {
     const retireResult = retirePython();
     steps.push({ name: 'Retire Python', status: 'OK', detail: retireResult.moved.length + ' items retired' });
@@ -480,7 +533,7 @@ async function run(args = [], pretty = false, _returnOnly = false) {
     steps.push({ name: 'Retire Python', status: 'WARN', detail: e.message });
   }
 
-  // Step 8: Migrate sessions from JSON to SQLite
+  // Step 9: Migrate sessions from JSON to SQLite
   try {
     const sessionStore = require(resolve('terminus', 'session-store.cjs'));
     if (sessionStore.isAvailable()) {
@@ -515,7 +568,7 @@ async function run(args = [], pretty = false, _returnOnly = false) {
     steps.push({ name: 'Migrate sessions', status: 'WARN', detail: 'Migration error: ' + e.message });
   }
 
-  // Step 9: Clean up classic-mode artifacts
+  // Step 10: Clean up classic-mode artifacts
   try {
     const cleaned = cleanupClassicArtifacts();
     if (cleaned > 0) {
@@ -527,7 +580,7 @@ async function run(args = [], pretty = false, _returnOnly = false) {
     steps.push({ name: 'Cleanup classics', status: 'WARN', detail: e.message });
   }
 
-  // Step 10: Post-install health check
+  // Step 11: Post-install health check
   let hcResult = null;
   try {
     const hc = require(resolve('terminus', 'health-check.cjs'));
@@ -538,7 +591,7 @@ async function run(args = [], pretty = false, _returnOnly = false) {
     steps.push({ name: 'Health check', status: 'WARN', detail: e.message });
   }
 
-  // Step 11: Install CLI shim
+  // Step 12: Install CLI shim
   try {
     installShim();
     steps.push({ name: 'CLI shim', status: 'OK', detail: 'Installed at ~/.local/bin/dynamo' });
@@ -605,6 +658,7 @@ module.exports = {
   copyTree,
   generateConfig,
   mergeSettings,
+  deployAgents,
   retirePython,
   restoreSettings,
   restorePython,

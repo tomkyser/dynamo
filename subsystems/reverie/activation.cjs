@@ -16,8 +16,20 @@ const PATTERNS = {
   snakeCase: /\b([a-z]+(?:_[a-z0-9]+){2,})\b/g,
 };
 
+// Strip system-injected tags before entity extraction.
+// These contain task notification metadata, file paths, and memory context
+// that would pollute the activation map with noise.
+const SYSTEM_TAG_PATTERN = /<(?:system-reminder|task-notification|dynamo-memory-context|local-command-caveat|command-name|command-message|command-args|local-command-stdout)[^>]*>[\s\S]*?<\/(?:system-reminder|task-notification|dynamo-memory-context|local-command-caveat|command-name|command-message|command-args|local-command-stdout)>/gi;
+
+function stripSystemTags(text) {
+  return text.replace(SYSTEM_TAG_PATTERN, ' ');
+}
+
 function extractEntities(text, options = {}) {
   if (!text || text.length === 0) return [];
+
+  // Strip system-injected blocks before extraction to avoid noise
+  text = stripSystemTags(text);
 
   const entities = new Map(); // normalized name -> { name, type, count, positions }
 
@@ -299,6 +311,7 @@ function setRateLimited(state, limited) {
 
 module.exports = {
   extractEntities,
+  stripSystemTags,
   propagateActivation,
   decayAll,
   computeSublimationScore,
@@ -311,5 +324,6 @@ module.exports = {
   setRateLimited,
   updateActivation,
   PATTERNS,
-  FRAME_KEYWORDS
+  FRAME_KEYWORDS,
+  SYSTEM_TAG_PATTERN
 };

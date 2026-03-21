@@ -94,6 +94,68 @@ describe('Activation Module', () => {
       assert.ok(dynamo, 'Should find dynamo');
       assert.ok(dynamo.count >= 3, `Count should be >= 3 for repeated dynamo, got ${dynamo.count}`);
     });
+
+    it('strips system-reminder tags before extraction', () => {
+      const { extractEntities } = require(ACTIVATION_PATH);
+      const input = 'fix the bug <system-reminder>UserPromptSubmit hook success: /private/tmp/claude-503/tasks/abc.output completed users library mobile</system-reminder>';
+      const results = extractEntities(input);
+      const paths = results.filter(e => e.type === 'filePaths' && e.name.includes('/private/tmp'));
+      assert.strictEqual(paths.length, 0, 'Should not extract file paths from system-reminder blocks');
+      const completed = results.find(e => e.name === 'completed');
+      assert.strictEqual(completed, undefined, 'Should not extract "completed" from system-reminder');
+    });
+
+    it('strips task-notification tags before extraction', () => {
+      const { extractEntities } = require(ACTIVATION_PATH);
+      const input = 'look at this <task-notification><output-file>/private/tmp/tasks/xyz.output</output-file><status>completed</status></task-notification>';
+      const results = extractEntities(input);
+      const paths = results.filter(e => e.type === 'filePaths' && e.name.includes('/private/tmp'));
+      assert.strictEqual(paths.length, 0, 'Should not extract paths from task-notification');
+    });
+
+    it('strips dynamo-memory-context tags before extraction', () => {
+      const { extractEntities } = require(ACTIVATION_PATH);
+      const input = 'check the config <dynamo-memory-context source="dynamo-hooks">From your experience, "completed" has come up repeatedly (7 times).</dynamo-memory-context>';
+      const results = extractEntities(input);
+      const completed = results.find(e => e.name === 'completed');
+      assert.strictEqual(completed, undefined, 'Should not extract entities from dynamo-memory-context');
+      const config = results.find(e => e.name.toLowerCase() === 'config');
+      assert.ok(config, 'Should still extract entities from user text outside tags');
+    });
+
+    it('preserves user text around stripped system blocks', () => {
+      const { extractEntities } = require(ACTIVATION_PATH);
+      const input = 'fix dynamo <system-reminder>noise noise noise</system-reminder> and check reverie';
+      const results = extractEntities(input);
+      const dynamo = results.find(e => e.name.toLowerCase() === 'dynamo');
+      const reverie = results.find(e => e.name.toLowerCase() === 'reverie');
+      assert.ok(dynamo, 'Should extract dynamo from before the tag');
+      assert.ok(reverie, 'Should extract reverie from after the tag');
+    });
+  });
+
+  // --- stripSystemTags ---
+
+  describe('stripSystemTags', () => {
+    it('is exported from the module', () => {
+      const { stripSystemTags } = require(ACTIVATION_PATH);
+      assert.strictEqual(typeof stripSystemTags, 'function');
+    });
+
+    it('returns text unchanged when no system tags present', () => {
+      const { stripSystemTags } = require(ACTIVATION_PATH);
+      const input = 'just a normal prompt about dynamo';
+      assert.strictEqual(stripSystemTags(input), input);
+    });
+
+    it('strips nested tags within system-reminder', () => {
+      const { stripSystemTags } = require(ACTIVATION_PATH);
+      const input = 'before <system-reminder><inner>data</inner></system-reminder> after';
+      const result = stripSystemTags(input);
+      assert.ok(!result.includes('inner'), 'Nested tags should be stripped');
+      assert.ok(result.includes('before'), 'Text before should remain');
+      assert.ok(result.includes('after'), 'Text after should remain');
+    });
   });
 
   // --- Domain Frame Classification (IV-10) ---

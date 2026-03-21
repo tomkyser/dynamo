@@ -56,9 +56,15 @@ function processUserPrompt(promptData, state, pendingResult, options = {}) {
   const config = options.config || loadConfig();
   timings.statePrep = performance.now() - stepStart1;
 
+  // Step 1.5: Strip system tags from prompt (noise reduction)
+  // System-injected blocks (<task-notification>, <system-reminder>, <dynamo-memory-context>)
+  // contain metadata that would pollute entity extraction and domain classification.
+  const { stripSystemTags } = require(resolve('reverie', 'activation.cjs'));
+  const cleanPrompt = stripSystemTags(promptData.prompt || '');
+
   // Step 2: entityExtraction
   const stepStart2 = performance.now();
-  const currentEntities = extractEntities(promptData.prompt || '');
+  const currentEntities = extractEntities(cleanPrompt);
   timings.entityExtraction = performance.now() - stepStart2;
 
   // Step 3: activationUpdate
@@ -69,7 +75,7 @@ function processUserPrompt(promptData, state, pendingResult, options = {}) {
   timings.activationUpdate = performance.now() - stepStart3;
 
   // Step 4: domainClassification
-  const domainFrame = classifyDomainFrame(promptData.prompt || '');
+  const domainFrame = classifyDomainFrame(cleanPrompt);
   s.domain_frame = domainFrame;
 
   // Step 5: semanticShift (D-10)
@@ -77,7 +83,7 @@ function processUserPrompt(promptData, state, pendingResult, options = {}) {
   const shift = detectSemanticShift(currentEntities, previousEntities);
 
   // Step 6: recallCheck (D-11)
-  const explicitRecall = detectExplicitRecall(promptData.prompt || '');
+  const explicitRecall = detectExplicitRecall(cleanPrompt);
 
   // Step 7: predictionCheck (D-12)
   let predictionsMatch = false;

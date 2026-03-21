@@ -108,7 +108,7 @@ The `.env` file deploys to `~/.claude/graphiti/.env`.
 node dynamo.cjs install
 ```
 
-The installer performs 10 steps:
+The installer performs 13 steps:
 
 1. **Check dependencies** -- verifies Node.js >= 22
 2. **Copy files** -- deploys `subsystems/`, `cc/`, `lib/`, and root files to `~/.claude/dynamo/`
@@ -116,10 +116,13 @@ The installer performs 10 steps:
 4. **Merge settings** -- adds hook definitions to `~/.claude/settings.json` (backs up first)
 5. **Deregister MCP** -- removes direct Graphiti MCP (all access through Dynamo CLI)
 6. **Deploy CLAUDE.md** -- copies template to `~/.claude/CLAUDE.md`
-7. **Install CLI shim** -- creates `bin/dynamo` for bare CLI invocation
-8. **Retire Python** -- moves legacy Python/Bash files to `~/.claude/graphiti-legacy/`
-9. **Migrate sessions** -- converts `sessions.json` to SQLite (one-time, idempotent)
-10. **Health check** -- verifies the deployment (8 stages)
+7. **Deploy agents** -- copies agent definitions from `cc/agents/` to `~/.claude/agents/` (Claude Code discovery path)
+8. **Verify lib/** -- ensures shared substrate is deployed
+9. **Retire Python** -- moves legacy Python/Bash files to `~/.claude/graphiti-legacy/`
+10. **Migrate sessions** -- converts `sessions.json` to SQLite (one-time, idempotent)
+11. **Cleanup classics** -- removes classic-mode artifacts
+12. **Health check** -- verifies the deployment (8 stages)
+13. **CLI shim** -- creates `bin/dynamo` for bare CLI invocation
 
 ### 4. Start the Docker stack
 
@@ -160,6 +163,8 @@ Hooks and CLI activate on a fresh session.
   sessions.db                 # SQLite session database
   sessions.json               # JSON backup (backward compat)
 
+~/.claude/agents/             # Agent discovery path (Claude Code scans this)
+  inner-voice.md              #   Deliberation subagent definition
 ~/.claude/CLAUDE.md           # Deployed from template
 ~/.claude/settings.json       # Hooks merged into this
 ```
@@ -383,6 +388,89 @@ cat ~/.claude/dynamo/hook-errors.log  # Check error log (rotates at 1MB)
 dynamo diagnose --pretty --verbose   # 13-stage deep inspection
 dynamo verify-memory --pretty        # Full pipeline verification
 ```
+
+## Versioning and Update System
+
+### Version Scheme
+
+Dynamo uses a milestone-based pre-release versioning scheme. The canonical version lives in `dynamo/VERSION`.
+
+**Format:** `X.Y.Z` for releases, `X.Y.Z-M{N}` for milestone pre-releases.
+
+**Ordering:** `1.3.0-M1 < 1.3.0-M2 < 1.3.0-M3 < 1.3.0` (release always wins over any milestone of the same base version).
+
+**Lifecycle example:**
+```
+1.3.0-M1  ← First milestone toward v1.3
+1.3.0-M2  ← Second milestone
+1.3.0-M3  ← Third milestone
+1.3.0     ← All milestones complete, official release
+1.3.1     ← Minor update
+```
+
+Git tags use `v` prefix: `v1.3-M1`, `v1.3-M2`, `v1.3.0`. The `normalizeVersion()` function handles conversion: strips `v`, inserts `.0` patch if missing (`v1.3-M2` → `1.3.0-M2`).
+
+### How `dynamo check-update` Works
+
+1. Reads current version from `dynamo/VERSION`
+2. Queries `https://api.github.com/repos/tomkyser/dynamo/releases/latest`
+3. Extracts `tag_name` from the release, normalizes it (e.g., `v1.3-M2` → `1.3.0-M2`)
+4. Compares with `compareVersions()` which handles milestone suffixes numerically
+5. If update available, reads `CHANGELOG.md` to show what's new between versions
+6. Returns `tarball_url` for download (used by `dynamo update`)
+
+### How `dynamo update` Works
+
+Six-step pipeline with automatic rollback on failure:
+
+1. **Check version** -- calls `checkUpdate()` to compare local vs latest release
+2. **Create snapshot** -- full backup of `~/.claude/dynamo/` and `settings.json` to `~/.claude/dynamo-backup/`
+3. **Pull code** -- two modes:
+   - **Dev mode** (git remote is `tomkyser/dynamo`): runs `git pull origin master`
+   - **User mode**: downloads tarball from the GitHub release
+4. **Run migrations** -- executes versioned scripts from `dynamo/migrations/` (e.g., `1.2.0-to-1.3.0.cjs`)
+5. **Run install** -- calls `install` to deploy files, generate config, merge settings, deploy agents
+6. **Health check** -- verifies Docker/Neo4j/API/MCP health
+
+If any step fails after snapshot, the entire deployment is restored from backup automatically.
+
+### How `dynamo install` Works
+
+The installer copies files from the **repo source** to `~/.claude/dynamo/`. When running from the deployed copy (`~/.claude/dynamo/`), it uses `resolveRepoRoot()` to find the real git repo via the `.repo-path` dotfile written during CLI shim installation. This prevents the chicken-and-egg problem where install would copy from itself to itself.
+
+**Key paths:**
+- Source: repo root (detected via `__dirname` or `.repo-path` fallback)
+- Destination: `~/.claude/dynamo/`
+- Agents: `cc/agents/*.md` → `~/.claude/agents/` (Claude Code discovery path)
+- Settings: hook definitions merged into `~/.claude/settings.json` (non-destructive)
+
+### How `dynamo sync` Works
+
+Bidirectional file sync between repo and `~/.claude/dynamo/`.
+
+```bash
+dynamo sync repo-to-live    # Push repo changes to deployment
+dynamo sync live-to-repo    # Pull deployment changes back to repo
+dynamo sync status          # Show what would change
+dynamo sync repo-to-live --dry-run  # Preview without applying
+```
+
+Sync uses **content comparison** (byte-level `Buffer.compare`) for same-size files, not just mtime. This catches changes that filesystem timestamp comparison would miss (e.g., after install overwrites files).
+
+Excluded from sync: `.env`, `config.json`, `tests/`, `sessions.json`, `.last-sync`, `node_modules`.
+
+### Creating a Release
+
+Releases are manual (no CI automation):
+
+1. Update `dynamo/VERSION` to the new version (e.g., `1.3.0-M3`)
+2. Update `CHANGELOG.md` with a `## [1.3.0-M3] - YYYY-MM-DD` section
+3. Commit and push to master
+4. Create a git tag: `git tag v1.3-M3`
+5. Push the tag: `git push origin v1.3-M3`
+6. Create a GitHub release from the tag (the release's `tag_name` is what `check-update` reads)
+
+**Important:** The git tag format (`v1.3-M3`) and the VERSION file format (`1.3.0-M3`) differ slightly. `normalizeVersion()` handles the conversion. When all milestones are complete and you ship a release, both align: tag `v1.3.0`, VERSION `1.3.0`.
 
 ## Development Guide
 

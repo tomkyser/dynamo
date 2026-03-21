@@ -14,36 +14,7 @@ const { formatInstallReport } = require(resolve('lib', 'pretty.cjs'));
 
 const LIVE_DIR = path.join(os.homedir(), '.claude', 'dynamo');
 
-/**
- * Resolve the repo root directory.
- * When running from the git repo, __dirname is inside the repo, so we can
- * resolve relative to it. When running from the deployed copy (~/.claude/dynamo/),
- * __dirname is NOT inside a git repo, so we read the .repo-path dotfile that
- * installShim() writes during install.
- * @returns {string} Absolute path to the repo root
- */
-function resolveRepoRoot() {
-  // Check if __dirname is inside a git repo
-  const relativeRoot = path.join(__dirname, '..', '..');
-  if (fs.existsSync(path.join(relativeRoot, '.git'))) {
-    return relativeRoot;
-  }
-
-  // Not in a git repo -- read .repo-path dotfile from LIVE_DIR
-  const repoPathFile = path.join(LIVE_DIR, '.repo-path');
-  try {
-    const repoPath = fs.readFileSync(repoPathFile, 'utf8').trim();
-    if (repoPath && fs.existsSync(path.join(repoPath, 'dynamo.cjs'))) {
-      return repoPath;
-    }
-  } catch (e) {
-    // .repo-path doesn't exist or isn't readable
-  }
-
-  // Fallback to original relative behavior
-  return relativeRoot;
-}
-
+const { resolveRepoRoot } = require('../../lib/resolve.cjs');
 const REPO_ROOT = resolveRepoRoot();
 const GRAPHITI_DIR = path.join(os.homedir(), '.claude', 'graphiti');
 const LEGACY_DIR = path.join(os.homedir(), '.claude', 'graphiti-legacy');

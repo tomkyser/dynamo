@@ -10,7 +10,8 @@ const { DYNAMO_DIR, output, error } = require(resolve('lib', 'core.cjs'));
 
 // --- Constants ---
 
-const REPO_ROOT = path.join(__dirname, '..', '..');  // repo root from subsystems/switchboard/
+const { resolveRepoRoot } = require('../../lib/resolve.cjs');
+const REPO_ROOT = resolveRepoRoot();
 const LIVE_DIR = path.join(os.homedir(), '.claude', 'dynamo');
 const SYNC_STAMP = path.join(REPO_ROOT, '.last-sync');
 

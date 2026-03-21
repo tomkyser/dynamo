@@ -52,7 +52,7 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 - [x] **FLAG-01**: `reverie.mode` config flag supports classic (existing behavior), hybrid (both pipelines, Reverie logged only), and cortex (Reverie active) modes with instant rollback
 - [x] **FLAG-02**: Hybrid mode runs both classic and Reverie pipelines on each event; Reverie output logged for A/B comparison but not injected
 - [x] **FLAG-03**: `dynamo config get/set` CLI commands manage feature flags and Reverie configuration
-- [ ] **FLAG-04**: `dynamo voice status/explain/reset` CLI commands provide visibility into Inner Voice state, last injection rationale, and state reset
+- [x] **FLAG-04**: `dynamo voice status/explain/reset` CLI commands provide visibility into Inner Voice state, last injection rationale, and state reset
 
 ### Operational Improvements
 
@@ -126,7 +126,7 @@ Requirements for v1.3-M2 Core Intelligence milestone. Each maps to roadmap phase
 | FLAG-01 | Phase 23 | Complete |
 | FLAG-02 | Phase 25 | Complete |
 | FLAG-03 | Phase 23 | Complete |
-| FLAG-04 | Phase 25 | Pending |
+| FLAG-04 | Phase 25 | Complete |
 | OPS-01 | Phase 25 | Complete |
 | OPS-02 | Phase 25 | Complete |
 | OPS-03 | Phase 25 | Pending |

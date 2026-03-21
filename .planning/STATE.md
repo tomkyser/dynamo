@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 25-01-PLAN.md
-last_updated: "2026-03-21T00:07:56.519Z"
+stopped_at: Completed 25-03-PLAN.md
+last_updated: "2026-03-21T00:14:20.203Z"
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 11
-  completed_plans: 9
+  completed_plans: 10
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-20)
 ## Current Position
 
 Phase: 25 (cutover-and-completion) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 
 ### Prior Milestones
 
@@ -71,6 +71,8 @@ v1.3-M1 decisions archived to milestones/v1.3-M1-ROADMAP.md.
 - [Phase 25]: .repo-path dotfile written during install enables DYNAMO_DEV=1 to find repo
 - [Phase 25]: Deleted Ledger hooks directory entirely rather than leaving as dead code -- aligns with user's clean break preference
 - [Phase 25]: Removed curation section from generateConfig -- new installs get clean config without OpenRouter artifacts
+- [Phase 25]: Voice commands output to stderr (human-readable only, no --format flag) matching developer tool use case
+- [Phase 25]: No voice history subcommand -- injection history already visible in voice status output
 
 ### Blockers/Concerns
 
@@ -78,6 +80,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-21T00:07:56.516Z
-Stopped at: Completed 25-01-PLAN.md
+Last session: 2026-03-21T00:14:20.201Z
+Stopped at: Completed 25-03-PLAN.md
 Resume file: None

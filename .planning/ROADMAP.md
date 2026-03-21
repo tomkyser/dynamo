@@ -120,9 +120,9 @@ Plans:
   3. Running `dynamo` from any terminal (without `node` prefix or full path) invokes the CLI via a symlink shim; `DYNAMO_DEV=1` overrides to the repo version
   4. CHANGELOG.md exists with well-written update notes generated from git; `dynamo check-update` and `dynamo update` display relevant changelog entries
   5. `dynamo install` and `dynamo sync` deploy all new Reverie files, `cc/agents/`, and `cc/prompts/iv-*` templates; install actively cleans up removed classic-mode files from existing deployments
-**Plans:** 1/4 plans executed
+**Plans:** 2/4 plans executed
 Plans:
-- [ ] 25-01-PLAN.md -- Classic mode removal (dispatcher, config, health checks, dead code deletion, test updates)
+- [x] 25-01-PLAN.md -- Classic mode removal (dispatcher, config, health checks, dead code deletion, test updates)
 - [x] 25-02-PLAN.md -- Bare CLI shim and CHANGELOG.md integration
 - [ ] 25-03-PLAN.md -- Voice CLI commands (status, explain, reset)
 - [ ] 25-04-PLAN.md -- Install/sync pipeline updates with active cleanup
@@ -158,4 +158,4 @@ Phases execute in numeric order: 23 -> 24 -> 25
 | 22. M1 Verification and Cleanup | v1.3-M1 | 4/4 | Complete | 2026-03-20 |
 | 23. Foundation and Routing | v1.3-M2 | 3/3 | Complete    | 2026-03-20 |
 | 24. Cognitive Pipeline | v1.3-M2 | 4/4 | Complete    | 2026-03-20 |
-| 25. Cutover & Completion | v1.3-M2 | 1/4 | In Progress|  |
+| 25. Cutover & Completion | v1.3-M2 | 2/4 | In Progress|  |

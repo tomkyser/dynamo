@@ -78,7 +78,7 @@
 - [ ] **SES-01**: Primary session (Face) — user-facing session with Self Model personality expression via hook-injected context
 - [ ] **SES-02**: Secondary session (Mind) — cognitive center managing attention, fragments, recall, taxonomy, Self Model authority
 - [ ] **SES-03**: Tertiary session (Subconscious) — continuous sublimation stream with configurable cycle frequency (default 5-10s)
-- [ ] **SES-04**: Wire-based inter-session communication (Primary ↔ Secondary ↔ Tertiary) with urgency levels (background/active/directive/urgent)
+- [ ] **SES-04**: Wire-based inter-session communication (Primary <-> Secondary <-> Tertiary) with urgency levels (background/active/directive/urgent)
 - [ ] **SES-05**: Session lifecycle (startup sequence, active operation, compaction handling, clean shutdown)
 - [ ] **SES-06**: Subagent usage from Secondary and Tertiary (parallel recall, batch processing, taxonomy maintenance)
 
@@ -90,13 +90,13 @@
 - [ ] **REM-04**: Retroactive evaluation of session fragments against completed session arc
 - [ ] **REM-05**: Association index editorial pass (entity dedup, weight updates, domain boundary review, taxonomy narrative updates)
 - [ ] **REM-06**: Self Model conditioning update (attention biases, recall strategies, error history, identity core review)
-- [ ] **REM-07**: Working memory → long-term memory gate (nothing enters consolidated storage without REM)
+- [ ] **REM-07**: Working memory -> long-term memory gate (nothing enters consolidated storage without REM)
 
 #### Primary Context Management
 
 - [ ] **CTX-01**: Continuous Self Model reinjection on every UserPromptSubmit (~800-1800 token budget)
 - [ ] **CTX-02**: Referential framing prompt (Primary treats context as reference material, Self Model directives as operating frame)
-- [ ] **CTX-03**: Context budget management (4 phases: full → compressed → minimal → compaction advocacy)
+- [ ] **CTX-03**: Context budget management (4 phases: full -> compressed -> minimal -> compaction advocacy)
 - [ ] **CTX-04**: Self Model as compaction frame (PreCompact preserves Self Model perspective, not neutral summary)
 
 #### Operational Modes
@@ -168,76 +168,81 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| LIB-01 | TBD | Pending |
-| LIB-02 | TBD | Pending |
-| LIB-03 | TBD | Pending |
-| SVC-01 | TBD | Pending |
-| SVC-02 | TBD | Pending |
-| SVC-03 | TBD | Pending |
-| SVC-04 | TBD | Pending |
-| SVC-05 | TBD | Pending |
-| SVC-06 | TBD | Pending |
-| SVC-07 | TBD | Pending |
-| SVC-08 | TBD | Pending |
-| SVC-09 | TBD | Pending |
-| PRV-01 | TBD | Pending |
-| PRV-02 | TBD | Pending |
-| FWK-01 | TBD | Pending |
-| FWK-02 | TBD | Pending |
-| FWK-03 | TBD | Pending |
-| FWK-04 | TBD | Pending |
-| FWK-05 | TBD | Pending |
-| FWK-06 | TBD | Pending |
-| SDK-01 | TBD | Pending |
-| SDK-02 | TBD | Pending |
-| SDK-03 | TBD | Pending |
-| INF-01 | TBD | Pending |
-| INF-02 | TBD | Pending |
-| INF-03 | TBD | Pending |
-| INF-04 | TBD | Pending |
-| SM-01 | TBD | Pending |
-| SM-02 | TBD | Pending |
-| SM-03 | TBD | Pending |
-| SM-04 | TBD | Pending |
-| SM-05 | TBD | Pending |
-| FRG-01 | TBD | Pending |
-| FRG-02 | TBD | Pending |
-| FRG-03 | TBD | Pending |
-| FRG-04 | TBD | Pending |
-| FRG-05 | TBD | Pending |
-| FRG-06 | TBD | Pending |
-| FRG-07 | TBD | Pending |
-| FRG-08 | TBD | Pending |
-| SES-01 | TBD | Pending |
-| SES-02 | TBD | Pending |
-| SES-03 | TBD | Pending |
-| SES-04 | TBD | Pending |
-| SES-05 | TBD | Pending |
-| SES-06 | TBD | Pending |
-| REM-01 | TBD | Pending |
-| REM-02 | TBD | Pending |
-| REM-03 | TBD | Pending |
-| REM-04 | TBD | Pending |
-| REM-05 | TBD | Pending |
-| REM-06 | TBD | Pending |
-| REM-07 | TBD | Pending |
-| CTX-01 | TBD | Pending |
-| CTX-02 | TBD | Pending |
-| CTX-03 | TBD | Pending |
-| CTX-04 | TBD | Pending |
-| OPS-01 | TBD | Pending |
-| OPS-02 | TBD | Pending |
-| OPS-03 | TBD | Pending |
-| OPS-04 | TBD | Pending |
-| INT-01 | TBD | Pending |
-| INT-02 | TBD | Pending |
-| INT-03 | TBD | Pending |
+| LIB-01 | Phase 1 | Pending |
+| LIB-02 | Phase 1 | Pending |
+| LIB-03 | Phase 1 | Pending |
+| SVC-01 | Phase 2 | Pending |
+| SVC-02 | Phase 2 | Pending |
+| SVC-03 | Phase 2 | Pending |
+| SVC-04 | Phase 2 | Pending |
+| SVC-05 | Phase 3 | Pending |
+| SVC-06 | Phase 3 | Pending |
+| SVC-07 | Phase 3 | Pending |
+| SVC-08 | Phase 6 | Pending |
+| SVC-09 | Phase 6 | Pending |
+| PRV-01 | Phase 3 | Pending |
+| PRV-02 | Phase 3 | Pending |
+| FWK-01 | Phase 4 | Pending |
+| FWK-02 | Phase 4 | Pending |
+| FWK-03 | Phase 4 | Pending |
+| FWK-04 | Phase 4 | Pending |
+| FWK-05 | Phase 4 | Pending |
+| FWK-06 | Phase 4 | Pending |
+| SDK-01 | Phase 5 | Pending |
+| SDK-02 | Phase 5 | Pending |
+| SDK-03 | Phase 5 | Pending |
+| INF-01 | Phase 5 | Pending |
+| INF-02 | Phase 5 | Pending |
+| INF-03 | Phase 5 | Pending |
+| INF-04 | Phase 5 | Pending |
+| SM-01 | M2 TBD | Pending |
+| SM-02 | M2 TBD | Pending |
+| SM-03 | M2 TBD | Pending |
+| SM-04 | M2 TBD | Pending |
+| SM-05 | M2 TBD | Pending |
+| FRG-01 | M2 TBD | Pending |
+| FRG-02 | M2 TBD | Pending |
+| FRG-03 | M2 TBD | Pending |
+| FRG-04 | M2 TBD | Pending |
+| FRG-05 | M2 TBD | Pending |
+| FRG-06 | M2 TBD | Pending |
+| FRG-07 | M2 TBD | Pending |
+| FRG-08 | M2 TBD | Pending |
+| SES-01 | M2 TBD | Pending |
+| SES-02 | M2 TBD | Pending |
+| SES-03 | M2 TBD | Pending |
+| SES-04 | M2 TBD | Pending |
+| SES-05 | M2 TBD | Pending |
+| SES-06 | M2 TBD | Pending |
+| REM-01 | M2 TBD | Pending |
+| REM-02 | M2 TBD | Pending |
+| REM-03 | M2 TBD | Pending |
+| REM-04 | M2 TBD | Pending |
+| REM-05 | M2 TBD | Pending |
+| REM-06 | M2 TBD | Pending |
+| REM-07 | M2 TBD | Pending |
+| CTX-01 | M2 TBD | Pending |
+| CTX-02 | M2 TBD | Pending |
+| CTX-03 | M2 TBD | Pending |
+| CTX-04 | M2 TBD | Pending |
+| OPS-01 | M2 TBD | Pending |
+| OPS-02 | M2 TBD | Pending |
+| OPS-03 | M2 TBD | Pending |
+| OPS-04 | M2 TBD | Pending |
+| INT-01 | M2 TBD | Pending |
+| INT-02 | M2 TBD | Pending |
+| INT-03 | M2 TBD | Pending |
 
-**Coverage:**
-- v1 requirements: 58 total
-- Mapped to phases: 0
-- Unmapped: 58
+**Coverage (Milestone 1):**
+- M1 requirements: 27 total
+- Mapped to phases: 27
+- Unmapped: 0
+
+**Coverage (Milestone 2):**
+- M2 requirements: 31 total
+- Mapped to phases: 0 (roadmap pending -- ships after M1)
+- Unmapped: 31
 
 ---
 *Requirements defined: 2026-03-22*
-*Last updated: 2026-03-22 after initial definition*
+*Last updated: 2026-03-22 after M1 roadmap phase mapping*

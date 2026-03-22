@@ -9,9 +9,9 @@
 
 #### Core Library
 
-- [ ] **LIB-01**: Shared utility patterns (error types, result types, contract patterns)
+- [x] **LIB-01**: Shared utility patterns (error types, result types, contract patterns)
 - [x] **LIB-02**: Path resolution and module identity system
-- [ ] **LIB-03**: Configuration loader with hierarchical precedence
+- [x] **LIB-03**: Configuration loader with hierarchical precedence
 
 #### Core Services
 
@@ -168,9 +168,9 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| LIB-01 | Phase 1 | Pending |
+| LIB-01 | Phase 1 | Complete |
 | LIB-02 | Phase 1 | Complete |
-| LIB-03 | Phase 1 | Pending |
+| LIB-03 | Phase 1 | Complete |
 | SVC-01 | Phase 2 | Pending |
 | SVC-02 | Phase 2 | Pending |
 | SVC-03 | Phase 2 | Pending |

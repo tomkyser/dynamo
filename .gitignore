@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+bun.lock
+
+# Environment
+.env
+.env.*
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Build artifacts
+dist/
+*.tsbuildinfo
+
+# DuckDB
+*.duckdb
+*.duckdb.wal
+
+# Logs
+*.log
+
+# Temp
+tmp/
+.tmp/

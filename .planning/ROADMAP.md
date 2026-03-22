@@ -30,12 +30,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Path resolution produces correct absolute paths for all Dynamo directory layout locations (lib, core, services, providers, modules, plugins, extensions, config)
   3. Configuration loader reads config.json with hierarchical precedence (defaults < global < project < env < runtime) and returns validated, typed config objects
   4. All lib/ code runs on Bun >= 1.3.10 with bun:test passing -- no node:sqlite or node:test assumptions leak in
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
-- [ ] 01-03: TBD
+- [ ] 01-01-PLAN.md -- Shared utility patterns: Result types (Ok/Err), contract validation factory, schema validator
+- [ ] 01-02-PLAN.md -- Path resolution: root discovery via .dynamo marker, central path registry for all layout directories
+- [ ] 01-03-PLAN.md -- Configuration loader: 5-level hierarchical deep merge, env var mapping, schema validation, barrel export
 
 ### Phase 2: Foundational Services
 **Goal**: Deliver the four services that form the substrate for all other services -- events, I/O bridging, state, and filesystem access
@@ -127,7 +127,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Core Library | 0/3 | Not started | - |
+| 1. Core Library | 0/3 | Planned | - |
 | 2. Foundational Services | 0/3 | Not started | - |
 | 3. Data Providers & Infrastructure Services | 0/3 | Not started | - |
 | 4. Framework | 0/3 | Not started | - |

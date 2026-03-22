@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [ ] 01-01-PLAN.md -- Shared utility patterns: Result types (Ok/Err), contract validation factory, schema validator
-- [ ] 01-02-PLAN.md -- Path resolution: root discovery via .dynamo marker, central path registry for all layout directories
+- [x] 01-02-PLAN.md -- Path resolution: root discovery via .dynamo marker, central path registry for all layout directories
 - [ ] 01-03-PLAN.md -- Configuration loader: 5-level hierarchical deep merge, env var mapping, schema validation, barrel export
 
 ### Phase 2: Foundational Services

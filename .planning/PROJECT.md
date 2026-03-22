@@ -14,13 +14,11 @@ Everything routes through Dynamo. It is the holistic wrapper via its APIs and in
 
 ### Validated
 
-(None yet — ship to validate)
+#### Core Library (`lib/`) — Validated in Phase 1: Core Library
+- [x] Shared resources, dependencies, and common utilities
+- [x] Pure library — no feature logic, just patterns and standardization
 
 ### Active
-
-#### Core Library (`lib/`)
-- [ ] Shared resources, dependencies, and common utilities
-- [ ] Pure library — no feature logic, just patterns and standardization
 
 #### Core Services (`core/services/`)
 - [ ] **Commutator** — Shared system I/O bus
@@ -121,4 +119,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-22 after initialization*
+*Last updated: 2026-03-22 after Phase 1 completion*

@@ -18,22 +18,22 @@ Everything routes through Dynamo. It is the holistic wrapper via its APIs and in
 - [x] Shared resources, dependencies, and common utilities
 - [x] Pure library — no feature logic, just patterns and standardization
 
+#### Core Services — Validated in Phases 2, 3, 3.1, 3.2
+- [x] **Switchboard** — Event and I/O dispatcher
+- [x] **Commutator** — Shared system I/O bus
+- [x] **Magnet** — Shared system state management
+- [x] **Lathe** — Filesystem ops (thin facade over Bun native APIs)
+- [x] **Forge** — Git ops, channel switching, repo-to-deploy sync
+- [x] **Conductor** — Infrastructure ops (Docker/Compose, dependency management)
+- [x] **Relay** — Install/update/sync operations
+- [x] **Wire** — MCP server toolkit for inter-session communication via Claude Code Channels
+- [x] **Assay** — Federated search across all data providers (provider metadata in results, capability-based routing)
+
+#### Core Providers — Validated in Phase 3
+- [x] **Ledger** — SQL database (DuckDB with bun:sqlite fallback)
+- [x] **Journal** — Flat file markdown system
+
 ### Active
-
-#### Core Services (`core/services/`)
-- [ ] **Commutator** — Shared system I/O bus
-- [ ] **Magnet** — Shared system state management
-- [ ] **Conductor** — Infrastructure ops (Docker/Compose, dependency management)
-- [ ] **Forge** — Git ops, channel switching, repo-to-deploy sync
-- [ ] **Lathe** — Filesystem ops (thin facade over Bun native APIs)
-- [ ] **Relay** — Install/update/sync operations
-- [ ] **Switchboard** — Event and I/O dispatcher
-- [ ] **Wire** — MCP server toolkit for inter-session communication via Claude Code Channels
-- [ ] **Assay** — Unified data search/indexing across all providers (Tika, consolidated query entry point, provider metadata in results)
-
-#### Core Providers (`core/providers/`)
-- [ ] **Ledger** — SQL database (DuckDB)
-- [ ] **Journal** — Flat file markdown system
 
 #### Framework (`core/armature/`)
 - [ ] Definitions and contracts (abstract classes, interfaces — CJS equivalent)
@@ -119,4 +119,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-22 after Phase 1 completion*
+*Last updated: 2026-03-23 after Phase 3.2 completion — all services and providers validated*

@@ -111,12 +111,13 @@ Plans:
   3. Register/boot two-phase lifecycle completes without errors -- all services register bindings first, then boot in dependency order with access to resolved services
   4. Plugin API contracts define manifest schema, domain extension/introduction points, dependency checking, and enable/disable toggle -- validated by loading a minimal test plugin manifest
   5. Claude Code hook definitions map all 8 hook types into Switchboard events, and the integration layer correctly routes hook payloads through Commutator
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
-- [ ] 04-03: TBD
+- [ ] 04-01-PLAN.md -- IoC container with bind/resolve/singleton/factory/tagged/deferred and schema validator enum enhancement
+- [ ] 04-02-PLAN.md -- Facade generator with hook points, override, domain metadata and hook definitions with wiring registry
+- [ ] 04-03-PLAN.md -- Plugin manifest validation, dependency checking, enable/disable and two-phase lifecycle orchestrator
+- [ ] 04-04-PLAN.md -- Armature barrel export, core.cjs bootstrap entry point, and full integration test
 
 ### Phase 5: SDK & Platform Infrastructure
 **Goal**: Make the platform consumable -- Circuit exports the framework safely for modules, Pulley provides CLI and MCP surface, and infrastructure services handle health, versioning, and self-management
@@ -150,5 +151,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 3.1 -> 3.2 -> 4 -> 5
 | 3. Data Providers & Infrastructure Services | 5/5 | Complete | 2026-03-23 |
 | 3.1 Wire Communication Service | 4/4 | Complete | 2026-03-23 |
 | 3.2 Assay Federated Search | 0/1 | Not started | - |
-| 4. Framework | 0/? | Not started | - |
+| 4. Framework | 0/4 | Not started | - |
 | 5. SDK & Platform Infrastructure | 0/? | Not started | - |

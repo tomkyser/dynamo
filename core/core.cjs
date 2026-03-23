@@ -87,46 +87,47 @@ async function bootstrap(options = {}) {
   });
 
   container.singleton('services.magnet', createMagnet, {
-    deps: [],
+    deps: ['services.switchboard', 'services.lathe'],
     tags: ['service', 'state'],
-    mapDeps: { 'services.switchboard': 'switchboard' },
+    mapDeps: { 'services.switchboard': 'switchboard', 'services.lathe': 'lathe' },
+    config: { statePath: paths.root + '/data/state.json' },
   });
 
   container.singleton('services.conductor', createConductor, {
-    deps: [],
+    deps: ['services.switchboard'],
     tags: ['service', 'infrastructure'],
     mapDeps: { 'services.switchboard': 'switchboard' },
   });
 
   container.singleton('services.forge', createForge, {
-    deps: ['services.lathe'],
+    deps: ['services.lathe', 'services.switchboard'],
     tags: ['service', 'git'],
     mapDeps: { 'services.lathe': 'lathe', 'services.switchboard': 'switchboard' },
     config: { repoPath: paths.root },
   });
 
   container.singleton('services.relay', createRelay, {
-    deps: ['services.forge', 'services.lathe'],
+    deps: ['services.forge', 'services.lathe', 'services.switchboard'],
     tags: ['service', 'operations'],
     mapDeps: { 'services.forge': 'forge', 'services.lathe': 'lathe', 'services.switchboard': 'switchboard' },
     config: { configPath: paths.config },
   });
 
   container.singleton('services.wire', createWire, {
-    deps: ['services.switchboard'],
+    deps: ['services.switchboard', 'services.conductor', 'providers.ledger'],
     tags: ['service', 'communication'],
     mapDeps: { 'services.switchboard': 'switchboard', 'services.conductor': 'conductor', 'providers.ledger': 'ledger' },
   });
 
   container.singleton('services.assay', createAssay, {
-    deps: [],
+    deps: ['services.switchboard', 'providers.ledger', 'providers.journal'],
     tags: ['service', 'search'],
     mapDeps: { 'services.switchboard': 'switchboard', 'providers.ledger': 'ledger', 'providers.journal': 'journal' },
   });
 
   // 5. Register both providers with domain tags and aliases
   container.singleton('providers.ledger', createLedger, {
-    deps: [],
+    deps: ['services.switchboard'],
     tags: ['provider', 'data', 'sql'],
     aliases: ['providers.data.sql'],
     config: { dbPath: paths.root + '/data/ledger.db' },
@@ -134,7 +135,7 @@ async function bootstrap(options = {}) {
   });
 
   container.singleton('providers.journal', createJournal, {
-    deps: ['services.lathe'],
+    deps: ['services.lathe', 'services.switchboard'],
     tags: ['provider', 'data', 'files'],
     aliases: ['providers.data.files'],
     mapDeps: { 'services.lathe': 'lathe', 'services.switchboard': 'switchboard' },

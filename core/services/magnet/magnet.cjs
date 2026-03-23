@@ -61,7 +61,20 @@ function createMagnet() {
     }
 
     _switchboard = options.switchboard || null;
-    _provider = options.provider || null;
+
+    // Wire json-provider if lathe and statePath are injected via mapDeps/config
+    if (options.lathe && options.statePath) {
+      const { createJsonProvider } = require('./json-provider.cjs');
+      const provResult = createJsonProvider({
+        lathe: options.lathe,
+        filePath: options.statePath,
+      });
+      if (provResult.ok) {
+        _provider = provResult.value;
+      }
+    } else {
+      _provider = options.provider || null;
+    }
 
     // Hydrate state from provider if available
     if (_provider) {

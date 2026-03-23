@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Ready to plan
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-03-23T01:25:31Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-03-23T01:36:47.925Z"
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 7
-  completed_plans: 4
+  completed_plans: 6
 ---
 
 # Project State
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 
 ## Current Position
 
-Phase: 2
-Plan: 3 (next)
+Phase: 02 (foundational-services) — EXECUTING
+Plan: 4 of 4
 
 ## Performance Metrics
 
@@ -49,7 +49,10 @@ Plan: 3 (next)
 | Phase 01 P01 | 4min | 3 tasks | 8 files |
 | Phase 01 P02 | 3min | 2 tasks | 2 files |
 | Phase 01 P03 | 2min | 2 tasks | 4 files |
+| Phase 02 P01 | 2min | 2 tasks | 2 files |
 | Phase 02 P02 | 2min | 2 tasks | 2 files |
+| Phase 02 P04 | 2min | 2 tasks | 2 files |
+| Phase 02 P03 | 4min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -67,9 +70,19 @@ Recent decisions affecting current work:
 - [Phase 01]: Module-scope caching with _resetRoot() export for test isolation in paths.cjs
 - [Phase 01]: loadConfig uses options-based DI for testability -- paths, env, and overrides all injectable
 - [Phase 01]: Barrel export (lib/index.cjs) excludes test-only APIs (_resetRoot) -- public surface is 13 functions
+- [Phase 02]: Lathe uses Bun.file/Bun.write for read/write and node:fs for directory ops -- leveraging each API where strongest
+- [Phase 02]: writeFileAtomic uses .tmp suffix + fs.renameSync for crash-safe writes
+- [Phase 02]: Service factory pattern: createLathe returns Result from createContract -- frozen, self-validated
 - [Phase 02]: Map-based handler registry for wildcard support and priority ordering in Switchboard
 - [Phase 02]: Wildcard matching uses string prefix comparison (slice+startsWith) not regex -- per D-05
 - [Phase 02]: Dual event types: actions (fire-and-forget, returns undefined) and filters (interceptable pipeline, returns Result)
+- [Phase 02]: Tool action override map separates generic actions from domain-specific ones (shell:executed, web:fetched, agent:completed)
+- [Phase 02]: Outbound adapters subscribe to Switchboard events via registerOutput, decoupled from stdout -- enables future Wire integration
+- [Phase 02]: hook:raw event emitted alongside domain event for listeners wanting unprocessed hook data
+- [Phase 02]: Provider interface uses load/save contract shape -- Ledger and Journal implement same shape in Phase 3
+- [Phase 02]: Debounced writes (1000ms) with flush:true override for stop() -- prevents write storms on rapid state changes
+- [Phase 02]: structuredClone for old value capture before mutation -- ensures immutable event payloads
+- [Phase 02]: Namespaced event keys for session/module scopes (e.g., 'sess-1.activeTab') -- flat key space with scope prefix
 
 ### Pending Todos
 
@@ -83,6 +96,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T01:25:31Z
-Stopped at: Completed 02-02-PLAN.md
-Resume file: .planning/phases/02-foundational-services/02-02-SUMMARY.md
+Last session: 2026-03-23T01:36:47.922Z
+Stopped at: Completed 02-03-PLAN.md
+Resume file: None

@@ -129,12 +129,14 @@ Plans:
   3. Pulley MCP endpoint surface exposes platform operations as MCP tools that Claude Code sessions can invoke
   4. Health check aggregates per-service healthCheck() results into a single diagnostic report, and the diagnostics system identifies which service or dependency is degraded
   5. Self-install and self-update via Relay complete end-to-end (backup, deploy, migrate, verify, rollback on failure) and versioning integrates with GitHub Releases API for semver tracking
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
-- [ ] 05-03: TBD
+- [ ] 05-01-PLAN.md -- Circuit module API: event proxy, module manifest, facade-only registration with dependency verification
+- [ ] 05-02-PLAN.md -- Pulley CLI framework: output formatter, help generator, command registry with subcommand routing, CLI entry point
+- [ ] 05-03-PLAN.md -- Health aggregation and Forge versioning: lifecycle-driven diagnostics, GitHub Releases API, semver comparison
+- [ ] 05-04-PLAN.md -- Platform commands and MCP server: 6 CLI commands, 6 MCP tools, self-management orchestration
+- [ ] 05-05-PLAN.md -- SDK barrel export, extended bootstrap, and end-to-end integration test
 
 ### ~~Phase 6: Search & Communication~~ (REMOVED — moved to Phase 3.1 and Phase 3.2)
 Wire (SVC-08) → Phase 3.1 | Assay (SVC-09) → Phase 3.2
@@ -152,4 +154,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 3.1 -> 3.2 -> 4 -> 5
 | 3.1 Wire Communication Service | 4/4 | Complete | 2026-03-23 |
 | 3.2 Assay Federated Search | 0/1 | Not started | - |
 | 4. Framework | 0/4 | Not started | - |
-| 5. SDK & Platform Infrastructure | 0/? | Not started | - |
+| 5. SDK & Platform Infrastructure | 0/5 | Not started | - |

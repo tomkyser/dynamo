@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Milestone complete
-stopped_at: Completed 05-05-PLAN.md
-last_updated: "2026-03-23T18:31:49.702Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-03-23T19:35:45.908Z"
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 26
-  completed_plans: 26
+  total_phases: 8
+  completed_phases: 8
+  total_plans: 28
+  completed_plans: 28
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-22)
 
 **Core value:** Everything routes through Dynamo -- the holistic wrapper via its APIs and interfaces. No component bypasses the patterns and paths Dynamo defines.
-**Current focus:** Phase 05 — sdk-platform-infrastructure
+**Current focus:** Phase 06 — bootstrap-integration-fixes
 
 ## Current Position
 
-Phase: 05
-Plan: Not started
+Phase: 06 (bootstrap-integration-fixes) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -72,6 +72,9 @@ Plan: Not started
 | Phase 05 P02 | 3min | 2 tasks | 7 files |
 | Phase 05 P04 | 5min | 2 tasks | 4 files |
 | Phase 05 P05 | 3min | 2 tasks | 3 files |
+| Phase 06 P01 | 3min | 2 tasks | 4 files |
+| Phase 06 P02 | 2min | 2 tasks | 1 files |
+| Phase 06 P02 | 2min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -160,6 +163,10 @@ Recent decisions affecting current work:
 - [Phase 05]: SDK barrel uses flat namespace re-export (16 functions) mirroring lib/index.cjs pattern
 - [Phase 05]: Bootstrap creates Pulley before Circuit so Circuit can delegate registerCommand/registerMcpTool to Pulley
 - [Phase 05]: Health check in test environment reports degraded (not healthy) due to Wire/Conductor lacking infrastructure
+- [Phase 06]: deps[] must mirror mapDeps keys for correct Kahn's algorithm boot ordering
+- [Phase 06]: Lazy require for json-provider inside Magnet init() prevents circular dependency at module load time
+- [Phase 06]: Assay search test uses await (async method) unlike plan template which omitted await
+- [Phase 06]: Assay search test uses await (async method) unlike plan template which omitted await
 
 ### Roadmap Evolution
 
@@ -178,6 +185,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T18:26:10.040Z
-Stopped at: Completed 05-05-PLAN.md
+Last session: 2026-03-23T19:35:45.905Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None

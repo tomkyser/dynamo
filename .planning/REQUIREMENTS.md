@@ -41,16 +41,16 @@
 
 #### SDK
 
-- [ ] **SDK-01**: Circuit — Module API (safe export of framework + core services/providers for module consumption, dependency verification)
-- [ ] **SDK-02**: Pulley — CLI framework (command routing with subcommands, help generation, structured output: human/JSON/raw)
-- [ ] **SDK-03**: Pulley — MCP endpoint surface
+- [x] **SDK-01**: Circuit — Module API (safe export of framework + core services/providers for module consumption, dependency verification)
+- [x] **SDK-02**: Pulley — CLI framework (command routing with subcommands, help generation, structured output: human/JSON/raw)
+- [x] **SDK-03**: Pulley — MCP endpoint surface
 
 #### Platform Infrastructure
 
-- [ ] **INF-01**: Health check and diagnostics system (per-service healthCheck() method, aggregated reporting)
-- [ ] **INF-02**: Self-install and self-update via Relay (backup, deploy, migrate, verify, rollback)
-- [ ] **INF-03**: Versioning with GitHub Releases API (semver: master releases, dev testing, feature branches)
-- [ ] **INF-04**: Git submodule management for plugins/modules/extensions via Forge
+- [x] **INF-01**: Health check and diagnostics system (per-service healthCheck() method, aggregated reporting)
+- [x] **INF-02**: Self-install and self-update via Relay (backup, deploy, migrate, verify, rollback)
+- [x] **INF-03**: Versioning with GitHub Releases API (semver: master releases, dev testing, feature branches)
+- [x] **INF-04**: Git submodule management for plugins/modules/extensions via Forge
 
 ### Milestone 2: Reverie Module
 
@@ -188,13 +188,13 @@ Deferred to future release. Tracked but not in current roadmap.
 | FWK-04 | Phase 4 | Complete |
 | FWK-05 | Phase 4 | Complete |
 | FWK-06 | Phase 4 | Complete |
-| SDK-01 | Phase 5 | Pending |
-| SDK-02 | Phase 5 | Pending |
-| SDK-03 | Phase 5 | Pending |
-| INF-01 | Phase 5 | Pending |
-| INF-02 | Phase 5 | Pending |
-| INF-03 | Phase 5 | Pending |
-| INF-04 | Phase 5 | Pending |
+| SDK-01 | Phase 5 | Complete |
+| SDK-02 | Phase 5 | Complete |
+| SDK-03 | Phase 5 | Complete |
+| INF-01 | Phase 5 | Complete |
+| INF-02 | Phase 5 | Complete |
+| INF-03 | Phase 5 | Complete |
+| INF-04 | Phase 5 | Complete |
 | SM-01 | M2 TBD | Pending |
 | SM-02 | M2 TBD | Pending |
 | SM-03 | M2 TBD | Pending |

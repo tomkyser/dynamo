@@ -152,8 +152,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 06-01-PLAN.md -- Fix deps[] declarations in core.cjs, wire Magnet persistence via mapDeps+config, implement forge.pull()
-- [ ] 06-02-PLAN.md -- Bootstrap integration tests validating all 4 success criteria end-to-end
+- [x] 06-01-PLAN.md -- Fix deps[] declarations in core.cjs, wire Magnet persistence via mapDeps+config, implement forge.pull()
+- [x] 06-02-PLAN.md -- Bootstrap integration tests validating all 4 success criteria end-to-end
 
 ### ~~Phase 6 (original): Search & Communication~~ (REMOVED — moved to Phase 3.1 and Phase 3.2)
 Wire (SVC-08) → Phase 3.1 | Assay (SVC-09) → Phase 3.2

@@ -64,12 +64,14 @@ Plans:
   3. Forge executes git operations (status, commit, branch, submodule add/update/remove) and performs repo-to-deploy sync via Lathe and Bun.spawn
   4. Conductor manages infrastructure lifecycle (DuckDB process health, Docker Compose up/down for MCP servers) and reports dependency status
   5. Relay orchestrates install, update, and sync operations with backup-before-modify and rollback-on-failure semantics
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
-- [ ] 03-03: TBD
+- [ ] 03-01-PLAN.md -- Ledger data provider: DATA_PROVIDER_SHAPE contract, DuckDB backend with bun:sqlite fallback, uniform read/write/query/delete interface
+- [ ] 03-02-PLAN.md -- Journal data provider: YAML frontmatter parser, markdown file storage via Lathe, frontmatter-based queries
+- [ ] 03-03-PLAN.md -- Forge git service: git CLI operations via Bun.spawnSync, submodule management, repo-to-deploy sync
+- [ ] 03-04-PLAN.md -- Conductor infrastructure service: Docker Compose lifecycle, dependency health checks, graceful degradation
+- [ ] 03-05-PLAN.md -- Relay operations service: install/update/sync orchestration, git-tag rollback, plugin/module management, config migration
 
 ### Phase 4: Framework
 **Goal**: Compose services and providers into a coherent platform through Armature -- the IoC container, lifecycle, contracts, and integration layer that modules and plugins will consume
@@ -130,7 +132,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 |-------|----------------|--------|-----------|
 | 1. Core Library | 0/3 | Planned | - |
 | 2. Foundational Services | 0/4 | Planned | - |
-| 3. Data Providers & Infrastructure Services | 0/3 | Not started | - |
+| 3. Data Providers & Infrastructure Services | 0/5 | Planned | - |
 | 4. Framework | 0/3 | Not started | - |
 | 5. SDK & Platform Infrastructure | 0/3 | Not started | - |
 | 6. Search & Communication | 0/3 | Not started | - |

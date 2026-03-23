@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Ready to plan
-stopped_at: Phase 5 context gathered
-last_updated: "2026-03-23T17:20:22.311Z"
+status: Milestone complete
+stopped_at: Completed 05-05-PLAN.md
+last_updated: "2026-03-23T18:31:49.702Z"
 progress:
   total_phases: 7
-  completed_phases: 6
-  total_plans: 21
-  completed_plans: 21
+  completed_phases: 7
+  total_plans: 26
+  completed_plans: 26
 ---
 
 # Project State
@@ -19,11 +19,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-22)
 
 **Core value:** Everything routes through Dynamo -- the holistic wrapper via its APIs and interfaces. No component bypasses the patterns and paths Dynamo defines.
-**Current focus:** Phase 04 — framework
+**Current focus:** Phase 05 — sdk-platform-infrastructure
 
 ## Current Position
 
-Phase: 5
+Phase: 05
 Plan: Not started
 
 ## Performance Metrics
@@ -67,6 +67,11 @@ Plan: Not started
 | Phase 04 P02 | 3min | 2 tasks | 4 files |
 | Phase 04 P03 | 3min | 2 tasks | 4 files |
 | Phase 04 P04 | 3min | 2 tasks | 3 files |
+| Phase 05 P01 | 3min | 2 tasks | 6 files |
+| Phase 05 P03 | 4min | 2 tasks | 4 files |
+| Phase 05 P02 | 3min | 2 tasks | 7 files |
+| Phase 05 P04 | 5min | 2 tasks | 4 files |
+| Phase 05 P05 | 3min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -141,6 +146,20 @@ Recent decisions affecting current work:
 - [Phase 04]: Boot options from mapDeps (resolved to facades) merged with config values -- options-based DI preserved
 - [Phase 04]: Bootstrap uses options.paths override for test isolation -- discoverRoot only called when no paths provided
 - [Phase 04]: Config loaded with empty env {} to avoid DYNAMO_* env pollution during bootstrap
+- [Phase 05]: Event proxy namespaces module emissions as moduleName:event while passing hook:* and state:* system events un-namespaced
+- [Phase 05]: Circuit enforces facade-only access -- modules never see container or raw implementations, only get facades via lifecycle.getFacade()
+- [Phase 05]: Module manifest mirrors plugin manifest schema with added hooks field for module-specific hook wiring
+- [Phase 05]: D-11: Lifecycle-driven health aggregation iterates facades directly rather than a dedicated health service
+- [Phase 05]: D-12: GitHub REST API via built-in fetch, auth token from env vars only (never config.json)
+- [Phase 05]: node:util.parseArgs for CLI flag parsing -- zero-dependency, built-in to Bun/Node
+- [Phase 05]: Longest-match routing for subcommands -- positionals.slice(0,i).join(' ') from longest to shortest
+- [Phase 05]: Three output modes (human/json/raw) with graceful fallbacks when fields missing
+- [Phase 05]: MCP tool registry separate from CLI command registry -- dual API surface pattern from Wire (D-13)
+- [Phase 05]: Registry-key-based dependency chain analysis: unhealthy service detection uses registry keys (services.switchboard) not health report names for accurate reverse-dependency tracing
+- [Phase 05]: Platform MCP server separate from Wire channel-server per D-08; each has distinct tool sets and capabilities
+- [Phase 05]: SDK barrel uses flat namespace re-export (16 functions) mirroring lib/index.cjs pattern
+- [Phase 05]: Bootstrap creates Pulley before Circuit so Circuit can delegate registerCommand/registerMcpTool to Pulley
+- [Phase 05]: Health check in test environment reports degraded (not healthy) due to Wire/Conductor lacking infrastructure
 
 ### Roadmap Evolution
 
@@ -159,6 +178,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T17:20:22.308Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-sdk-platform-infrastructure/05-CONTEXT.md
+Last session: 2026-03-23T18:26:10.040Z
+Stopped at: Completed 05-05-PLAN.md
+Resume file: None

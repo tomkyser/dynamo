@@ -132,10 +132,10 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 05-01-PLAN.md -- Circuit module API: event proxy, module manifest, facade-only registration with dependency verification
-- [ ] 05-02-PLAN.md -- Pulley CLI framework: output formatter, help generator, command registry with subcommand routing, CLI entry point
-- [ ] 05-03-PLAN.md -- Health aggregation and Forge versioning: lifecycle-driven diagnostics, GitHub Releases API, semver comparison
-- [ ] 05-04-PLAN.md -- Platform commands and MCP server: 6 CLI commands, 6 MCP tools, self-management orchestration
+- [x] 05-01-PLAN.md -- Circuit module API: event proxy, module manifest, facade-only registration with dependency verification
+- [x] 05-02-PLAN.md -- Pulley CLI framework: output formatter, help generator, command registry with subcommand routing, CLI entry point
+- [x] 05-03-PLAN.md -- Health aggregation and Forge versioning: lifecycle-driven diagnostics, GitHub Releases API, semver comparison
+- [x] 05-04-PLAN.md -- Platform commands and MCP server: 6 CLI commands, 6 MCP tools, self-management orchestration
 - [ ] 05-05-PLAN.md -- SDK barrel export, extended bootstrap, and end-to-end integration test
 
 ### ~~Phase 6: Search & Communication~~ (REMOVED — moved to Phase 3.1 and Phase 3.2)
@@ -154,4 +154,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 3.1 -> 3.2 -> 4 -> 5
 | 3.1 Wire Communication Service | 4/4 | Complete | 2026-03-23 |
 | 3.2 Assay Federated Search | 0/1 | Not started | - |
 | 4. Framework | 0/4 | Not started | - |
-| 5. SDK & Platform Infrastructure | 0/5 | Not started | - |
+| 5. SDK & Platform Infrastructure | 3/5 | In Progress|  |

@@ -69,5 +69,7 @@ describe('CLI main', () => {
     expect(result.ok).toBe(false);
     const errOutput = stderrChunks.join('');
     expect(errOutput).toContain('Error:');
+    // Reset process.exitCode to avoid leaking to test runner
+    process.exitCode = 0;
   });
 });

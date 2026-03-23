@@ -35,7 +35,7 @@ Everything routes through Dynamo. It is the holistic wrapper via its APIs and in
 
 ### Active
 
-(No active requirements — all Milestone 1 requirements validated)
+Milestone 2 (Reverie Module) requirements to be defined via `/gsd:new-milestone`.
 
 ### Validated (continued)
 
@@ -76,6 +76,13 @@ Everything routes through Dynamo. It is the holistic wrapper via its APIs and in
 
 Dynamo is a ground-up rebuild. Prior experimental work (v0, archived at `archive/v0-pre-rewrite`) produced a working 6-subsystem monolith through 6 milestones (~7,081 LOC, 525 tests). That system validated core concepts — hook-based memory, cognitive pipelines, dual-path routing, adversarial framing — but grew organically without proper platform architecture. This rebuild applies the lessons learned to a properly layered system.
 
+**Current state (after Milestone 1):**
+- 9 services, 2 providers, 1 framework, 1 SDK — all wired through IoC container
+- 9,932 LOC source, 11,394 LOC tests (52 source files, 45 test files)
+- 851 tests passing, 0 failures
+- Platform is consumable: Circuit exports services safely, Pulley exposes CLI + MCP surface
+- Next: Milestone 2 (Reverie) builds the first module on top of this platform
+
 **Canonical architecture documents:**
 - `.claude/new-plan.md` — The architecture plan. Absolute canon.
 - `.claude/reverie-spec-v2.md` — The Reverie module specification. Canon.
@@ -106,11 +113,14 @@ Dynamo is a ground-up rebuild. Prior experimental work (v0, archived at `archive
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Ground-up rebuild vs. incremental refactor | v0 architecture was organically grown; proper layering requires clean foundation | -- Pending |
-| Bun over Node.js | Performance, built-in APIs, native TypeScript support (CJS compat) | -- Pending |
-| DuckDB for Ledger provider | Embedded analytics DB, no server dependency, SQL interface | -- Pending |
-| Git submodules for additions | Decouples plugin/module repos from core while enabling managed updates | -- Pending |
-| Two milestones (Platform then Reverie) | SDK must exist before modules can consume it | -- Pending |
+| Ground-up rebuild vs. incremental refactor | v0 architecture was organically grown; proper layering requires clean foundation | ✓ Good — clean layering delivered in 8 phases |
+| Bun over Node.js | Performance, built-in APIs, native TypeScript support (CJS compat) | ✓ Good — bun:test, bun:sqlite, Bun.spawn all validated |
+| DuckDB for Ledger provider | Embedded analytics DB, no server dependency, SQL interface | ✓ Good — bun:sqlite fallback proven, DuckDB backend ready |
+| Git submodules for additions | Decouples plugin/module repos from core while enabling managed updates | ✓ Good — Relay manages submodule lifecycle |
+| Two milestones (Platform then Reverie) | SDK must exist before modules can consume it | ✓ Good — M1 delivers consumable SDK, M2 can build on it |
+| Wire moved to Phase 3.1 | Channels API maturity concerns overruled by frontier value | ✓ Good — validated with multi-session integration test |
+| deps[] must match mapDeps | Boot order bugs from implicit registration ordering | ✓ Good — Kahn's algorithm now deterministic for all services |
+| Options-based DI over decorator DI | CJS does not support decorators; v0 validated options pattern | ✓ Good — clean, testable, zero framework overhead |
 
 ## Evolution
 
@@ -130,4 +140,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-23 after Phase 6 completion — Bootstrap integration fixes validated, all cross-phase wiring gaps closed, Milestone 1 fully complete (851 tests, 45 files)*
+*Last updated: 2026-03-23 after v1.0 Milestone 1 (Platform SDK) completion — 8 phases, 28 plans, 27/27 requirements, 851 tests. Merged to dev.*

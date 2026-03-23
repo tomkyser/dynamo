@@ -23,7 +23,7 @@
 - [x] **SVC-06**: Conductor — Infrastructure ops (Docker/Compose lifecycle, dependency management)
 - [x] **SVC-07**: Relay — Install/update/sync orchestration with rollback capability
 - [x] **SVC-08**: Wire — MCP server toolkit for inter-session communication via Claude Code Channels
-- [ ] **SVC-09**: Assay — Unified search/indexing across all data providers with federated query, provider metadata in results
+- [x] **SVC-09**: Assay — Unified search/indexing across all data providers with federated query, provider metadata in results
 
 #### Core Providers
 
@@ -179,7 +179,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | SVC-06 | Phase 3 | Complete |
 | SVC-07 | Phase 3 | Complete |
 | SVC-08 | Phase 6 | Complete |
-| SVC-09 | Phase 6 | Pending |
+| SVC-09 | Phase 6 | Complete |
 | PRV-01 | Phase 3 | Complete |
 | PRV-02 | Phase 3 | Complete |
 | FWK-01 | Phase 4 | Pending |

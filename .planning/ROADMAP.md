@@ -99,7 +99,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 03.2-01-PLAN.md -- Assay service factory: federated search with parallel dispatch, capability-based routing, provider metadata tagging, Switchboard events
+- [x] 03.2-01-PLAN.md -- Assay service factory: federated search with parallel dispatch, capability-based routing, provider metadata tagging, Switchboard events
 
 ### Phase 4: Framework
 **Goal**: Compose services and providers into a coherent platform through Armature -- the IoC container, lifecycle, contracts, and integration layer that modules and plugins will consume

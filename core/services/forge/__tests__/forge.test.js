@@ -317,6 +317,35 @@ describe('Forge', () => {
     });
   });
 
+  describe('pull', () => {
+    beforeEach(() => {
+      forge.init({ repoPath: tmpDir, lathe, switchboard: mockSwitchboard });
+      forge.start();
+    });
+
+    it('pull method exists on the forge contract', () => {
+      expect(typeof forge.pull).toBe('function');
+    });
+
+    it('pull returns GIT_FAILED when no remote exists', () => {
+      // Test repo created via git init has no remote, so pull fails gracefully
+      const result = forge.pull('origin', 'master');
+      expect(result.ok).toBe(false);
+      expect(result.error.code).toBe('GIT_FAILED');
+    });
+
+    it('pull accepts optional remote and branch arguments', () => {
+      // Verify it calls _runGit without throwing even with args
+      const result = forge.pull('origin');
+      expect(result.ok).toBe(false); // Still fails (no remote) but doesn't throw
+    });
+
+    it('pull with no arguments attempts default pull', () => {
+      const result = forge.pull();
+      expect(result.ok).toBe(false); // Fails gracefully (no tracking branch)
+    });
+  });
+
   describe('event emission', () => {
     beforeEach(() => {
       forge.init({ repoPath: tmpDir, lathe, switchboard: mockSwitchboard });

@@ -13,7 +13,7 @@ const FORGE_SHAPE = {
     'status', 'commit', 'branch', 'tag', 'log', 'resetTo',
     'submoduleAdd', 'submoduleUpdate', 'submoduleRemove', 'sync'
   ],
-  optional: ['stageAll', 'stageFiles', 'deleteTag']
+  optional: ['stageAll', 'stageFiles', 'deleteTag', 'pull']
 };
 
 /**
@@ -246,6 +246,20 @@ function createForge() {
   }
 
   /**
+   * Pull from a remote repository.
+   *
+   * @param {string} [remote='origin'] - Remote name
+   * @param {string} [branch] - Branch name (omit for current branch)
+   * @returns {import('../../../lib/result.cjs').Result<string>}
+   */
+  function pull(remote, branch) {
+    const args = ['pull'];
+    if (remote) args.push(remote);
+    if (branch) args.push(branch);
+    return _runGit(args);
+  }
+
+  /**
    * Get recent commit log entries.
    *
    * @param {number} [limit=10] - Maximum number of entries to return
@@ -377,6 +391,7 @@ function createForge() {
     branch,
     tag,
     deleteTag,
+    pull,
     log,
     resetTo,
     submoduleAdd,

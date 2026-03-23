@@ -35,7 +35,18 @@ Everything routes through Dynamo. It is the holistic wrapper via its APIs and in
 
 ### Active
 
-Milestone 2 (Reverie Module) requirements to be defined via `/gsd:new-milestone`.
+## Current Milestone: v1.0 M2 Reverie Module
+
+**Goal:** Build the first module on the Dynamo platform — Reverie delivers persistent, evolving AI memory through a three-session architecture with fragment-based recall, Self Model personality, and REM consolidation.
+
+**Target features:**
+- Self Model with three aspects (Face/Mind/Subconscious), Identity Core, Relational Model, Conditioning
+- Fragment Memory Engine (5 types, multi-angle formation, real-time recall, association index, decay)
+- Three-Session Architecture (Primary/Secondary/Tertiary via Wire with urgency-level messaging)
+- REM Consolidation (tiered: compaction triage, idle provisional, full session-end, editorial pass)
+- Primary Context Management (Self Model injection, referential framing, 4-phase budget, compaction framing)
+- Operational Modes (Active/Passive/REM/Dormant)
+- Module Integration (8 Claude Code hooks, CLI surface via Pulley, submodule management)
 
 ### Validated (continued)
 
@@ -140,4 +151,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-23 after v1.0 Milestone 1 (Platform SDK) completion — 8 phases, 28 plans, 27/27 requirements, 851 tests. Merged to dev.*
+*Last updated: 2026-03-23 — v1.0 M2 (Reverie Module) milestone started*

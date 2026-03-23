@@ -1,6 +1,9 @@
 'use strict';
 
 const { describe, it, expect, beforeEach, afterEach } = require('bun:test');
+const fs = require('node:fs');
+const path = require('node:path');
+const os = require('node:os');
 const { createSqliteBackend } = require('../sqlite-backend.cjs');
 
 describe('SQLite Backend', () => {
@@ -68,11 +71,19 @@ describe('SQLite Backend', () => {
   });
 
   it('SQLite backend uses WAL mode', () => {
-    const openResult = backend.open(':memory:');
-    db = openResult.value;
-    // WAL mode should be set during open
-    const result = backend.execute('PRAGMA journal_mode');
+    // WAL mode only applies to file-based databases, not :memory:
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ledger-test-'));
+    const dbPath = path.join(tmpDir, 'test.db');
+    const fileBackend = createSqliteBackend();
+    const openResult = fileBackend.open(dbPath);
+    expect(openResult.ok).toBe(true);
+    const result = fileBackend.execute('PRAGMA journal_mode');
     expect(result.ok).toBe(true);
     expect(result.value[0].journal_mode).toBe('wal');
+    fileBackend.close();
+    // Cleanup
+    try {
+      fs.rmSync(tmpDir, { recursive: true });
+    } catch (_) { /* ignore */ }
   });
 });

@@ -35,13 +35,14 @@ Everything routes through Dynamo. It is the holistic wrapper via its APIs and in
 
 ### Active
 
-#### Framework (`core/armature/`)
-- [ ] Definitions and contracts (abstract classes, interfaces — CJS equivalent)
-- [ ] Hook definitions
-- [ ] Claude Code integration layer
-- [ ] Services and Providers API (import by domain or by name)
-- [ ] Plugin API (extend/overwrite core domains, introduce new ones)
-- [ ] External API definitions and contracts (CLI, MCP)
+#### Framework (`core/armature/`) — Validated in Phase 4: Framework
+- [x] IoC container with singleton/factory lifetimes, tagged bindings, domain aliases, topological sort
+- [x] Facade generator with before/after/around hook points, method override, domain metadata
+- [x] Hook definitions for all 8 Claude Code hook types with declarative wiring registry
+- [x] Services and Providers API (import by domain alias or by name via container)
+- [x] Plugin API (manifest validation, dependency checking, enable/disable, discovery)
+- [x] Two-phase lifecycle orchestrator (register/boot with topological ordering, reverse shutdown)
+- [x] Bootstrap entry point (`core/core.cjs`) registering all 9 services + 2 providers
 
 #### SDK (`core/sdk/`)
 - [ ] **Circuit** — Module API (exports Framework, Core Services & Providers safely)
@@ -119,4 +120,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-23 after Phase 3.2 completion — all services and providers validated*
+*Last updated: 2026-03-23 after Phase 4 completion — framework (Armature) validated, full platform bootstrap operational*

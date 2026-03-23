@@ -58,6 +58,12 @@ Everything routes through Dynamo. It is the holistic wrapper via its APIs and in
 - [x] Versioning: semver + GitHub Releases API (master: `v{M}.{m}.{p}`, dev: `dev-{M}.{m}.{p}`)
 - [x] Self-management (install, configure, update, troubleshoot) via platform CLI commands
 
+#### Bootstrap Integration — Validated in Phase 6: Bootstrap Integration Fixes
+- [x] All service/provider deps[] match mapDeps (deterministic boot order via Kahn's algorithm)
+- [x] Magnet persistence wired via json-provider (lathe + statePath injected through lifecycle)
+- [x] forge.pull() implemented as optional contract method (unblocks `dynamo update`)
+- [x] Assay receives initialized Ledger and Journal facades after full bootstrap
+
 ### Out of Scope
 
 - **LLM API integrations below SDK scope** — Dynamo is built on Claude Code within what Max subscription offers natively
@@ -124,4 +130,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-23 after Phase 5 completion — SDK (Circuit + Pulley) validated, platform infrastructure complete, all Milestone 1 requirements satisfied (835 tests, 44 files)*
+*Last updated: 2026-03-23 after Phase 6 completion — Bootstrap integration fixes validated, all cross-phase wiring gaps closed, Milestone 1 fully complete (851 tests, 45 files)*

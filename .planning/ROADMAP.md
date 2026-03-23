@@ -84,10 +84,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 03.1-01-PLAN.md -- Protocol types and priority queue: message envelope with typed urgency, urgency-based priority queue with backpressure
-- [ ] 03.1-02-PLAN.md -- Session registry and write coordinator: capability tracking, lifecycle events, reconnection buffering, Ledger write serialization
-- [ ] 03.1-03-PLAN.md -- Transport layer and relay server: transport abstraction, Channels + relay transports, standalone Bun.serve relay process
-- [ ] 03.1-04-PLAN.md -- Wire service factory and channel server: compose all modules into service contract, MCP channel server, multi-session integration test
+- [x] 03.1-01-PLAN.md -- Protocol types and priority queue: message envelope with typed urgency, urgency-based priority queue with backpressure
+- [x] 03.1-02-PLAN.md -- Session registry and write coordinator: capability tracking, lifecycle events, reconnection buffering, Ledger write serialization
+- [x] 03.1-03-PLAN.md -- Transport layer and relay server: transport abstraction, Channels + relay transports, standalone Bun.serve relay process
+- [x] 03.1-04-PLAN.md -- Wire service factory and channel server: compose all modules into service contract, MCP channel server, multi-session integration test
 
 ### Phase 3.2: Assay Federated Search (INSERTED — moved from Phase 6)
 **Goal**: Deliver federated search across all data providers — Assay executes provider-specific queries against Ledger (SQL) and Journal (markdown frontmatter), returning merged results with provider metadata
@@ -148,7 +148,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 3.1 -> 3.2 -> 4 -> 5
 | 1. Core Library | 3/3 | Complete | 2026-03-22 |
 | 2. Foundational Services | 4/4 | Complete | 2026-03-22 |
 | 3. Data Providers & Infrastructure Services | 5/5 | Complete | 2026-03-23 |
-| 3.1 Wire Communication Service | 0/4 | Not started | - |
+| 3.1 Wire Communication Service | 4/4 | Complete | 2026-03-23 |
 | 3.2 Assay Federated Search | 0/? | Not started | - |
 | 4. Framework | 0/? | Not started | - |
 | 5. SDK & Platform Infrastructure | 0/? | Not started | - |

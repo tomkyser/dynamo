@@ -77,19 +77,22 @@ Plans:
 ### Phase 3.1: Wire Communication Service (INSERTED — moved from Phase 6)
 **Goal**: Establish MCP-based communication channels between concurrent Claude Code sessions with transport abstraction (Channels transport + HTTP relay fallback) for Reverie's multi-session architecture
 **Depends on**: Phase 3
-**Requirements**: SVC-09
+**Requirements**: SVC-08
 **Success Criteria** (what must be TRUE):
   1. Wire establishes MCP-based communication channels between concurrent Claude Code sessions with transport abstraction (Channels transport + HTTP relay fallback)
   2. Wire supports urgency-level messaging (background, active, directive, urgent) designed for Reverie's three-session architecture, validated by a multi-session integration test
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 03.1 to break down)
+- [ ] 03.1-01-PLAN.md -- Protocol types and priority queue: message envelope with typed urgency, urgency-based priority queue with backpressure
+- [ ] 03.1-02-PLAN.md -- Session registry and write coordinator: capability tracking, lifecycle events, reconnection buffering, Ledger write serialization
+- [ ] 03.1-03-PLAN.md -- Transport layer and relay server: transport abstraction, Channels + relay transports, standalone Bun.serve relay process
+- [ ] 03.1-04-PLAN.md -- Wire service factory and channel server: compose all modules into service contract, MCP channel server, multi-session integration test
 
 ### Phase 3.2: Assay Federated Search (INSERTED — moved from Phase 6)
 **Goal**: Deliver federated search across all data providers — Assay executes provider-specific queries against Ledger (SQL) and Journal (markdown frontmatter), returning merged results with provider metadata
 **Depends on**: Phase 3
-**Requirements**: SVC-08
+**Requirements**: SVC-09
 **Success Criteria** (what must be TRUE):
   1. Assay executes federated queries across Ledger (SQL) and Journal (markdown frontmatter) providers, returning merged results with provider metadata identifying the source of each result
   2. Assay supports provider-specific query optimization (SQL queries to Ledger, frontmatter scans to Journal) rather than lowest-common-denominator queries
@@ -133,7 +136,7 @@ Plans:
 - [ ] 05-03: TBD
 
 ### ~~Phase 6: Search & Communication~~ (REMOVED — moved to Phase 3.1 and Phase 3.2)
-Wire (SVC-09) → Phase 3.1 | Assay (SVC-08) → Phase 3.2
+Wire (SVC-08) → Phase 3.1 | Assay (SVC-09) → Phase 3.2
 
 ## Progress
 
@@ -145,7 +148,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 3.1 -> 3.2 -> 4 -> 5
 | 1. Core Library | 3/3 | Complete | 2026-03-22 |
 | 2. Foundational Services | 4/4 | Complete | 2026-03-22 |
 | 3. Data Providers & Infrastructure Services | 5/5 | Complete | 2026-03-23 |
-| 3.1 Wire Communication Service | 0/? | Not started | - |
+| 3.1 Wire Communication Service | 0/4 | Not started | - |
 | 3.2 Assay Federated Search | 0/? | Not started | - |
 | 4. Framework | 0/? | Not started | - |
 | 5. SDK & Platform Infrastructure | 0/? | Not started | - |

@@ -67,7 +67,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
 - [Roadmap]: 6-phase bottom-up build order derived from dependency graph (Lib -> Services -> Providers+Infra -> Framework -> SDK -> Search+Comms)
-- [Roadmap]: Wire and Assay deferred to Phase 6 (highest-risk, highest-dependency, gives Channels API time to stabilize)
+- [Roadmap]: ~~Wire and Assay deferred to Phase 6~~ OVERRULED — moved to Phase 3.1 (Wire) and 3.2 (Assay). User directive: frontier project, Channels maturity concerns overruled
 - [Roadmap]: Framework builds thin contracts only -- plugin API validated by Reverie in M2, not speculated in M1
 - [Phase 01]: Bun upgraded to 1.3.11 -- test files use .test.js extension for bun:test discovery
 - [Phase 01]: Result types, contract factory, schema validator established as foundational lib/ patterns
@@ -102,6 +102,11 @@ Recent decisions affecting current work:
 - [Phase 03]: json_extract returns raw values (unquoted strings) -- criteria params use String() casting, not JSON quoting
 - [Phase 03]: Relay uses _withBackup() internal helper for all modify operations -- centralizes backup-modify-rollback pattern
 - [Phase 03]: Sync operation skips backup/commit -- lighter-weight hot-sync for repo-to-.claude/ scenarios
+
+### Roadmap Evolution
+
+- Phase 03.1 inserted after Phase 3: Wire communication service — MCP server toolkit for inter-session communication via Claude Code Channels (URGENT — user override: Channels maturity concerns overruled, frontier project)
+- Phase 03.2 inserted after Phase 3: Assay federated search service — unified search/indexing across Ledger and Journal providers (URGENT — moved from Phase 6)
 
 ### Pending Todos
 

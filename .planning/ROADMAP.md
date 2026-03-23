@@ -2,7 +2,7 @@
 
 ## Overview
 
-Milestone 1 delivers the Dynamo platform SDK: the layered foundation that modules like Reverie consume. The build follows a strict bottom-up dependency order -- core library first, then foundational services, then data providers and infrastructure services in parallel, then the framework composition layer, then the SDK and platform infrastructure, and finally the two highest-risk services (Wire and Assay) that depend on nearly everything else. Each phase delivers a coherent, independently testable capability. Cross-milestone dependencies with M2 (Reverie) are accounted for in design but not implemented.
+Milestone 1 delivers the Dynamo platform SDK: the layered foundation that modules like Reverie consume. The build follows a strict bottom-up dependency order -- core library first, then foundational services, then data providers and infrastructure services, then Wire and Assay (moved up from Phase 6 -- frontier project, Channels maturity concerns overruled), then the framework composition layer, and finally the SDK and platform infrastructure. Each phase delivers a coherent, independently testable capability. Cross-milestone dependencies with M2 (Reverie) are accounted for in design but not implemented.
 
 ## Phases
 
@@ -12,12 +12,13 @@ Milestone 1 delivers the Dynamo platform SDK: the layered foundation that module
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Core Library** - Shared utilities, patterns, path resolution, and configuration loader that everything else imports
-- [ ] **Phase 2: Foundational Services** - Event bus, I/O bridge, state management, and filesystem facade that all subsequent services depend on
-- [ ] **Phase 3: Data Providers & Infrastructure Services** - Data layer (DuckDB + markdown), git ops, infrastructure management, and install/update orchestration
+- [x] **Phase 1: Core Library** - Shared utilities, patterns, path resolution, and configuration loader that everything else imports
+- [x] **Phase 2: Foundational Services** - Event bus, I/O bridge, state management, and filesystem facade that all subsequent services depend on
+- [x] **Phase 3: Data Providers & Infrastructure Services** - Data layer (DuckDB + markdown), git ops, infrastructure management, and install/update orchestration
+- [ ] **Phase 3.1: Wire Communication Service** - MCP server toolkit for inter-session communication via Claude Code Channels (INSERTED — moved from Phase 6)
+- [ ] **Phase 3.2: Assay Federated Search** - Unified search and indexing across Ledger and Journal data providers (INSERTED — moved from Phase 6)
 - [ ] **Phase 4: Framework** - Service container, provider contracts, lifecycle hooks, plugin API contracts, and Claude Code integration layer
 - [ ] **Phase 5: SDK & Platform Infrastructure** - Module API, CLI framework, MCP endpoints, health checks, versioning, and self-management
-- [ ] **Phase 6: Search & Communication** - Federated search across all providers and multi-session communication via Claude Code Channels
 
 ## Phase Details
 
@@ -71,11 +72,35 @@ Plans:
 - [x] 03-02-PLAN.md -- Journal data provider: YAML frontmatter parser, markdown file storage via Lathe, frontmatter-based queries
 - [x] 03-03-PLAN.md -- Forge git service: git CLI operations via Bun.spawnSync, submodule management, repo-to-deploy sync
 - [x] 03-04-PLAN.md -- Conductor infrastructure service: Docker Compose lifecycle, dependency health checks, graceful degradation
-- [ ] 03-05-PLAN.md -- Relay operations service: install/update/sync orchestration, git-tag rollback, plugin/module management, config migration
+- [x] 03-05-PLAN.md -- Relay operations service: install/update/sync orchestration, git-tag rollback, plugin/module management, config migration
+
+### Phase 3.1: Wire Communication Service (INSERTED — moved from Phase 6)
+**Goal**: Establish MCP-based communication channels between concurrent Claude Code sessions with transport abstraction (Channels transport + HTTP relay fallback) for Reverie's multi-session architecture
+**Depends on**: Phase 3
+**Requirements**: SVC-09
+**Success Criteria** (what must be TRUE):
+  1. Wire establishes MCP-based communication channels between concurrent Claude Code sessions with transport abstraction (Channels transport + HTTP relay fallback)
+  2. Wire supports urgency-level messaging (background, active, directive, urgent) designed for Reverie's three-session architecture, validated by a multi-session integration test
+**Plans**: TBD
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 03.1 to break down)
+
+### Phase 3.2: Assay Federated Search (INSERTED — moved from Phase 6)
+**Goal**: Deliver federated search across all data providers — Assay executes provider-specific queries against Ledger (SQL) and Journal (markdown frontmatter), returning merged results with provider metadata
+**Depends on**: Phase 3
+**Requirements**: SVC-08
+**Success Criteria** (what must be TRUE):
+  1. Assay executes federated queries across Ledger (SQL) and Journal (markdown frontmatter) providers, returning merged results with provider metadata identifying the source of each result
+  2. Assay supports provider-specific query optimization (SQL queries to Ledger, frontmatter scans to Journal) rather than lowest-common-denominator queries
+**Plans**: TBD
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 03.2 to break down)
 
 ### Phase 4: Framework
 **Goal**: Compose services and providers into a coherent platform through Armature -- the IoC container, lifecycle, contracts, and integration layer that modules and plugins will consume
-**Depends on**: Phase 3
+**Depends on**: Phase 3.2
 **Requirements**: FWK-01, FWK-02, FWK-03, FWK-04, FWK-05, FWK-06
 **Success Criteria** (what must be TRUE):
   1. Service container resolves dependencies via IoC (bind/singleton/factory) with automatic dependency resolution, contextual binding, scoped lifetimes, and deferred/lazy loading
@@ -107,32 +132,20 @@ Plans:
 - [ ] 05-02: TBD
 - [ ] 05-03: TBD
 
-### Phase 6: Search & Communication
-**Goal**: Deliver the two highest-risk, highest-dependency services that complete the platform -- federated search across all data providers and multi-session communication for Reverie
-**Depends on**: Phase 5
-**Requirements**: SVC-08, SVC-09
-**Success Criteria** (what must be TRUE):
-  1. Assay executes federated queries across Ledger (SQL) and Journal (markdown frontmatter) providers, returning merged results with provider metadata identifying the source of each result
-  2. Assay supports provider-specific query optimization (SQL queries to Ledger, frontmatter scans to Journal) rather than lowest-common-denominator queries
-  3. Wire establishes MCP-based communication channels between concurrent Claude Code sessions with transport abstraction (Channels transport + HTTP relay fallback)
-  4. Wire supports urgency-level messaging (background, active, directive, urgent) designed for Reverie's three-session architecture, validated by a multi-session integration test
-**Plans**: TBD
-
-Plans:
-- [ ] 06-01: TBD
-- [ ] 06-02: TBD
-- [ ] 06-03: TBD
+### ~~Phase 6: Search & Communication~~ (REMOVED — moved to Phase 3.1 and Phase 3.2)
+Wire (SVC-09) → Phase 3.1 | Assay (SVC-08) → Phase 3.2
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
+Phases execute in numeric order: 1 -> 2 -> 3 -> 3.1 -> 3.2 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Core Library | 0/3 | Planned | - |
-| 2. Foundational Services | 0/4 | Planned | - |
-| 3. Data Providers & Infrastructure Services | 4/5 | In Progress|  |
-| 4. Framework | 0/3 | Not started | - |
-| 5. SDK & Platform Infrastructure | 0/3 | Not started | - |
-| 6. Search & Communication | 0/3 | Not started | - |
+| 1. Core Library | 3/3 | Complete | 2026-03-22 |
+| 2. Foundational Services | 4/4 | Complete | 2026-03-22 |
+| 3. Data Providers & Infrastructure Services | 5/5 | Complete | 2026-03-23 |
+| 3.1 Wire Communication Service | 0/? | Not started | - |
+| 3.2 Assay Federated Search | 0/? | Not started | - |
+| 4. Framework | 0/? | Not started | - |
+| 5. SDK & Platform Infrastructure | 0/? | Not started | - |

@@ -15,10 +15,10 @@
 
 #### Core Services
 
-- [ ] **SVC-01**: Switchboard — Event bus with actions (fire-and-forget) and filters (interceptable data pipeline), priority ordering
+- [x] **SVC-01**: Switchboard — Event bus with actions (fire-and-forget) and filters (interceptable data pipeline), priority ordering
 - [ ] **SVC-02**: Commutator — System I/O bus bridging Claude Code hooks to Switchboard events with semantic routing
 - [ ] **SVC-03**: Magnet — Centralized state management with provider-backed persistence, session-aware scoping
-- [ ] **SVC-04**: Lathe — Filesystem facade over Bun native APIs
+- [x] **SVC-04**: Lathe — Filesystem facade over Bun native APIs
 - [ ] **SVC-05**: Forge — Git ops, submodule management, branch-aware operations, repo-to-deploy sync
 - [ ] **SVC-06**: Conductor — Infrastructure ops (Docker/Compose lifecycle, dependency management)
 - [ ] **SVC-07**: Relay — Install/update/sync orchestration with rollback capability
@@ -171,10 +171,10 @@ Deferred to future release. Tracked but not in current roadmap.
 | LIB-01 | Phase 1 | Complete |
 | LIB-02 | Phase 1 | Complete |
 | LIB-03 | Phase 1 | Complete |
-| SVC-01 | Phase 2 | Pending |
+| SVC-01 | Phase 2 | Complete |
 | SVC-02 | Phase 2 | Pending |
 | SVC-03 | Phase 2 | Pending |
-| SVC-04 | Phase 2 | Pending |
+| SVC-04 | Phase 2 | Complete |
 | SVC-05 | Phase 3 | Pending |
 | SVC-06 | Phase 3 | Pending |
 | SVC-07 | Phase 3 | Pending |

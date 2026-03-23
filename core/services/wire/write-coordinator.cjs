@@ -42,7 +42,7 @@ function createWriteCoordinator(options = {}) {
     }
 
     _queue.enqueue(envelope);
-    return ok(_queue.getDepth());
+    return ok(_queue.getDepth().total);
   }
 
   /**
@@ -125,7 +125,7 @@ function createWriteCoordinator(options = {}) {
       clearTimeout(_timer);
       _timer = null;
     }
-    return ok(_queue.getDepth());
+    return ok(_queue.getDepth().total);
   }
 
   /**
@@ -134,7 +134,7 @@ function createWriteCoordinator(options = {}) {
    * @returns {number}
    */
   function getQueueDepth() {
-    return _queue.getDepth();
+    return _queue.getDepth().total;
   }
 
   /**

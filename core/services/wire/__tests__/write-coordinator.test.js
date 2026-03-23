@@ -37,7 +37,7 @@ function createFailingLedger() {
  * Helper to create a write-intent envelope.
  */
 function makeWriteIntent(opts = {}) {
-  return createEnvelope({
+  const result = createEnvelope({
     from: opts.from || 'sess-1',
     to: opts.to || 'ledger',
     type: MESSAGE_TYPES.WRITE_INTENT,
@@ -47,6 +47,7 @@ function makeWriteIntent(opts = {}) {
       data: opts.data || [{ key: 'test', value: 'data' }],
     },
   });
+  return result.value;
 }
 
 describe('WriteCoordinator', () => {
@@ -89,10 +90,11 @@ describe('WriteCoordinator', () => {
     it('returns err for non-write-intent type', () => {
       const envelope = createEnvelope({
         from: 'sess-1',
+        to: 'other',
         type: MESSAGE_TYPES.DIRECTIVE,
         urgency: URGENCY_LEVELS.ACTIVE,
         payload: {},
-      });
+      }).value;
 
       const result = coordinator.queueWrite(envelope);
 

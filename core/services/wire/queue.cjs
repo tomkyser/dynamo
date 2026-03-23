@@ -119,7 +119,22 @@ function createPriorityQueue(config = {}) {
     return result;
   }
 
-  return { enqueue, dequeue, getDepth, isEmpty, flush };
+  /**
+   * Peeks at the highest-priority envelope without removing it.
+   *
+   * @returns {Object|null} The next envelope, or null if all queues empty
+   */
+  function peek() {
+    for (let i = 0; i < _dequeueOrder.length; i++) {
+      const queue = _queues[_dequeueOrder[i]];
+      if (queue.length > 0) {
+        return queue[0];
+      }
+    }
+    return null;
+  }
+
+  return { enqueue, dequeue, peek, getDepth, isEmpty, flush };
 }
 
 module.exports = { createPriorityQueue };

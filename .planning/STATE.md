@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to execute
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-03-23T01:26:49.992Z"
+stopped_at: Completed 02-04-PLAN.md
+last_updated: "2026-03-23T01:33:53.052Z"
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 7
-  completed_plans: 3
+  completed_plans: 6
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 ## Current Position
 
 Phase: 02 (foundational-services) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 
 ## Performance Metrics
 
@@ -51,6 +51,7 @@ Plan: 3 of 4
 | Phase 01 P03 | 2min | 2 tasks | 4 files |
 | Phase 02 P01 | 2min | 2 tasks | 2 files |
 | Phase 02 P02 | 2min | 2 tasks | 2 files |
+| Phase 02 P04 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,9 @@ Recent decisions affecting current work:
 - [Phase 02]: Map-based handler registry for wildcard support and priority ordering in Switchboard
 - [Phase 02]: Wildcard matching uses string prefix comparison (slice+startsWith) not regex -- per D-05
 - [Phase 02]: Dual event types: actions (fire-and-forget, returns undefined) and filters (interceptable pipeline, returns Result)
+- [Phase 02]: Tool action override map separates generic actions from domain-specific ones (shell:executed, web:fetched, agent:completed)
+- [Phase 02]: Outbound adapters subscribe to Switchboard events via registerOutput, decoupled from stdout -- enables future Wire integration
+- [Phase 02]: hook:raw event emitted alongside domain event for listeners wanting unprocessed hook data
 
 ### Pending Todos
 
@@ -87,6 +91,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T01:26:49.990Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-03-23T01:33:53.049Z
+Stopped at: Completed 02-04-PLAN.md
 Resume file: None

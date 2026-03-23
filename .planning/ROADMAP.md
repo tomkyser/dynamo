@@ -49,10 +49,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 02-01-PLAN.md -- Lathe filesystem facade: Bun.file/Bun.write wrapper, directory ops, atomic write via tmp+rename
+- [x] 02-01-PLAN.md -- Lathe filesystem facade: Bun.file/Bun.write wrapper, directory ops, atomic write via tmp+rename
 - [x] 02-02-PLAN.md -- Switchboard event bus: action dispatch, filter pipeline with priority ordering, prefix wildcard matching
 - [ ] 02-03-PLAN.md -- Magnet state management: three-tier scoping, Switchboard event emission, JSON file provider via Lathe
-- [ ] 02-04-PLAN.md -- Commutator I/O bridge: Claude Code hook semantic routing, tool-to-domain mapping, outbound adapters
+- [x] 02-04-PLAN.md -- Commutator I/O bridge: Claude Code hook semantic routing, tool-to-domain mapping, outbound adapters
 
 ### Phase 3: Data Providers & Infrastructure Services
 **Goal**: Stand up the data layer (SQL and markdown) and the infrastructure services (git, Docker, install/update) that the framework will compose

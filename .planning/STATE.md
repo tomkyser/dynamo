@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: ready_for_verification
+status: Phase complete — ready for verification
 stopped_at: Completed 03.1-04-PLAN.md
-last_updated: "2026-03-23T05:09:34Z"
+last_updated: "2026-03-23T05:11:02.242Z"
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 16
-  completed_plans: 16
+  completed_plans: 15
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-22)
 
 **Core value:** Everything routes through Dynamo -- the holistic wrapper via its APIs and interfaces. No component bypasses the patterns and paths Dynamo defines.
-**Current focus:** Phase 03.1 — wire-communication-service (complete, pending verification)
+**Current focus:** Phase 03.1 — wire-communication-service
 
 ## Current Position
 
-Phase: 03.1
-Plan: 4 of 4 (complete)
+Phase: 03.1 (wire-communication-service) — EXECUTING
+Plan: 4 of 4
 
 ## Performance Metrics
 
@@ -58,6 +58,9 @@ Plan: 4 of 4 (complete)
 | Phase 03 P02 | 5min | 2 tasks | 5 files |
 | Phase 03 P01 | 6min | 2 tasks | 8 files |
 | Phase 03 P05 | 3min | 2 tasks | 2 files |
+| Phase 03.1 P01 | 3min | 2 tasks | 4 files |
+| Phase 03.1 P02 | 4min | 2 tasks | 6 files |
+| Phase 03.1 P03 | 4min | 2 tasks | 7 files |
 | Phase 03.1 P04 | 6min | 2 tasks | 4 files |
 
 ## Accumulated Context
@@ -103,6 +106,16 @@ Recent decisions affecting current work:
 - [Phase 03]: json_extract returns raw values (unquoted strings) -- criteria params use String() casting, not JSON quoting
 - [Phase 03]: Relay uses _withBackup() internal helper for all modify operations -- centralizes backup-modify-rollback pattern
 - [Phase 03]: Sync operation skips backup/commit -- lighter-weight hot-sync for repo-to-.claude/ scenarios
+- [Phase 03.1]: Protocol uses node:crypto.randomUUID() for envelope IDs -- zero-dependency UUID generation
+- [Phase 03.1]: Urgent queue has Infinity depth limit per D-09 -- urgent messages never dropped
+- [Phase 03.1]: Queue uses array shift/push for FIFO within urgency buckets -- O(1) amortized
+- [Phase 03.1]: Registry uses internal EventEmitter for lifecycle events; Switchboard integration deferred to wire.cjs factory
+- [Phase 03.1]: Write coordinator uses greedy batching: consecutive same-table writes merged into single ledger.write() call
+- [Phase 03.1]: Write coordinator flush() is synchronous drain for deterministic testing and clean shutdown
+- [Phase 03.1]: Transport router selects Channels for urgent/directive, relay for background/active, with bidirectional fallback (D-01)
+- [Phase 03.1]: Channels API meta keys must use underscores not hyphens -- Channels silently drops hyphenated keys
+- [Phase 03.1]: _createServer(config) with port:0 for random-port relay server test isolation
+- [Phase 03.1]: Relay server does NOT auto-unregister on WS close -- preserves reconnection resilience (D-10)
 - [Phase 03.1]: Wire factory composes registry, transport router, queue, and write coordinator via createContract -- 10 required + 4 optional methods
 - [Phase 03.1]: MCP SDK CJS resolution uses absolute path fallback for StdioServerTransport due to Bun wildcard export mismatch
 - [Phase 03.1]: Dual API surface: native programmatic API (wire.cjs) + MCP tools (channel-server.cjs) per D-13
@@ -124,6 +137,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T05:09:34Z
+Last session: 2026-03-23T05:11:02.239Z
 Stopped at: Completed 03.1-04-PLAN.md
-Resume file: .planning/phases/03.1-wire-communication-service/03.1-04-SUMMARY.md
+Resume file: None

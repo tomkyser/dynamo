@@ -19,16 +19,16 @@
 - [x] **SVC-02**: Commutator — System I/O bus bridging Claude Code hooks to Switchboard events with semantic routing
 - [x] **SVC-03**: Magnet — Centralized state management with provider-backed persistence, session-aware scoping
 - [x] **SVC-04**: Lathe — Filesystem facade over Bun native APIs
-- [ ] **SVC-05**: Forge — Git ops, submodule management, branch-aware operations, repo-to-deploy sync
-- [ ] **SVC-06**: Conductor — Infrastructure ops (Docker/Compose lifecycle, dependency management)
-- [ ] **SVC-07**: Relay — Install/update/sync orchestration with rollback capability
-- [ ] **SVC-08**: Wire — MCP server toolkit for inter-session communication via Claude Code Channels
+- [x] **SVC-05**: Forge — Git ops, submodule management, branch-aware operations, repo-to-deploy sync
+- [x] **SVC-06**: Conductor — Infrastructure ops (Docker/Compose lifecycle, dependency management)
+- [x] **SVC-07**: Relay — Install/update/sync orchestration with rollback capability
+- [x] **SVC-08**: Wire — MCP server toolkit for inter-session communication via Claude Code Channels
 - [ ] **SVC-09**: Assay — Unified search/indexing across all data providers with federated query, provider metadata in results
 
 #### Core Providers
 
-- [ ] **PRV-01**: Ledger — DuckDB embedded database provider with uniform provider interface
-- [ ] **PRV-02**: Journal — Flat file markdown provider with uniform provider interface
+- [x] **PRV-01**: Ledger — DuckDB embedded database provider with uniform provider interface
+- [x] **PRV-02**: Journal — Flat file markdown provider with uniform provider interface
 
 #### Framework (Armature)
 
@@ -175,13 +175,13 @@ Deferred to future release. Tracked but not in current roadmap.
 | SVC-02 | Phase 2 | Complete |
 | SVC-03 | Phase 2 | Complete |
 | SVC-04 | Phase 2 | Complete |
-| SVC-05 | Phase 3 | Pending |
-| SVC-06 | Phase 3 | Pending |
-| SVC-07 | Phase 3 | Pending |
-| SVC-08 | Phase 6 | Pending |
+| SVC-05 | Phase 3 | Complete |
+| SVC-06 | Phase 3 | Complete |
+| SVC-07 | Phase 3 | Complete |
+| SVC-08 | Phase 6 | Complete |
 | SVC-09 | Phase 6 | Pending |
-| PRV-01 | Phase 3 | Pending |
-| PRV-02 | Phase 3 | Pending |
+| PRV-01 | Phase 3 | Complete |
+| PRV-02 | Phase 3 | Complete |
 | FWK-01 | Phase 4 | Pending |
 | FWK-02 | Phase 4 | Pending |
 | FWK-03 | Phase 4 | Pending |

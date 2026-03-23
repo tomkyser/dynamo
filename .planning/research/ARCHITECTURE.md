@@ -1,472 +1,921 @@
-# Architecture Patterns
+# Architecture Patterns: Reverie Module Integration with Dynamo Platform
 
-**Domain:** Self-contained development platform for Claude Code (game-engine-class architecture)
-**Researched:** 2026-03-22
+**Domain:** Cognitive memory module integrating with existing platform services
+**Researched:** 2026-03-23
+**Overall confidence:** HIGH (based on direct source code analysis of all platform services + canonical spec)
 
-## Recommended Architecture
+---
 
-Dynamo's canonical architecture is a strict layered system with unidirectional dependency flow. Each layer provides services to the layer above and depends only on layers below. This pattern is the industry standard for platform-class software (game engines, framework ecosystems like Laravel, Spring) and is well-validated for Dynamo's goals.
+## 1. Recommended Architecture: Module Internal Decomposition
 
-**The canonical build order is correct and validated:**
+### 1.1 How Reverie Maps to Circuit's Module API
 
-```
-Core Library (lib/)
-    |
-    v
-Core Services (core/services/) + Core Providers (core/providers/)   [parallel, both import lib/ only]
-    |
-    v
-Framework / Armature (core/armature/)   [imports services + providers]
-    |
-    v
-SDK: Circuit + Pulley (core/sdk/)   [imports framework]
-    |
-    v
-Plugins (plugins/)   [import SDK]
-    |
-    v
-Modules (modules/)   [import SDK + plugins]
-    |
-    v
-Extensions (extensions/)   [import plugins + modules]
-    |
-    v
-Runtime   [imports extensions, composes everything]
-```
+Reverie registers with Circuit via a single manifest and `registerFn`. Circuit provides:
+- **Scoped service access** via `circuitApi.getService(name)` -- returns facades only (lines 50-70, circuit.cjs)
+- **Scoped provider access** via `circuitApi.getProvider(name)` -- same facade isolation
+- **Namespaced events** via `circuitApi.events` (an EventProxy instance) -- `emit('update')` becomes `switchboard.emit('reverie:update')`
+- **System event passthrough** -- `events.on('hook:session-start', handler)` passes through un-namespaced (event-proxy.cjs lines 42-48)
+- **CLI registration** via `circuitApi.registerCommand()` -- delegates to Pulley
+- **MCP tool registration** via `circuitApi.registerMcpTool()`
 
-### Why This Order Is Right
+**Critical constraint:** Circuit checks `manifest.dependencies.services` and `manifest.dependencies.providers` before granting access. Reverie must declare ALL platform dependencies upfront.
 
-This matches the universal layered platform pattern observed in:
+### 1.2 Reverie Module Manifest
 
-- **Game engines** (Unreal, Godot, Unity): Platform layer, core systems, resource management, scene management, game logic -- each layer wraps the one below.
-- **Framework ecosystems** (Laravel, Spring, Django): Core utilities, service container, service providers, facades, application layer.
-- **Build systems** (Gradle, Bazel): Dependency graph with topological ordering guarantees -- lower layers compile before upper layers that consume them.
-
-The key validation: Services and Providers at the same tier, importing only the library, is the correct call. In Laravel's architecture, Service Providers and the Service Container are peers -- both are core infrastructure that the Framework layer (facades, routing, middleware) then composes. Dynamo's separation of "services can do" and "providers can supply/receive" maps cleanly to this industry pattern.
-
-### Component Boundaries
-
-| Component | Layer | Responsibility | Imports From | Exports To |
-|-----------|-------|---------------|-------------|-----------|
-| **lib/** | 0 - Library | Shared patterns, types, utilities, constants | Nothing (pure) | Everything above |
-| **Commutator** | 1 - Service | System I/O bus -- all I/O flows through here | lib/ | Armature |
-| **Magnet** | 1 - Service | System state management -- singleton state container | lib/ | Armature |
-| **Conductor** | 1 - Service | Infrastructure ops (Docker, dependency mgmt) | lib/ | Armature |
-| **Forge** | 1 - Service | Git operations, channel switching, repo-to-deploy sync | lib/ | Armature |
-| **Lathe** | 1 - Service | Filesystem operations (thin Bun-native facade) | lib/ | Armature |
-| **Relay** | 1 - Service | Install, update, sync operations | lib/ | Armature |
-| **Switchboard** | 1 - Service | Event dispatcher -- internal event bus | lib/ | Armature |
-| **Wire** | 1 - Service | MCP server toolkit for inter-session communication | lib/ | Armature |
-| **Assay** | 1 - Service | Unified search/indexing across all data providers | lib/ | Armature |
-| **Ledger** | 1 - Provider | SQL database (DuckDB) | lib/ | Armature |
-| **Journal** | 1 - Provider | Flat file markdown system | lib/ | Armature |
-| **Armature** | 2 - Framework | Contracts, interfaces, hooks, plugin API, Claude Code integration | Services, Providers | SDK |
-| **Circuit** | 3 - SDK | Module API (safe export of platform capabilities) | Armature | Modules |
-| **Pulley** | 3 - SDK | External APIs (CLI, MCP endpoints) | Armature | External consumers |
-| **Plugins** | 4 - Plugin | Extend/overwrite core domains, introduce new services/providers | SDK | Modules |
-| **Modules** | 5 - Module | User-facing features (e.g., Reverie) | SDK + Plugins | Extensions, Users |
-| **Extensions** | 6 - Extension | Compose on top of plugins + modules | Plugins, Modules | Runtime |
-
-**Critical boundary rule:** No cross-imports within the same tier. Services do not import other services. Providers do not import other providers. Communication between same-tier components flows through the event bus (Switchboard) or through the Framework layer above them. This prevents circular dependencies and keeps each service independently testable.
-
-### Data Flow
-
-```
-User Input (Claude Code)
-    |
-    v
-[Claude Code Hooks] -- SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, Stop
-    |
-    v
-Pulley (CLI/MCP surface) -- routes external commands
-    |
-    v
-Circuit (Module API) -- Reverie and other modules receive dispatched events
-    |                         |
-    |                         v
-    |                   Wire (MCP Channels) -- inter-session communication
-    |                         |
-    |                         v
-    |                   Secondary/Tertiary sessions (Reverie cognitive processing)
-    |
-    v
-Armature (Framework) -- resolves services/providers by domain or name
-    |
-    +--------> Switchboard (event dispatch to services)
-    |
-    +--------> Commutator (I/O bus for system-level I/O)
-    |
-    +--------> Magnet (state reads/writes)
-    |
-    +--------> Assay (unified search across providers)
-    |               |
-    |               +--------> Ledger (DuckDB queries)
-    |               +--------> Journal (markdown file reads)
-    |
-    +--------> Forge (git operations)
-    +--------> Lathe (filesystem operations)
-    +--------> Conductor (infrastructure management)
-    +--------> Relay (install/update/sync)
+```javascript
+const REVERIE_MANIFEST = {
+  name: 'reverie',
+  version: '0.1.0',
+  description: 'Cognitive memory system with Self Model, fragments, and three-session architecture',
+  main: 'modules/reverie/reverie.cjs',
+  enabled: true,
+  dependencies: {
+    services: ['wire', 'switchboard', 'commutator', 'magnet', 'conductor', 'lathe', 'assay'],
+    providers: ['ledger', 'journal'],
+  },
+  hooks: {
+    'SessionStart': true,
+    'UserPromptSubmit': true,
+    'PreToolUse': true,
+    'PostToolUse': true,
+    'Stop': true,
+    'PreCompact': true,
+    'SubagentStart': true,
+    'SubagentStop': true,
+  },
+};
 ```
 
-**Data flow direction is strictly downward for requests and upward for responses.** Services never call modules. Providers never call services. The event bus (Switchboard) enables lateral communication by allowing services to emit events that the Framework routes -- but services themselves are ignorant of who listens.
+### 1.3 Internal Component Decomposition
 
-### Wire and MCP Channels Architecture
-
-Wire deserves special architectural attention because it is the backbone for Reverie's multi-session cognitive processing.
+Reverie's internal structure should mirror the spec's functional boundaries, NOT the platform's service/provider pattern. Reverie is a module, not a mini-platform. Its internals are plain CJS modules composed via the options-based DI pattern validated in v0.
 
 ```
-Primary Session (User-facing / Face)
-    |
-    | <-- Wire (MCP Channel) --> |
-    |                            |
-    v                            v
-Secondary Session (Mind)    Tertiary Session (Subconscious)
-    |                            |
-    +-- Full Dynamo SDK access --+
-    |                            |
-    v                            v
-Ledger, Journal, Magnet     Fragment Index, Association Engine
+modules/reverie/
+  reverie.cjs                    # Module entry point: registerFn callback
+  lib/
+    constants.cjs                # Fragment types, decay params, mode enum, thresholds
+    schema.cjs                   # Fragment YAML schema, Self Model field definitions
+  components/
+    self-model/
+      self-model.cjs             # Self Model state manager (identity, relational, conditioning)
+      cold-start.cjs             # Initial Self Model seed generation
+      prompt-composer.cjs        # Composes Face/Mind/Subconscious prompts from state
+    fragment-engine/
+      fragment-engine.cjs        # Fragment CRUD orchestrator
+      formation.cjs              # Multi-angle formation pipeline (attention check, fan-out)
+      recall.cjs                 # Retrieval + ranking + reconstruction orchestration
+      decay.cjs                  # Deterministic decay computation (no LLM)
+      association-index.cjs      # Ledger table management for the association index
+    session-manager/
+      session-manager.cjs        # Three-session lifecycle orchestrator
+      primary-handler.cjs        # Hook processing for Primary session
+      secondary-handler.cjs      # Mind session logic dispatcher
+      tertiary-handler.cjs       # Sublimation cycle runner
+    rem/
+      rem-consolidator.cjs       # REM orchestrator (tier 1/2/3 dispatch)
+      retroactive.cjs            # Retroactive fragment evaluation
+      editorial.cjs              # Association index editorial pass
+      conditioning-update.cjs    # Self Model conditioning updater
+    context-manager/
+      context-manager.cjs        # Primary context injection orchestrator
+      budget.cjs                 # 4-phase context budget tracker
+      framing.cjs                # Referential framing prompt generator
+      compaction.cjs             # PreCompact Self Model preservation
+    mode-manager/
+      mode-manager.cjs           # Operational mode state machine (Active/Passive/REM/Dormant)
+  data/                          # Module data directory (spec Section 6.3)
+    fragments/
+      active/
+      working/
+      archive/
+    self-model/
+    taxonomy/
+    sessions/
+  tests/
+    ...
 ```
 
-Claude Code Channels (shipped March 20, 2026 as research preview in v2.1.80) implements channels as MCP servers that push events into running sessions. A Wire channel is an MCP server that sits between sessions, enabling bidirectional communication. This architecture is validated by the Channels PoC.
+### 1.4 Component Boundaries and Platform Integration Points
 
-**Key constraint:** Events only arrive while a session is open. For always-on cognitive processing (Reverie Mind/Subconscious sessions), sessions must run in a persistent background process.
+| Internal Component | Platform Services Used | Platform Providers Used | Access Pattern |
+|---|---|---|---|
+| **Self Model** | Magnet (state persistence), Switchboard (state:changed events) | Journal (narrative state files), Ledger (structured state tables) | Read on boot, write on REM, continuous Magnet cache |
+| **Fragment Engine** | Assay (recall queries), Lathe (working dir management), Switchboard (formation events) | Journal (fragment markdown files), Ledger (association index tables) | Write-heavy during sessions, read-heavy on recall |
+| **Session Manager** | Wire (inter-session messaging), Conductor (dependency checks), Switchboard (lifecycle events) | -- | Wire.send() for all session communication |
+| **REM Consolidator** | Lathe (working dir cleanup), Switchboard (REM lifecycle events) | Journal (fragment promotion), Ledger (index editorial) | Write-heavy post-session |
+| **Context Manager** | Commutator (hook injection via registerOutput), Magnet (state file reads) | -- | Read Self Model state, write systemMessage via hook stdout |
+| **Mode Manager** | Switchboard (mode transition events), Magnet (mode state) | -- | State machine, emits events on transitions |
+
+### 1.5 Component Communication Pattern
+
+Internal components do NOT communicate through Switchboard. They communicate through direct function calls, orchestrated by the Session Manager and the module entry point. Switchboard is for platform-level event routing only.
+
+```
+reverie.cjs (entry)
+  -> registers hook handlers via events.on('hook:*')
+  -> creates all internal components with injected platform facades
+  -> Session Manager orchestrates lifecycle
+     -> calls Fragment Engine methods directly
+     -> calls Self Model methods directly
+     -> calls Context Manager methods directly
+  -> REM Consolidator receives control from Session Manager on session end
+     -> calls Fragment Engine, Self Model, Association Index directly
+```
+
+**Rationale:** Using Switchboard for internal module communication would create a hidden dependency graph and make testing harder. The options-based DI pattern means each component receives exactly what it needs as constructor arguments. Integration tests compose the real components; unit tests inject mocks.
+
+---
+
+## 2. Three-Session Orchestration: Wire Integration
+
+### 2.1 Wire's Existing Capabilities vs. What Reverie Needs
+
+**Wire already provides:**
+- Session registry with `register(sessionId, info)` and `unregister(sessionId)` -- stores identity, capabilities, writePermissions
+- Message sending via `send(envelope)` with transport routing (Channels API or HTTP relay)
+- Priority queue with 4 urgency levels: `urgent (0) > directive (1) > active (2) > background (3)`
+- Message types already defined in protocol.cjs that map directly to Reverie's needs:
+  - `context-injection` -- Secondary -> Primary Self Model updates
+  - `directive` -- Secondary -> Primary behavioral instructions
+  - `recall-product` -- Secondary -> Primary recall reconstructions
+  - `sublimation` -- Tertiary -> Secondary fuzzy associations
+  - `snapshot` -- Primary -> Secondary conversation snapshots
+  - `write-intent` -- Any session -> Ledger write coordinator
+  - `heartbeat` / `ack` -- Session health monitoring
+- Write coordinator with greedy batching for Ledger writes
+- Switchboard event emission on all lifecycle events (`wire:session-registered`, `wire:session-lost`, etc.)
+- Dual transport: Channels API (primary) + HTTP relay (fallback)
+
+**Wire does NOT currently provide (new orchestration needed):**
+
+| Gap | What's Needed | Where to Build It |
+|-----|---------------|-------------------|
+| **Session spawning** | Spawn Secondary and Tertiary as Claude Code channel sessions | Session Manager uses Bun.spawn to launch `claude` CLI processes with channel config -- NOT a Conductor responsibility (see rationale below) |
+| **Session identity roles** | Registry entries need `role: 'primary' | 'secondary' | 'tertiary'` | Extend the `info` object passed to `wire.register()` -- already supports arbitrary info objects |
+| **Topology enforcement** | Primary <-> Secondary <-> Tertiary only (no Primary <-> Tertiary direct) | Session Manager validates `envelope.to` before calling `wire.send()` |
+| **Conversation forwarding** | Hooks on Primary need to forward payloads to Secondary via Wire | Commutator output adapters -> Wire.send() in Session Manager |
+| **Sublimation cycle timer** | Tertiary needs a configurable interval loop | Tertiary handler runs `setInterval` -> Assay query -> Wire.send(sublimation) |
+| **Session health monitoring** | Detect if Secondary or Tertiary crashes / disconnects | Wire already emits `wire:session-lost` -- Session Manager subscribes and handles recovery |
+
+### 2.2 Session Spawning: The Missing Piece
+
+Conductor currently manages Docker Compose lifecycle, not Claude Code sessions. The three-session architecture needs to spawn Claude Code instances as channel sessions. This is the most significant gap.
+
+**Recommended approach:** Session Manager uses Bun.spawn (via Lathe or directly) to launch `claude` CLI processes with the channel plugin configured. This is NOT a Conductor responsibility -- Conductor is for infrastructure dependencies (Docker, DuckDB, disk checks). Session spawning belongs in the Session Manager component within Reverie, using Wire's transport layer for communication after spawn.
+
+```
+Session Manager spawning flow:
+1. SessionStart hook fires on Primary
+2. Session Manager starts Wire relay (wire.start())
+3. Session Manager spawns Secondary via Bun.spawn('claude', [...channelArgs])
+4. Session Manager spawns Tertiary via Bun.spawn('claude', [...channelArgs])
+5. Secondary connects to Wire relay, registers as { role: 'secondary', capabilities: [...] }
+6. Tertiary connects to Wire relay, registers as { role: 'tertiary', capabilities: [...] }
+7. Session Manager subscribes to wire:session-registered, waits for both
+8. Session Manager triggers Self Model load + prompt composition
+9. Session Manager sends Face prompt to Primary via hook state file
+10. Session Manager sends Subconscious prompt to Tertiary via Wire
+```
+
+**Why not Conductor?** Conductor's contract is `composeUp/composeDown/composeStatus/checkDependencies/isDockerAvailable`. Claude Code sessions are not Docker containers. Adding `spawnClaudeSession()` to Conductor would violate its infrastructure-ops domain responsibility. The Session Manager owns session lifecycle; it uses Wire for communication and Bun.spawn for process creation.
+
+### 2.3 Wire Message Flow Topology
+
+```
+PRIMARY (Face)                    SECONDARY (Mind)                 TERTIARY (Subconscious)
+     |                                  |                                |
+     |--- snapshot (background) ------->|                                |
+     |                                  |--- directive (directive) ----->| (attention pointer)
+     |<-- context-injection (bg) -------|                                |
+     |<-- directive (directive) --------|                                |
+     |<-- recall-product (active) ------|                                |
+     |                                  |<-- sublimation (background) ---|
+     |                                  |--- write-intent ------------->Wire.queueWrite()
+     |                                  |                                |--- (reads Assay only)
+     |--- snapshot (on hook fire) ----->|                                |
+     |<-- context-injection (bg) -------|                                |
+```
+
+**Urgency level usage:**
+- `background`: Self Model prompt updates, conversation snapshots, sublimation candidates
+- `active`: Recall products ready for injection, attention pointer updates
+- `directive`: Behavioral directives ("shift communication style"), sublimation sensitivity changes
+- `urgent`: Emergency context (stop current approach, critical sublimation connection)
+
+### 2.4 Wire Registry Session Info Extension
+
+Current `wire.register(sessionId, info)` accepts arbitrary info objects. Reverie registers sessions with:
+
+```javascript
+wire.register('reverie-primary-' + sessionId, {
+  identity: { module: 'reverie', role: 'primary', sessionId },
+  capabilities: ['receive-context', 'receive-directive', 'receive-recall'],
+  writePermissions: [],  // Primary does NOT write to Ledger directly
+});
+
+wire.register('reverie-secondary-' + sessionId, {
+  identity: { module: 'reverie', role: 'secondary', sessionId },
+  capabilities: ['receive-snapshot', 'receive-sublimation', 'formation', 'recall', 'rem'],
+  writePermissions: ['fragments', 'associations', 'self-model', 'taxonomy'],
+});
+
+wire.register('reverie-tertiary-' + sessionId, {
+  identity: { module: 'reverie', role: 'tertiary', sessionId },
+  capabilities: ['receive-attention', 'sublimation-scan'],
+  writePermissions: [],  // Tertiary reads only
+});
+```
+
+---
+
+## 3. Data Flow Architecture
+
+### 3.1 Fragment Formation Flow
+
+```
+User sends message to Primary
+  |
+  v
+Claude Code fires UserPromptSubmit hook
+  |
+  v
+Commutator.ingest(hookPayload) --> Switchboard.emit('hook:prompt-submit', payload)
+  |
+  v
+Reverie's hook handler (registered via events.on('hook:prompt-submit'))
+  |
+  v
+Context Manager: inject Self Model systemMessage via hook stdout
+  |
+  v (simultaneously)
+Session Manager: forward prompt content to Secondary via Wire
+  wire.send(createEnvelope({
+    from: primarySessionId,
+    to: secondarySessionId,
+    type: MESSAGE_TYPES.SNAPSHOT,
+    urgency: URGENCY_LEVELS.BACKGROUND,
+    payload: { hook: 'UserPromptSubmit', content: hookPayload }
+  }))
+  |
+  v
+SECONDARY (Mind) receives snapshot, processes through formation pipeline:
+  |
+  v
+Fragment Engine: formation.cjs
+  1. Attention check against current pointer (deterministic gate)
+  2. Domain fan-out: classify stimulus, check per-domain thresholds
+  3. For each activated domain (1-3 typically):
+     a. Score Self Model relevance (identity, relational, conditioning)
+     b. Generate associations (entities, tags, valence)
+     c. Compose impressionistic body
+     d. Seed decay weight
+  4. Tag formation group, link sibling fragments
+  |
+  v
+Fragment Engine: fragment-engine.cjs
+  5. Write fragments to Journal (working directory)
+     journal.write(fragmentId, { frontmatter, body })
+     --> writes to: modules/reverie/data/fragments/working/session-{id}/
+  |
+  v
+  6. Update association index in Ledger via Wire write coordinator
+     wire.queueWrite(createEnvelope({
+       from: secondarySessionId,
+       to: 'ledger',
+       type: MESSAGE_TYPES.WRITE_INTENT,
+       urgency: URGENCY_LEVELS.ACTIVE,
+       payload: {
+         table: 'associations',
+         data: [{ source_id, target_id, type, weight, ... }]
+       }
+     }))
+```
+
+**Key detail:** Journal writes happen directly from Secondary (Journal is file-based, no single-writer constraint). Ledger writes go through Wire's write coordinator (DuckDB single-writer constraint). See Section 4 for the full write coordination analysis.
+
+### 3.2 Fragment Recall Flow
+
+```
+Mind determines recall is needed (conversation context or sublimation trigger)
+  |
+  v
+Fragment Engine: recall.cjs
+  1. Compose Assay query from:
+     - Current attention pointer
+     - Active domains
+     - Entity references from conversation
+     - Temporal hints if applicable
+  |
+  v
+  2. Federated search via Assay:
+     assay.search({
+       criteria: {
+         domains: activeDomains,
+         attention_tags: relevantTags,
+         min_weight: 0.3  // decay threshold
+       },
+       providers: ['journal', 'ledger'],  // search both
+       options: {
+         sql: 'SELECT fragment_id, weight FROM fragment_decay WHERE current_weight > 0.3 ORDER BY current_weight DESC LIMIT 20',
+         limit: 20
+       }
+     })
+  |
+  v
+  3. Assay dispatches to both providers in parallel (assay.cjs lines 192-243):
+     - Ledger: SQL query against association index tables
+     - Journal: Frontmatter criteria match against fragment files
+     Both return results tagged with _provider metadata
+  |
+  v
+  4. recall.cjs: Composite ranking
+     - Merge Ledger association scores with Journal content matches
+     - Apply Self Model relevance weighting
+     - Apply decay weighting (current_weight from fragment_decay table)
+     - Select top N fragments (configurable, default 5-15)
+  |
+  v
+  5. recall.cjs: Retrieve full fragment bodies from Journal
+     journal.read(fragmentId) for each selected fragment
+  |
+  v
+  6. recall.cjs: LLM Reconstruction
+     Mind session synthesizes fragments through current Self Model frame
+     (This is an LLM operation within the Secondary Claude Code session)
+  |
+  v
+  7. Send recall product to Primary:
+     wire.send(createEnvelope({
+       from: secondarySessionId,
+       to: primarySessionId,
+       type: MESSAGE_TYPES.RECALL_PRODUCT,
+       urgency: URGENCY_LEVELS.ACTIVE,
+       payload: { reconstruction, sourceFragments, context }
+     }))
+```
+
+### 3.3 Self Model Injection Flow
+
+```
+Every UserPromptSubmit hook fires on Primary
+  |
+  v
+Commutator bridges to Switchboard: 'hook:prompt-submit'
+  |
+  v
+Context Manager (registered via Commutator.registerOutput):
+  1. Read current Self Model state file
+     (Written by Secondary to a known path: modules/reverie/data/self-model/current-face.json)
+  |
+  v
+  2. budget.cjs: Determine injection phase (1-4) based on estimated context utilization
+     Phase 1 (0-50%):   Full injection ~1800 tokens
+     Phase 2 (50-75%):  Compressed ~1000 tokens
+     Phase 3 (75-90%):  Minimal ~400 tokens
+     Phase 4 (>90%):    Compaction advocacy ~200 tokens
+  |
+  v
+  3. framing.cjs: Compose referential framing prompt
+     - Identity frame (personality, style, boundaries)
+     - Relational context (user state, trust calibration)
+     - Attention directives (what Mind considers important)
+     - Active recall products (if any)
+     - Behavioral directives from Secondary
+     - Referential framing instruction
+  |
+  v
+  4. Output via hook stdout as systemMessage
+     (Commutator's registerOutput pattern -- hook writes to stdout,
+      Claude Code processes it as system context injection)
+```
+
+**Critical implementation detail:** The `UserPromptSubmit` hook is synchronous. The Context Manager must read a pre-prepared state file, not query Wire in real-time. Secondary writes this state file proactively between user turns. The hook reads the file and outputs the systemMessage. This is the background urgency path -- Secondary updates the file, Primary's hook reads it on next prompt.
+
+### 3.4 REM Consolidation Flow
+
+```
+Session end signal (Stop hook or idle timeout)
+  |
+  v
+Session Manager: notify Secondary
+  wire.send({ type: DIRECTIVE, payload: { command: 'begin-rem', tier: 3 } })
+  |
+  v
+Session Manager: notify Tertiary to shutdown
+  wire.send({ type: DIRECTIVE, payload: { command: 'shutdown' } })
+  Tertiary emits final sublimation batch, terminates
+  |
+  v
+REM Consolidator (runs in Secondary):
+  |
+  v
+  1. retroactive.cjs: Re-evaluate all session fragments
+     - Read all fragments from Journal working directory
+     - Score against completed session arc (full context available)
+     - Update headers: relevance scores, pointers, attention tags
+     - Write updated fragments back to Journal working directory
+  |
+  v
+  2. rem-consolidator.cjs: Meta-fragment creation
+     - For each recall event during session, create meta-recall fragment
+     - Write to Journal working directory
+  |
+  v
+  3. rem-consolidator.cjs: Sublimation triage
+     - Evaluate all sublimation candidates from Tertiary
+     - Signal-producing sublimations -> create sublimation fragments
+     - Noise sublimations -> discard
+     - Update Conditioning sublimation_sensitivity per domain
+  |
+  v
+  4. editorial.cjs: Association index editorial pass
+     - Deduplicate entities (Ledger query + merge)
+     - Update association weights (strengthen used, weaken unused)
+     - Review domain boundaries (merge/split/create/retire)
+     - Update taxonomy narrative in Journal
+     All Ledger writes via Wire write coordinator
+  |
+  v
+  5. conditioning-update.cjs: Self Model conditioning update
+     - Evaluate attention biases (which were useful?)
+     - Update recall strategies
+     - Update error history
+     - Conservative updates (single session doesn't shift dramatically)
+     Write to Journal (narrative) + Ledger (structured) + Magnet (cache)
+  |
+  v
+  6. Fragment promotion: working -> active
+     - Surviving fragments moved from working/ to active/ subdirectories
+     - Pruned fragments discarded
+     - Journal file moves via Lathe
+  |
+  v
+  7. Self Model state persistence
+     magnet.set('module', 'reverie', 'selfModelVersion', newVersion)
+     journal.write('self-model/identity-core', updatedIdentity)
+     journal.write('self-model/relational-model', updatedRelational)
+     Ledger writes for structured state via wire.queueWrite()
+  |
+  v
+  8. Cleanup
+     - Remove working directory for this session
+     - Wire relay shutdown
+     - Session Manager terminates Secondary
+```
+
+### 3.5 Sublimation Flow
+
+```
+TERTIARY (continuous cycle, configurable 5-10s interval):
+  |
+  v
+  1. Receive state from Secondary via Wire:
+     - attention_pointer: current conversational focus
+     - active_domains: which domains to scan
+     - sensitivity_thresholds: per-domain sublimation thresholds
+     - priming_signals: fragments/entities to bias toward
+  |
+  v
+  2. Index scan via Assay (header-only, no full retrieval):
+     assay.search({
+       criteria: {
+         attention_tags: attention_pointer.tags,
+         domains: active_domains,
+       },
+       providers: ['ledger'],  // Ledger only for header/index scans
+       options: {
+         sql: `SELECT f.fragment_id, f.current_weight, d.name as domain,
+                      GROUP_CONCAT(at.tag) as tags
+               FROM fragment_decay f
+               JOIN entity_domains ed ON ...
+               JOIN domains d ON ...
+               JOIN fragment_tags ft ON f.fragment_id = ft.fragment_id
+               JOIN attention_tags at ON ft.tag_id = at.id
+               WHERE f.current_weight > 0.1
+               GROUP BY f.fragment_id
+               ORDER BY f.current_weight DESC
+               LIMIT 50`
+       }
+     })
+  |
+  v
+  3. Resonance scoring (deterministic, no LLM):
+     - Score each match against attention pointer overlap
+     - Score entity co-occurrence across domains
+     - Score emotional valence alignment
+  |
+  v
+  4. Emit sublimations above threshold:
+     wire.send(createEnvelope({
+       from: tertiarySessionId,
+       to: secondarySessionId,
+       type: MESSAGE_TYPES.SUBLIMATION,
+       urgency: URGENCY_LEVELS.BACKGROUND,
+       payload: {
+         fragmentId,
+         resonanceScore,
+         associationPath: { domain, tag, entity },
+       }
+     }))
+  |
+  v
+  5. Wait for next cycle interval, return to step 1
+```
+
+---
+
+## 4. Concurrency and Write Coordination
+
+### 4.1 The DuckDB Single-Writer Problem
+
+DuckDB allows only one writer at a time. Wire's write coordinator (write-coordinator.cjs) already addresses this with a centralized queue that serializes writes with greedy batching. The key question: how do three sessions coordinate writes through this single coordinator?
+
+**Architecture decision: Secondary is the sole Ledger writer.**
+
+This is not a limitation -- it follows directly from the spec. Examining write responsibilities:
+
+| Session | Reads Ledger? | Writes Ledger? | What it writes |
+|---------|--------------|----------------|----------------|
+| Primary | No | **No** | Nothing -- Primary has no fragment or index responsibilities |
+| Secondary | Yes (via Assay) | **Yes** | Association index, fragment decay, Self Model structured state, taxonomy structure |
+| Tertiary | Yes (via Assay, read-only scans) | **No** | Nothing -- Tertiary only resonates, never modifies |
+
+**Therefore:** The single-writer constraint is satisfied by design. Secondary is the only session that calls `wire.queueWrite()`. There is no multi-writer contention because Primary and Tertiary never write to Ledger.
+
+### 4.2 What About REM Consolidation?
+
+During REM, only Secondary is running (Primary and Tertiary have terminated). Secondary has exclusive access to Ledger. The write coordinator still serializes writes for internal ordering, but there is zero contention.
+
+### 4.3 What About Subagents?
+
+Secondary can spawn subagents for parallel recall or batch processing. If subagents need to write to Ledger, they MUST route through Wire's write coordinator (same as Secondary). Subagents inherit Wire tools (validated by PoC test G3 per spec Section 4.5), so they send `write-intent` envelopes that enter the same serialized queue.
+
+This means subagent writes are serialized with Secondary's writes automatically. No additional coordination needed.
+
+### 4.4 Journal Write Contention
+
+Journal is file-based (markdown files via Lathe). Unlike DuckDB, there is no single-writer constraint at the provider level. However, concurrent file writes to the SAME file from different sessions could corrupt data.
+
+**Mitigation by design:**
+- Primary never writes fragments.
+- Secondary writes to `fragments/working/session-{id}/` -- a session-scoped directory.
+- Tertiary never writes fragments.
+- REM runs in Secondary only (no other sessions running).
+- Different fragment IDs always produce different file paths.
+
+**Remaining risk:** If Secondary spawns multiple subagents that write different fragments concurrently, they write to DIFFERENT files (unique fragment IDs). Lathe uses atomic writes (Bun.file/Bun.write with atomic semantics). No contention.
+
+**The only coordination needed:** During REM fragment promotion (moving from working/ to active/), Secondary must be the sole writer. Since REM runs post-session with only Secondary active, this is guaranteed.
+
+### 4.5 Self Model State File Coordination
+
+Secondary writes the Face prompt state file (`current-face.json`). Primary's hook reads it synchronously. This is a classic reader-writer scenario.
+
+**Pattern:** Atomic write (Bun.write is atomic). Secondary writes the complete file atomically. Primary reads whatever version is on disk. If Primary reads during a write, it gets either the old complete file or the new complete file -- never a partial. This is safe without locking because Bun.write is implemented with Zig's atomic file operations.
+
+---
+
+## 5. Hook Integration Architecture
+
+### 5.1 Commutator Event Routing
+
+Commutator already maps all 8 Claude Code hooks to Switchboard events (commutator.cjs lines 51-58):
+
+| Claude Code Hook | Commutator Event Name | Reverie Listener |
+|---|---|---|
+| `SessionStart` | `hook:session-start` | Session Manager: boot Wire, spawn Secondary/Tertiary |
+| `UserPromptSubmit` | `hook:prompt-submit` | Context Manager: inject Self Model. Session Manager: forward to Secondary |
+| `PreToolUse` | `file:pending` / `shell:pending` / `web:pending` / `tool:pending` | Session Manager: forward to Secondary. Secondary may intercept |
+| `PostToolUse` | `file:changed` / `shell:executed` / `web:fetched` / `tool:changed` | Session Manager: forward summary to Secondary |
+| `Stop` | `hook:stop` | Session Manager: evaluate -- session-ending or turn-ending? |
+| `PreCompact` | `hook:pre-compact` | Context Manager: inject compaction framing. REM Consolidator: Tier 1 triage |
+| `SubagentStart` | `hook:subagent-start` | Session Manager: forward to Secondary, inject context if available |
+| `SubagentStop` | `hook:subagent-stop` | Session Manager: forward output summary to Secondary |
+
+### 5.2 Reverie Hook Registration Pattern
+
+Reverie registers its hook handlers during the `registerFn` callback in Circuit. The event proxy handles namespace routing:
+
+```javascript
+// In reverie.cjs registerFn:
+function register(circuit) {
+  const events = circuit.events;
+
+  // System events (hook:*, state:*) pass through un-namespaced
+  events.on('hook:session-start', (payload) => sessionManager.onSessionStart(payload));
+  events.on('hook:prompt-submit', (payload) => {
+    contextManager.injectSelfModel(payload);  // synchronous hook output
+    sessionManager.forwardToSecondary(payload);  // async Wire send
+  });
+  events.on('hook:stop', (payload) => sessionManager.onStop(payload));
+  events.on('hook:pre-compact', (payload) => {
+    contextManager.injectCompactionFrame(payload);
+    remConsolidator.triggerTriage(payload);
+  });
+  events.on('hook:subagent-start', (payload) => sessionManager.onSubagentStart(payload));
+  events.on('hook:subagent-stop', (payload) => sessionManager.onSubagentStop(payload));
+
+  // For tool hooks (PreToolUse/PostToolUse), Commutator resolves to domain events
+  // like file:changed, shell:executed. These are NOT hook:* prefixed, so EventProxy
+  // would namespace them as reverie:file:changed. Instead, use hook:raw which
+  // Commutator emits for EVERY hook (commutator.cjs line 170).
+  // hook:raw passes through EventProxy's system-event filter.
+
+  // NOTE: hook:raw does NOT pass through EventProxy currently (only hook:* and state:* do).
+  // Two options:
+  // 1. Extend EventProxy pass-through list (small platform change)
+  // 2. Register directly on Switchboard facade during registerFn (works now)
+  // Recommendation: Option 2 for M2, Option 1 as tech debt for platform v1.1
+
+  return circuit.ok();
+}
+```
+
+### 5.3 Event Proxy Gap: Tool Hook Access
+
+**Issue identified:** Commutator resolves PreToolUse/PostToolUse to domain events like `file:changed`, `shell:executed`, etc. These are NOT `hook:*` prefixed, so Circuit's event proxy namespaces them as `reverie:file:changed` instead of passing through.
+
+However, Commutator also emits `hook:raw` for every hook (commutator.cjs line 170). Reverie can listen for `hook:raw` and filter for PreToolUse/PostToolUse events internally.
+
+**Current workaround:** `hook:raw` starts with `hook:` so it DOES pass through EventProxy's system event filter. Reverie listens on `hook:raw`, inspects `payload.hook_event_name`, and handles PreToolUse/PostToolUse internally.
+
+**Longer-term fix (platform v1.1):** Extend EventProxy's pass-through list to be configurable per module, or add domain-event prefixes to the pass-through list.
+
+### 5.4 Hook Output Pattern
+
+For hooks that need to inject systemMessage (UserPromptSubmit, PreCompact, SubagentStart), Reverie's handlers must write to stdout in the Claude Code hook response format. The Commutator's `registerOutput` method handles this:
+
+```javascript
+// Context Manager registers an output adapter during initialization
+commutator.registerOutput('hook:prompt-submit', (payload) => {
+  const selfModelContext = contextManager.composeSelfModelInjection(payload);
+  // Write to stdout for Claude Code to process as systemMessage
+  process.stdout.write(JSON.stringify({ systemMessage: selfModelContext }));
+});
+```
+
+**Critical timing consideration:** `registerOutput` subscribes an action handler on Switchboard. The hook handler runs synchronously. The state file must already be written before the hook fires. This is why Secondary writes the state file proactively between user turns, and the hook handler reads the file synchronously.
+
+---
+
+## 6. Build Order and Dependency Graph
+
+### 6.1 Dependency Analysis
+
+```
+                    +----------------+
+                    |  constants     |  (no deps)
+                    |   schema       |
+                    +-------+--------+
+                            |
+              +-------------+-----------+
+              v             v           v
+     +------------+ +----------+ +--------------+
+     | Self Model | |   Decay  | | Mode Manager |  (depends on constants/schema only)
+     |            | |          | |              |
+     +------+-----+ +-----+---+ +------+-------+
+            |              |            |
+            v              v            |
+     +--------------------------+       |
+     |   Association Index      |       |
+     |  (Ledger table mgmt)    |       |
+     +-------------+------------+       |
+                   |                    |
+     +-------------+----------+         |
+     v             v          |         |
++----------+ +----------+    |         |
+|Formation | |  Recall  |    |         |
+|          | |          |    |         |
++----+-----+ +----+-----+    |         |
+     |            |           |         |
+     v            v           v         v
+     +------------------------------------------+
+     |         Fragment Engine                   |  (composes Formation, Recall, Decay,
+     |                                           |   Association Index)
+     +--------------------+----------------------+
+                          |
+            +-------------+-------------+
+            v             v             v
+     +----------+  +------------+  +--------------+
+     | Context  |  |    REM     |  |   Session    |
+     | Manager  |  |Consolidat. |  |   Manager    |
+     |          |  |            |  |              |
+     +----------+  +------------+  +------+-------+
+                                          |
+                                          v
+                                    +----------+
+                                    | reverie  |  (module entry point)
+                                    |  .cjs    |
+                                    +----------+
+```
+
+### 6.2 Recommended Build Order
+
+**Phase 1: Foundation (no platform interaction needed beyond lib patterns)**
+1. `lib/constants.cjs` -- Fragment types, decay parameters, mode enums, threshold defaults
+2. `lib/schema.cjs` -- Fragment YAML schema definition, Self Model field shapes
+
+**Phase 2: Data Layer (needs Journal + Ledger facades)**
+3. `components/fragment-engine/decay.cjs` -- Deterministic decay function (pure computation)
+4. `components/fragment-engine/association-index.cjs` -- Ledger table creation, CRUD, query helpers
+5. `components/self-model/cold-start.cjs` -- Seed Self Model generation
+6. `components/self-model/self-model.cjs` -- Self Model state manager (read/write Journal + Ledger + Magnet)
+7. `components/mode-manager/mode-manager.cjs` -- State machine (Active/Passive/REM/Dormant)
+
+Items 3-7 can be parallelized -- they depend only on Phase 1 outputs and platform facades.
+
+**Phase 3: Processing Pipelines (needs Assay + completed data layer)**
+8. `components/fragment-engine/formation.cjs` -- Multi-angle formation pipeline
+9. `components/fragment-engine/recall.cjs` -- Retrieval + ranking + reconstruction
+10. `components/fragment-engine/fragment-engine.cjs` -- Composes formation, recall, decay, association-index
+
+Items 8-9 can be parallelized.
+
+**Phase 4: Context and Consolidation (needs Fragment Engine + Self Model)**
+11. `components/self-model/prompt-composer.cjs` -- Composes Face/Mind/Subconscious prompts
+12. `components/context-manager/budget.cjs` -- 4-phase context budget tracker
+13. `components/context-manager/framing.cjs` -- Referential framing prompt generation
+14. `components/context-manager/compaction.cjs` -- PreCompact Self Model preservation
+15. `components/context-manager/context-manager.cjs` -- Composes budget, framing, compaction
+
+Items 11-14 can be parallelized.
+
+16. `components/rem/retroactive.cjs` -- Retroactive fragment evaluation
+17. `components/rem/editorial.cjs` -- Association index editorial pass
+18. `components/rem/conditioning-update.cjs` -- Self Model conditioning updater
+19. `components/rem/rem-consolidator.cjs` -- Composes retroactive, editorial, conditioning-update
+
+Items 16-18 can be parallelized.
+
+**Phase 5: Session Orchestration (needs Wire + all above components)**
+20. `components/session-manager/primary-handler.cjs` -- Hook processing for Primary
+21. `components/session-manager/secondary-handler.cjs` -- Mind session logic
+22. `components/session-manager/tertiary-handler.cjs` -- Sublimation cycle runner
+23. `components/session-manager/session-manager.cjs` -- Three-session lifecycle orchestrator
+
+Items 20-22 can be parallelized.
+
+**Phase 6: Module Entry Point + Integration**
+24. `reverie.cjs` -- Circuit registration, wires all components, CLI commands via Pulley
+
+### 6.3 Build Order Rationale
+
+- **Foundation first** because every component depends on fragment types, schema shapes, and constants.
+- **Data layer before processing** because formation and recall cannot be tested without the association index and Self Model state structures.
+- **Processing before orchestration** because session management and context injection need to call fragment engine and Self Model methods.
+- **Session Manager last** because it orchestrates everything and cannot be tested without all components.
+- **Parallelization is aggressive** within phases because the options-based DI pattern means components are testable in isolation with mocked dependencies.
+
+---
 
 ## Patterns to Follow
 
-### Pattern 1: Service Locator via Domain Aliases (Laravel-Inspired)
+### Pattern 1: Options-Based DI for Internal Components
 
-**What:** The Framework (Armature) provides two import paths for every service and provider:
-1. **By name:** `Dynamo/Services/Assay/assay.cjs` -- direct import when you know the service
-2. **By domain:** `Dynamo/Services/Data/search.cjs` -- alias that resolves to whatever service owns the "data search" domain
+Every Reverie component takes an options object with injected platform facades and sister components. This is the same validated pattern used by all 9 platform services.
 
-**When:** Always. This is how consumers access platform capabilities.
-
-**Why this over pure DI:** In a CJS/Bun environment without a compilation step, traditional constructor injection is verbose and requires manual wiring. The domain alias pattern (proven by Laravel's facade system) gives clean ergonomics while maintaining decoupling. The alias layer is the seam where plugins can overwrite domain ownership -- a plugin that provides a better search engine registers against the "data search" domain, and all existing consumers automatically use it without code changes.
-
-**Implementation approach:**
 ```javascript
-// core/armature/registry.cjs
-// The registry maps domain paths to concrete service/provider facades
-const registry = {
-  'Services/Data/search': () => require('../services/assay/facade.cjs'),
-  'Services/Data/sql': () => require('../providers/ledger/facade.cjs'),
-  'Providers/Data/sql': () => require('../providers/ledger/facade.cjs'),
-  'Services/IO/bus': () => require('../services/commutator/facade.cjs'),
-  // ...
-};
+function createFragmentEngine(options = {}) {
+  const _journal = options.journal;      // Journal facade from Circuit
+  const _assay = options.assay;          // Assay facade from Circuit
+  const _wire = options.wire;            // Wire facade from Circuit
+  const _selfModel = options.selfModel;  // Internal component (not a platform service)
+  const _associationIndex = options.associationIndex;  // Internal component
 
-// Lazy resolution -- services are not instantiated until first access
-// Plugin API can overwrite entries before first resolution
-function resolve(domainPath) {
-  const factory = registry[domainPath];
-  if (!factory) throw new Error(`No service registered for domain: ${domainPath}`);
-  return factory();
+  // ... implementation
+
+  return Object.freeze({
+    formFragment,
+    recall,
+    computeDecay,
+    // ...
+  });
 }
-
-module.exports = { resolve, register };
 ```
 
-**Confidence:** HIGH -- This pattern is directly validated by Laravel (world's most popular framework ecosystem for this pattern class) and aligns with the canonical architecture document's description of import-by-domain.
+### Pattern 2: Facade Access Through Circuit Only
 
-### Pattern 2: Event Bus as Cross-Service Coordinator (Switchboard)
+Reverie components NEVER import platform services directly. All access goes through Circuit's scoped API, which returns facades. This is enforced by Circuit's dependency checking (circuit.cjs lines 130-148).
 
-**What:** Switchboard implements the singleton event bus pattern. Services emit events; the Framework subscribes handlers. Services never know who listens. This is the mediator topology of event-driven architecture.
-
-**When:** Any time one service's action should trigger behavior in another service or in modules above.
-
-**Why not direct service-to-service calls:** Direct calls create coupling and violate the layer boundary rule. If Forge (git) needs to notify Magnet (state) that a branch changed, Forge emits `git:branch-changed` and Switchboard routes it. Forge never imports Magnet.
-
-**Implementation approach:**
 ```javascript
-// core/services/switchboard/switchboard.cjs
-// Singleton event bus -- only one instance per Dynamo runtime
-class Switchboard {
-  #listeners = new Map();
+// CORRECT
+const wireResult = circuit.getService('wire');
+const wire = wireResult.value;
 
-  on(event, handler, priority = 0) {
-    if (!this.#listeners.has(event)) this.#listeners.set(event, []);
-    this.#listeners.get(event).push({ handler, priority });
-    this.#listeners.get(event).sort((a, b) => b.priority - a.priority);
-  }
+// WRONG -- bypasses facade isolation
+const { createWire } = require('../../core/services/wire/wire.cjs');
+```
 
-  emit(event, payload) {
-    const handlers = this.#listeners.get(event) || [];
-    for (const { handler } of handlers) {
-      handler(payload);
-    }
-  }
+### Pattern 3: Working Directory Isolation for Testing
 
-  // Hook for plugin API -- plugins can register listeners at framework level
-  register(pluginId, events) { /* ... */ }
+Each test creates an isolated temporary directory. Fragment files, Self Model state, and association index data all go into the temp directory. This is the same pattern used by every platform service test.
+
+```javascript
+const { describe, it, expect, beforeEach, afterEach } = require('bun:test');
+const tmpdir = require('node:os').tmpdir();
+const path = require('node:path');
+const fs = require('node:fs');
+
+describe('FragmentEngine', () => {
+  let testDir;
+
+  beforeEach(() => {
+    testDir = path.join(tmpdir, 'reverie-test-' + Date.now());
+    fs.mkdirSync(testDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    fs.rmSync(testDir, { recursive: true, force: true });
+  });
+});
+```
+
+### Pattern 4: Wire Envelope Creation for Inter-Session Communication
+
+All session communication uses Wire's `createEnvelope()` with explicit type and urgency. Payload is opaque to Wire -- only Reverie's handlers interpret it.
+
+```javascript
+const envResult = wire.createEnvelope({
+  from: secondarySessionId,
+  to: primarySessionId,
+  type: 'context-injection',     // MESSAGE_TYPES value
+  urgency: 'background',         // URGENCY_LEVELS value
+  payload: {
+    selfModelPrompt: composedPrompt,
+    version: selfModelVersion,
+  },
+});
+if (envResult.ok) {
+  await wire.send(envResult.value);
 }
-
-// Singleton export
-let instance;
-module.exports = () => {
-  if (!instance) instance = new Switchboard();
-  return instance;
-};
 ```
 
-**Confidence:** HIGH -- Event bus singleton is the standard pattern for decoupled service communication in both game engines and framework platforms.
-
-### Pattern 3: Facade per Service/Provider
-
-**What:** Every service and provider exposes a facade -- a thin API surface that defines the contract between the component's internal logic and its consumers. The facade is the only thing imported by the Framework layer.
-
-**When:** Always. No service or provider exposes internals directly.
-
-**Why:** Facades are the seam where plugins intercept. When a plugin "extends Assay with S3 search," it modifies the Assay facade, not Assay's internals. The facade defines what is possible; the implementation behind it is swappable.
-
-**Implementation approach:**
-```javascript
-// core/services/assay/facade.cjs
-// The facade exposes the public contract
-// Internal implementation can change without affecting consumers
-const { search, index } = require('./internals/engine.cjs');
-const { queryProvider } = require('./internals/routing.cjs');
-
-module.exports = {
-  queryAllProviders: (query, opts) => search(query, { ...opts, scope: 'all' }),
-  queryProvider: (providerId, query, opts) => queryProvider(providerId, query, opts),
-  index: (document, metadata) => index(document, metadata),
-  // Plugin hook point -- plugins append methods here via Armature's plugin API
-};
-```
-
-**Confidence:** HIGH -- Facade pattern is explicitly called out in the canonical architecture document and matches Laravel's facade implementation.
-
-### Pattern 4: Options-Based Dependency Injection for Testing
-
-**What:** Functions and constructors accept an options object where dependencies can be overridden. Production code uses defaults; test code injects mocks.
-
-**When:** For all testable components. Validated in v0 with `node:test`.
-
-**Why not a full DI container:** CJS with Bun does not benefit from a heavy DI container. Options-based injection gives the same test isolation with zero framework overhead. This was validated across 525 tests in v0.
-
-**Implementation approach:**
-```javascript
-// Any service function
-function processQuery(query, opts = {}) {
-  const ledger = opts.ledger || require('../providers/ledger/facade.cjs');
-  const journal = opts.journal || require('../providers/journal/facade.cjs');
-  // ...
-}
-
-// In tests
-const { processQuery } = require('./assay/facade.cjs');
-const mockLedger = { query: () => [{ id: 1, name: 'test' }] };
-processQuery('test', { ledger: mockLedger });
-```
-
-**Confidence:** HIGH -- Validated in v0 with 525 tests. Well-established pattern in the JS ecosystem.
-
-### Pattern 5: Hook System for Claude Code Lifecycle Integration
-
-**What:** Dynamo registers shell command hooks in Claude Code's `.claude/settings.json` that fire at lifecycle points. These hooks are the entry points for Dynamo to intercept and augment Claude Code behavior.
-
-**When:** SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, Stop -- and potentially all 12 Claude Code hook events.
-
-**Architecture:**
-```
-Claude Code fires hook event
-    |
-    v
-Shell command (registered in settings.json)
-    |
-    v
-Hook dispatcher (cc/hooks/dynamo-hooks.cjs or equivalent)
-    |
-    v
-Switchboard routes to registered handlers
-    |
-    v
-Services/Modules process the event
-    |
-    v
-Response returned via stdout (hookSpecificOutput) or exit code
-```
-
-**Key constraints from Claude Code hooks architecture:**
-- Hooks are `type: "command"` (shell) or `type: "prompt"` (Claude model decision)
-- SessionStart hooks inject context via `hookSpecificOutput.additionalContext` (as of v2.1.0)
-- PreToolUse hooks can modify tool inputs (as of v2.0.10)
-- PostToolUse hooks receive both `tool_input` and `tool_response`
-- Hooks always exit 0 (never block Claude Code) -- errors are logged, not thrown
-
-**Confidence:** HIGH -- Claude Code hooks are documented, and Dynamo v0 validated this pattern across 6 milestones.
-
-### Pattern 6: Plugin Registration and Domain Overwrite
-
-**What:** The Plugin API (defined in Armature) allows plugins to:
-1. Extend an existing service facade with new methods
-2. Overwrite a domain alias to point to a different implementation
-3. Register entirely new services/providers under new domains
-
-**When:** At Armature initialization, before any service is first resolved.
-
-**Architecture:**
-```
-Plugin loads via config.json toggle
-    |
-    v
-Plugin calls Armature's plugin API during registration phase
-    |
-    v
-Armature updates the domain registry and/or facade method tables
-    |
-    v
-All subsequent resolve() calls return the plugin-modified version
-```
-
-**Key constraint:** Plugins import from the SDK layer (Circuit), not from services directly. They declare what they extend/overwrite through the Plugin API, and Armature applies the modifications. This prevents plugins from bypassing the layered architecture.
-
-**Confidence:** MEDIUM -- The pattern is well-established in plugin architectures (WordPress, PocketBase, VSCode extensions) but the specific CJS implementation for domain overwriting needs careful design to avoid hidden state mutation. The canonical architecture document describes this clearly, but implementation nuances will need phase-specific research.
+---
 
 ## Anti-Patterns to Avoid
 
-### Anti-Pattern 1: Cross-Tier Imports
+### Anti-Pattern 1: Switchboard for Intra-Module Communication
 
-**What:** A service importing another service directly. A module importing a provider directly. Any import that skips a layer.
+**What:** Using Switchboard events for component-to-component calls within Reverie.
+**Why bad:** Creates hidden coupling, makes testing harder (need full Switchboard setup), makes control flow opaque. Switchboard is for platform-level cross-cutting events, not intra-module method calls.
+**Instead:** Direct function calls between components. Session Manager calls `fragmentEngine.formFragment()` directly, not via `switchboard.emit('reverie:form-fragment')`.
 
-**Why bad:** Circular dependency risk. Untestable coupling. Breaks plugin extensibility (if Module X imports Ledger directly, a plugin that replaces Ledger's domain with a different provider does not affect Module X).
+### Anti-Pattern 2: Primary Writing to Ledger
 
-**Instead:** All access goes through the Framework layer (Armature). Services communicate via Switchboard events. Modules access services through Circuit (SDK).
+**What:** Primary session making direct Ledger writes (e.g., logging tool usage).
+**Why bad:** Violates single-writer ownership. If Primary writes, it must go through Wire write coordinator, adding contention and complexity for no benefit.
+**Instead:** Primary sends snapshots to Secondary via Wire. Secondary decides what to persist.
 
-### Anti-Pattern 2: God Service
+### Anti-Pattern 3: Tertiary Running LLM Synthesis
 
-**What:** One service accumulating too many responsibilities because "it's easier." Likely candidates: Commutator (I/O bus becoming a catch-all), Magnet (state store becoming a global dump), Assay (search becoming a query router for everything).
+**What:** Having the Tertiary session perform LLM-based fragment reconstruction or evaluation.
+**Why bad:** Tertiary is a resonance engine. It scans headers and scores matches deterministically. LLM synthesis is expensive and would compete with the Mind's cognitive budget.
+**Instead:** Tertiary does header-only scans via Assay, scores resonance deterministically, and sends fuzzy sublimation candidates to Secondary. Secondary decides if directed recall is warranted.
 
-**Why bad:** Violates separation of concerns. Makes testing exponentially harder. The v0 monolith grew organically into this exact problem.
+### Anti-Pattern 4: Synchronous Wire Communication in Hook Handlers
 
-**Instead:** Each service has a single domain. When a new responsibility emerges, evaluate whether it belongs to an existing service's domain or warrants a new service. Prefer new services over expanding existing ones.
+**What:** Hook handler awaiting Wire response before returning hook output.
+**Why bad:** Claude Code hooks are synchronous. Awaiting Wire round-trips would block the hook and potentially timeout.
+**Instead:** Hook handler reads pre-prepared state file synchronously. Wire communication is fire-and-forget from the hook handler's perspective.
 
-### Anti-Pattern 3: Leaky Facade
+### Anti-Pattern 5: Reverie Importing Platform Internals Directly
 
-**What:** A facade that exposes implementation details -- returning DuckDB result objects directly, exposing file paths from Journal's internal storage layout, leaking Switchboard's event Map structure.
+**What:** `require('../../core/services/wire/wire.cjs')` from within Reverie module code.
+**Why bad:** Bypasses Circuit's facade isolation, dependency checking, and contract validation. Creates tight coupling to implementation details that may change.
+**Instead:** Always access via `circuit.getService('wire')` which returns the validated facade.
 
-**Why bad:** Consumers couple to the implementation behind the facade. Swapping implementations (which plugins need to do) becomes a breaking change.
-
-**Instead:** Facades return plain objects/arrays with documented shapes. Providers never return database-specific types. Services never return internal data structures.
-
-### Anti-Pattern 4: Eager Initialization
-
-**What:** All services and providers instantiating at startup, even those not needed for the current operation.
-
-**Why bad:** Slow startup. Unnecessary resource consumption. DuckDB initialization, for example, involves native bindings -- expensive if you're only running a git operation.
-
-**Instead:** Lazy resolution (the registry pattern uses factory functions, not pre-built instances). Services initialize on first access. The registry caches after first resolution.
-
-### Anti-Pattern 5: Hook Handler Doing Business Logic
-
-**What:** Claude Code hook handlers (in the dispatcher) containing complex logic instead of routing to the appropriate service.
-
-**Why bad:** Hook handlers cannot be unit tested in isolation from Claude Code. They have strict execution constraints (timeout, exit behavior). Business logic in hooks becomes untestable.
-
-**Instead:** Hook handlers are thin routers. They parse the hook input, emit a Switchboard event or call a Circuit API method, and return the result. All logic lives in services/modules.
+---
 
 ## Scalability Considerations
 
-| Concern | MVP (1 Module) | Growth (5+ Plugins, 3+ Modules) | Ecosystem (Community Additions) |
-|---------|----------------|----------------------------------|-------------------------------|
-| **Service Resolution** | Direct require, lazy singleton | Registry with plugin overrides, cached | Registry with conflict resolution, priority ordering |
-| **Event Volume** | Switchboard handles <100 events/session | Priority-ordered handlers, debouncing | Namespace events by plugin/module origin |
-| **State Management** | Magnet as simple key-value | Magnet with scoped namespaces per module | Magnet with access control, module isolation |
-| **Provider Growth** | Ledger + Journal | Plugin providers registered via Armature | Provider discovery, health checks, fallback chains |
-| **Wire Sessions** | 3 sessions (Primary/Mind/Subconscious) | Multiple module-owned sessions | Session pool management, resource limits |
-| **Hook Overhead** | 5-6 hook handlers | Many handlers per hook event | Priority chain, handler timeout enforcement |
+| Concern | At 10 sessions | At 100 sessions | At 1000 sessions |
+|---------|---------------|-----------------|-------------------|
+| **Fragment volume** | ~100-500 fragments | ~5K-25K fragments | ~50K-250K fragments |
+| **Journal file count** | Manageable | May need directory sharding (by date or domain) | Definitely needs sharding + cold archival |
+| **Ledger association index** | Fast queries | Index size matters; need DuckDB indexes on join columns | May need partitioning or periodic cleanup |
+| **Assay search latency** | <100ms | <500ms if indexed properly | Need result caching or pre-computed indexes |
+| **Wire message volume** | Low | Moderate; write coordinator batching essential | May need message aggregation or sampling |
+| **Self Model state size** | Small (<10KB) | Growing; Conditioning and Relational Model accumulate | Need periodic compaction of conditioning history |
 
-## Build Order: Dependency Graph and Bootstrap Sequence
-
-The canonical build order is a valid topological sort of the dependency graph. Here is the detailed breakdown with rationale for each phase:
-
-### Phase 1: Core Library (lib/)
-**Dependencies:** None
-**Produces:** Shared patterns, types, error classes, utility functions, constants
-**Rationale:** Pure foundation. Everything else imports from here. Must be complete and stable before anything builds on it.
-**Validation gate:** 100% unit test coverage. Zero external dependencies.
-
-### Phase 2: Core Services + Core Providers (parallel)
-**Dependencies:** lib/ only
-**Produces:** 9 services (Commutator, Magnet, Conductor, Forge, Lathe, Relay, Switchboard, Wire, Assay) + 2 providers (Ledger, Journal)
-**Rationale:** Services and providers are peers at the same tier. Neither depends on the other. Building in parallel is correct and efficient.
-
-**Within this phase, there is an internal ordering preference:**
-1. **Switchboard first** -- other services may want to emit events during their own initialization
-2. **Commutator and Magnet early** -- I/O bus and state are foundational for other services
-3. **Lathe before Forge** -- git ops depend on filesystem ops
-4. **Ledger and Journal in parallel with services** -- providers have no service dependencies
-5. **Assay last among services** -- it queries across providers, so providers should exist first (though at this layer Assay only imports lib/, the logical dependency matters for integration testing)
-6. **Wire last** -- depends on MCP patterns that may require Conductor for server lifecycle
-
-### Phase 3: Framework / Armature
-**Dependencies:** All services and providers
-**Produces:** Domain registry, facade resolution, plugin API contracts, hook definitions, Claude Code integration layer
-**Rationale:** The Framework is the composition layer. It cannot exist until all the things it composes exist. This is where domain aliases are defined, plugin extension points are declared, and the service/provider API surface solidifies.
-
-### Phase 4: SDK (Circuit + Pulley)
-**Dependencies:** Armature
-**Produces:** Module API (Circuit), external API surface (Pulley -- CLI, MCP endpoints)
-**Rationale:** The SDK wraps the Framework for safe consumption by modules and external users. Circuit determines what modules can and cannot access. Pulley determines how the outside world interacts with Dynamo.
-
-### Phase 5: Plugins (if any ship with v1)
-**Dependencies:** SDK
-**Note:** The Plugin API ships in v1 (defined in Armature), but actual plugin implementations are separate repos. No plugins are in scope for the initial platform build.
-
-### Phase 6: Modules (Reverie)
-**Dependencies:** SDK + any required plugins
-**Produces:** The first user-facing functionality
-**Rationale:** Dynamo is inert without a module. Reverie is the proof that the platform works.
-
-## Validation of Canonical Architecture Against Industry Patterns
-
-| Canonical Decision | Industry Precedent | Assessment |
-|-------------------|--------------------|------------|
-| Strict unidirectional layer dependencies | Game engines (Unreal, Godot), Laravel, Spring Boot | **Validated.** Universal pattern for platform-class software. |
-| Services do, Providers supply/receive | Laravel's Service/Provider distinction, DDD's Application/Infrastructure split | **Validated.** Clean separation matches industry consensus. Services contain logic; providers supply data and accept writes. |
-| Facade per component | Laravel facades, game engine Service Locator pattern | **Validated.** Industry standard for decoupling API surface from implementation. |
-| Domain-based import aliasing | Laravel facade aliases, Spring's qualifier annotations, DDD bounded contexts | **Validated.** Elegant approach. Less common in the JS ecosystem specifically, but well-proven in platform frameworks. CJS implementation is straightforward via a registry. |
-| Plugin API that can overwrite core domains | WordPress hooks/filters, VSCode extension API, PocketBase hooks | **Validated.** Standard extensibility pattern. Key nuance: registration timing matters -- plugins must register before first service resolution. |
-| Event bus for cross-service communication | Game engine event systems, Redux, RxJS | **Validated.** The mediator topology (Switchboard as central dispatcher) is the correct choice over broker topology when services need orchestration. |
-| Git submodules for plugins/modules/extensions | Common in game engine ecosystems (Godot plugins, Unreal marketplace content) | **Validated with caveat.** Git submodules are well-suited for decoupled repos, but they have UX friction (submodule sync, update, init). Relay service should abstract this completely. |
-| MCP for inter-session communication (Wire) | Claude Code Channels (shipped March 2026), MCP architecture spec | **Validated.** MCP's JSON-RPC 2.0 over stdio is the correct transport for local inter-session communication. Channels is the first-party feature that makes this possible. |
-| No LLM API below SDK scope | Unique to Dynamo's constraint set | **Novel but sound.** This forces the platform to be pure infrastructure. LLM capabilities come through Claude Code sessions (via Wire), not through API calls. This is a significant architectural differentiator. |
-| Options-based DI over container | Common in lightweight JS frameworks, validated in Dynamo v0 | **Validated.** Right choice for CJS + Bun. A full DI container adds complexity without proportional benefit in this runtime environment. |
-
-## Open Architectural Questions
-
-1. **Switchboard event namespacing:** How are events namespaced as the ecosystem grows? Recommend `{origin}:{domain}:{action}` format (e.g., `forge:git:branch-changed`, `plugin-terminus:pipeline:completed`).
-
-2. **Plugin registration timing:** The registry must support a registration phase (plugins modify domain mappings) followed by a resolution phase (services are instantiated). A "freeze" mechanism after first resolution prevents mid-runtime domain changes that could cause inconsistency.
-
-3. **Wire session lifecycle:** Who manages the lifecycle of secondary/tertiary sessions? Conductor should own MCP server lifecycle, but the Module (Reverie) defines what sessions it needs. The interaction between Circuit's session request API and Conductor's lifecycle management needs careful contract design.
-
-4. **Magnet state isolation:** When multiple modules share Magnet, how is state isolated? Recommend scoped namespaces with module ownership (a module cannot read or write another module's state unless explicitly shared through Circuit's API).
-
-5. **Error propagation across layers:** The canonical docs specify hooks always exit 0. What about errors within the service layer? Recommend a consistent error envelope pattern in lib/ that all facades use, with Switchboard emitting `system:error` events for cross-cutting error handling.
+---
 
 ## Sources
 
-- [Layered Architecture (Baeldung)](https://www.baeldung.com/cs/layered-architecture)
-- [Software Architecture Patterns 2026 (SayOne)](https://www.sayonetech.com/blog/software-architecture-patterns/)
-- [Game Engine Architecture: Systems Design 2025](https://generalistprogrammer.com/game-engine-architecture)
-- [Component Pattern (Game Programming Patterns)](https://gameprogrammingpatterns.com/component.html)
-- [Service Locator (Game Programming Patterns)](https://gameprogrammingpatterns.com/service-locator.html)
-- [Service Provider Pattern for Games (DigitalRune)](https://digitalrune.github.io/DigitalRune-Documentation/html/619b1341-c6a1-4c59-b33d-cc1f799402dc.htm)
-- [Laravel Service Container (v12.x)](https://laravel.com/docs/12.x/container)
-- [Laravel Facades (v12.x)](https://laravel.com/docs/12.x/facades)
-- [Inversion of Control (Martin Fowler)](https://martinfowler.com/bliki/InversionOfControl.html)
-- [Service Locator is an Anti-Pattern (Mark Seemann)](https://blog.ploeh.dk/2010/02/03/ServiceLocatorisanAnti-Pattern/)
-- [MCP Architecture Overview](https://modelcontextprotocol.io/docs/learn/architecture)
-- [MCP Architecture Patterns for Multi-Agent AI (IBM)](https://developer.ibm.com/articles/mcp-architecture-patterns-ai-systems/)
-- [Claude Code Hooks Reference](https://code.claude.com/docs/en/hooks)
-- [Claude Code Channels](https://code.claude.com/docs/en/channels)
-- [EventBus Pattern in JS (Galperin)](https://yaron-galperin.medium.com/eventbus-pattern-event-driven-communication-in-js-2f29c3875982)
-- [Event-Based Architectures in JavaScript (freeCodeCamp)](https://www.freecodecamp.org/news/event-based-architectures-in-javascript-a-handbook-for-devs/)
-- [DuckDB Node.js API](https://duckdb.org/docs/stable/clients/nodejs/overview)
-- [Fast DuckDB Bindings for Bun (@evan/duckdb)](https://github.com/evanwashere/duckdb)
-- [Plugin Architecture Design Pattern (DevLeader)](https://devleader.substack.com/p/plugin-architecture-design-pattern)
-- [Plug-in Architecture (OmarElgabry)](https://medium.com/omarelgabrys-blog/plug-in-architecture-dec207291800)
-- [Introduction to the Dependency Graph (Tweag)](https://www.tweag.io/blog/2025-09-04-introduction-to-dependency-graph/)
+- Dynamo core/core.cjs -- Bootstrap entry point with all service registrations (HIGH confidence, direct source)
+- Dynamo core/services/wire/wire.cjs -- Wire service implementation with full API (HIGH confidence, direct source)
+- Dynamo core/services/wire/protocol.cjs -- Message types and urgency levels (HIGH confidence, direct source)
+- Dynamo core/services/wire/write-coordinator.cjs -- Write coordination with greedy batching (HIGH confidence, direct source)
+- Dynamo core/services/switchboard/switchboard.cjs -- Event bus with wildcard matching (HIGH confidence, direct source)
+- Dynamo core/services/commutator/commutator.cjs -- Hook-to-event bridge with tool domain routing (HIGH confidence, direct source)
+- Dynamo core/services/magnet/magnet.cjs -- State management with 3-tier scoping (HIGH confidence, direct source)
+- Dynamo core/services/conductor/conductor.cjs -- Infrastructure ops (Docker, dependencies) (HIGH confidence, direct source)
+- Dynamo core/services/assay/assay.cjs -- Federated search with capability routing (HIGH confidence, direct source)
+- Dynamo core/providers/ledger/ledger.cjs -- DuckDB/SQLite dual backend (HIGH confidence, direct source)
+- Dynamo core/providers/journal/journal.cjs -- Flat file markdown with frontmatter (HIGH confidence, direct source)
+- Dynamo core/sdk/circuit/circuit.cjs -- Module API with facade isolation (HIGH confidence, direct source)
+- Dynamo core/sdk/circuit/event-proxy.cjs -- Namespaced events with system passthrough (HIGH confidence, direct source)
+- Dynamo core/sdk/circuit/module-manifest.cjs -- Module manifest schema (HIGH confidence, direct source)
+- `.claude/reverie-spec-v2.md` -- Canonical Reverie specification (HIGH confidence, canonical document)
+- `.claude/new-plan.md` -- Architecture plan (HIGH confidence, canonical document)
+- `.planning/milestones/v1.0-REQUIREMENTS.md` -- Cross-milestone dependency matrix (HIGH confidence, project artifact)

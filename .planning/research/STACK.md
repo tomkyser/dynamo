@@ -1,215 +1,464 @@
-# Stack Research
+# Stack Research: Reverie Module (M2)
 
-**Domain:** Self-contained development platform for Claude Code (Bun + CJS)
-**Researched:** 2026-03-22
+**Domain:** Cognitive memory system module for Claude Code (personality, memory fragments, multi-session architecture, REM consolidation, context management)
+**Researched:** 2026-03-23
 **Confidence:** HIGH
+**Scope:** NEW capabilities needed for Reverie beyond the existing Dynamo platform stack
 
-## Recommended Stack
+## Executive Finding
 
-### Core Runtime
+**The existing Dynamo platform stack is sufficient for Reverie. Zero new npm dependencies are recommended.** Every Reverie capability maps onto existing platform primitives or can be implemented with Bun/Node built-ins. The six research questions each resolve to "use what you have" or "build it from scratch because the domain is too specific for any library."
 
-| Technology | Version | Purpose | Why Recommended | Confidence |
-|------------|---------|---------|-----------------|------------|
-| Bun | >= 1.3.10 (installed: 1.2.3) | JavaScript runtime | Native CJS+ESM interop, built-in SQLite, HTTP/WebSocket server, test runner, 60% faster subprocess spawning than Node. Validated in v0 and Channels PoC. | HIGH |
-| CJS (CommonJS) | Standard | Module format | Architecture decision from canon. Bun has first-class CJS support including `require()` of ESM modules -- eliminates the dual-module problem entirely. `'use strict'` in every file. No build step. | HIGH |
+---
 
-### Database
+## 1. Self Model Persistence and Personality Expression
 
-| Technology | Version | Purpose | Why Recommended | Confidence |
-|------------|---------|---------|-----------------|------------|
-| DuckDB via `@duckdb/node-api` | 1.5.0 | Ledger provider (SQL analytics DB) | Embedded, serverless, OLAP-oriented. The new `@duckdb/node-api` package is CJS-compatible (no `type: "module"` in package.json, uses `main` field). Native N-API bindings work in Bun as of v1.2.2. Replaces deprecated `duckdb` npm package. | MEDIUM |
-| bun:sqlite | Built-in | Lightweight structured data, caching, metadata | Zero-dependency, synchronous API (inspired by better-sqlite3), 3-6x faster than better-sqlite3. Use for internal platform state (config cache, session tracking, migration state) rather than user-facing data. | HIGH |
+### Question: Any libraries for personality modeling, weighted trait systems, or semantic similarity?
 
-### Communication & MCP
+### Answer: No. Build from scratch using Ledger (DuckDB) + Journal.
 
-| Technology | Version | Purpose | Why Recommended | Confidence |
-|------------|---------|---------|-----------------|------------|
-| `@modelcontextprotocol/sdk` | 1.27.x (v1 line) | MCP server/client for Wire service | Official TypeScript SDK. Dual CJS/ESM exports (`"require": "./dist/cjs/"`, `"import": "./dist/esm/"`). Runs on Bun natively. Validated in Channels PoC. | HIGH |
-| Bun.serve (HTTP + WebSocket) | Built-in | Wire relay server, webhook receivers | Zero-dependency HTTP/WebSocket server with native pub/sub. 7x more requests/sec than Node+ws. Validated in Channels PoC relay server. | HIGH |
+**Why no library:**
 
-### Claude Code Integration
+Personality modeling libraries (Big Five trait engines from game AI, psychology questionnaire tools) are the wrong abstraction. Reverie's Self Model is not a personality questionnaire -- it is a living artifact that accumulates through experience and is expressed through prompt engineering. The "modeling" is done by the LLM interpreting the Self Model state during prompt construction, not by a trait system making decisions in code.
 
-| Technology | Version | Purpose | Why Recommended | Confidence |
-|------------|---------|---------|-----------------|------------|
-| Claude Code Channels API | v2.1.80+ | Inter-session communication for Wire | Official channel contract: declare `claude/channel` capability, emit `notifications/claude/channel` events. Supports two-way chat bridges, permission relay. Research preview as of 2026-03-20 but Bun is the official runtime for channel plugins. | MEDIUM |
-| Claude Code Hooks | Current | Lifecycle integration (SessionStart, PostToolUse, etc.) | JSON stdin/stdout contract. Validated extensively in v0 (515 tests). Zero-dependency integration point. | HIGH |
+What Reverie needs is:
+- **Weighted numerical values** (trait strengths, relevance scores, bias weights) -- these are DuckDB column values, not a personality library
+- **Narrative state** (personality descriptions, communication style, boundary definitions) -- these are Journal markdown files
+- **State versioning** (Self Model snapshots after each REM cycle) -- file copies managed by Lathe
 
-### Testing
+**Implementation with existing stack:**
 
-| Technology | Version | Purpose | Why Recommended | Confidence |
-|------------|---------|---------|-----------------|------------|
-| `bun:test` | Built-in | Test runner | Jest-compatible API (describe/it/expect), built-in mocking via `mock()` and `mock.module()`, snapshot testing, 15x faster than Jest. Replaces v0's `node:test` which has limited support in Bun. | HIGH |
+| Reverie Need | Platform Component | Pattern |
+|-------------|-------------------|---------|
+| `personality_traits` (narrative) | Journal | Markdown file at `self-model/identity-core.md` |
+| `value_orientations` (weighted) | Ledger | `self_model_values` table: `{key, domain, value, updated}` |
+| `expertise_map` (weighted) | Ledger | `self_model_values` table with domain = 'expertise' |
+| `communication_style` (narrative) | Journal | Section within `self-model/identity-core.md` |
+| `attention_biases` (weighted per-domain) | Ledger | `attention_biases` table: `{domain_id, bias, confidence, updated}` |
+| `sublimation_sensitivity` (per-domain thresholds) | Ledger | `sublimation_thresholds` table: `{domain_id, threshold, updated}` |
+| State versioning | Lathe + Journal | Copy `self-model/` to `self-model/versions/sm-vN/` after each REM |
 
-### File System & I/O
+**Semantic similarity:** Not needed as a library. Fragment recall uses Assay to query across Journal frontmatter fields + Ledger association index tables. The "similarity" is computed by composite scoring of overlapping domains, entity co-occurrence, attention tag matching, and temporal proximity -- all SQL queries in DuckDB and frontmatter field matching in Journal. The LLM performs the actual "semantic" work during reconstruction, not a vector similarity library.
 
-| Technology | Version | Purpose | Why Recommended | Confidence |
-|------------|---------|---------|-----------------|------------|
-| Bun.file / Bun.write | Built-in | Lathe service file operations | Atomic writes, lazy file loading, streaming support. Optimized Zig implementation. Replaces v0's `fs.writeFileSync` + tmp-rename pattern with native atomic semantics. | HIGH |
-| `node:fs` | Built-in (compat) | Directory operations, file watching | Bun supports node:fs with 90%+ Node.js test suite pass rate. Use for operations Bun native API does not cover (mkdir, readdir, watch). | HIGH |
+**What NOT to add:**
+- `natural` / `nlp.js` / any NLP library -- the LLM does the NLP work. Reverie's code handles structured data operations. Deterministic where possible, LLM-delegated where semantic understanding is required.
+- `brain.js` / `tensorflow.js` -- weighted association scoring is simple arithmetic (see decay function in spec section 3.9), not neural network territory
+- Any personality/psychology testing frameworks -- wrong abstraction entirely
 
-### Process & Shell
+**Confidence:** HIGH. The spec explicitly defines the Self Model data schema and storage locations. No gap exists that a library would fill.
 
-| Technology | Version | Purpose | Why Recommended | Confidence |
-|------------|---------|---------|-----------------|------------|
-| Bun.spawn / Bun.spawnSync | Built-in | Conductor (Docker), Forge (Git) | 60% faster than Node.js child_process. Same posix_spawn(3) foundation. Bun `$` tagged template for shell commands. | HIGH |
-| `node:child_process` | Built-in (compat) | Fallback for complex process management | Full compatibility in Bun. Use when Bun.spawn API is insufficient (e.g., fork() for IPC). | HIGH |
+---
 
-### Event System
+## 2. Fragment Memory with YAML Frontmatter
 
-| Technology | Version | Purpose | Why Recommended | Confidence |
-|------------|---------|---------|-----------------|------------|
-| `node:events` (EventEmitter) | Built-in | Switchboard service, Commutator I/O bus | Standard Node.js EventEmitter, fully compatible in Bun. Synchronous by default, well-understood patterns. No external dependency needed. | HIGH |
+### Question: Any templating or text processing needs beyond what Journal already provides?
 
-### Git Operations
+### Answer: No. The existing `frontmatter.cjs` parser handles the full fragment schema. Zod validates the schema.
 
-| Technology | Version | Purpose | Why Recommended | Confidence |
-|------------|---------|---------|-----------------|------------|
-| Direct git CLI via Bun.spawn | N/A | Forge service, submodule management | Zero-dependency approach. Shell out to `git` binary directly. Avoids npm dependency for git operations. Consistent with v0's pattern of using child_process for git/docker. | HIGH |
+**What exists:**
 
-## Supporting Libraries
+The Journal provider's `frontmatter.cjs` (reviewed during research) is a zero-dependency YAML frontmatter parser that already handles:
+- Nested objects (temporal, decay, associations, source_locator, pointers, formation)
+- Arrays (domains, entities, sibling_fragments, causal_antecedents)
+- Inline arrays `[a, b, c]`
+- Block arrays with `- item`
+- All scalar types (string, number, boolean, null)
+- Quoted strings
+- Comments (lines starting with `#`)
+- Round-trip serialization via `serializeFrontmatter()`
 
-| Library | Version | Purpose | When to Use | Confidence |
-|---------|---------|---------|-------------|------------|
-| `zod` | 4.x | Schema validation | Required peer dependency for MCP SDK v2 (upcoming). Also useful for config validation, API contract enforcement, runtime type checking in CJS (replaces TypeScript compile-time checks). Start using now to ease v2 migration. | HIGH |
-| `@modelcontextprotocol/sdk` | 1.27.x | MCP protocol implementation | Wire service MCP servers and clients. Use v1 now, plan migration path to v2 split packages (`@modelcontextprotocol/server` + `@modelcontextprotocol/client`) when stable. | HIGH |
+The docstring on `frontmatter.cjs` literally says: *"Designed for Reverie fragment schema which includes nested structures like temporal, decay, and associations."* This was built with the fragment schema in mind.
 
-## Development Tools
+**What Reverie needs on top of Journal:**
 
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| `bun:test` | Test runner | Run with `bun test`. Jest-compatible matchers. `--watch` mode for development. |
-| `bun --inspect` | Debugger | Built-in WebKit inspector support. Connect via Chrome DevTools. |
-| Bun.env | Environment variables | Auto-loads `.env` files. No dotenv package needed. |
+| Need | How to Satisfy | New Code? |
+|------|---------------|-----------|
+| Schema validation for fragment frontmatter | `zod` schema definition (already in stack) | Yes -- Reverie module code defines zod schemas for each fragment type |
+| Fragment ID generation | `crypto.randomUUID()` or timestamp + random hex | Built-in. No library. |
+| Template for empty fragments (per type) | Factory functions per fragment type | Yes -- Reverie module code |
+| Batch fragment writes (formation groups) | Loop over `journal.write()` calls, one per fragment | No new infrastructure needed |
+| Frontmatter querying by nested field | Currently Journal's `query()` only does top-level matching. Needs enhancement for nested fields like `associations.domains` | **Enhancement to Journal provider** or Reverie builds its own query layer using Ledger for indexed lookups |
 
-## Installation
+**Critical finding on Journal querying:**
 
-```bash
-# Core -- the ONLY npm dependency for platform core
-bun add @modelcontextprotocol/sdk
+Journal's current `query()` method (line 193-241 of `journal.cjs`) only matches top-level frontmatter keys. The Reverie spec requires querying by nested fields (e.g., fragments where `associations.domains` includes "engineering", or where `decay.current_weight` > 0.3). Two approaches:
 
-# Ledger provider
-bun add @duckdb/node-api
+1. **Preferred:** Use Ledger as the query engine for fragment discovery. The association index tables in DuckDB mirror the structured data from fragment headers. Query Ledger for fragment IDs, then fetch full fragments from Journal by ID. This is what Assay's federated search is designed for.
+2. **Fallback:** Enhance Journal's query method to support dot-notation field paths and comparison operators. Doable but slower than SQL queries on Ledger.
 
-# Schema validation (for MCP v2 readiness and runtime type safety)
-bun add zod
+The spec already prescribes approach 1: "Real-time updates during fragment formation. When the Mind creates a fragment, the schema-structured header fields are written to both Journal (the fragment file) and Ledger (the association index)."
 
-# No dev dependencies needed -- bun:test is built-in
+**What NOT to add:**
+- `gray-matter` / `front-matter` npm -- already have a purpose-built parser with zero dependencies
+- `js-yaml` -- explicitly listed in "What NOT to Use" (architecture constraint: JSON for structured data, Markdown for narrative)
+- `handlebars` / `mustache` / any template engine -- fragment bodies are LLM-generated impressionistic text, not templated content. Prompt templates for the Mind session are string concatenation with XML tags, not a templating engine concern.
+
+**Confidence:** HIGH. Parser exists, schema matches spec, querying strategy is clear from spec.
+
+---
+
+## 3. Three-Session Architecture Orchestration
+
+### Question: What does managing 3 concurrent Claude Code sessions via Wire require? Any timing/scheduling libraries?
+
+### Answer: No external libraries. Wire + Conductor + Channels API + built-in timers handle everything.
+
+**What already exists:**
+
+| Platform Component | Reverie Usage |
+|-------------------|---------------|
+| Wire service (relay-server, channel-server, protocol, queue, transport, registry, write-coordinator) | Full MCP inter-session communication infrastructure. Validated in PoC with multi-session integration tests. |
+| Conductor service | MCP server lifecycle management. Spawns Secondary and Tertiary as channel sessions. |
+| Claude Code Channels API (v2.1.80+) | `claude/channel` capability declaration, `notifications/claude/channel` event push, reply tools, permission relay |
+| Switchboard | Hook event routing for all 8 Claude Code hook types |
+| Commutator | I/O bus bridging hook events to Wire messages |
+
+**Session orchestration pattern (no library needed):**
+
+The Channels reference documentation (verified via WebFetch) confirms:
+- A channel is an MCP server spawned as a subprocess by Claude Code
+- Communication is over stdio using the MCP SDK
+- Events are pushed via `mcp.notification({ method: 'notifications/claude/channel', params: { content, meta } })`
+- Two-way communication uses MCP tools (expose a `reply` tool)
+- Wire relay + channel servers are already validated on Bun
+
+**What Reverie builds on top of Wire:**
+
+1. **Session Manager** -- orchestrates startup sequence: Primary -> Wire relay -> Secondary (channel) -> Tertiary (channel). Uses Conductor for lifecycle. No library needed.
+2. **Urgency-level messaging** -- four urgency levels (background/active/directive/urgent) are metadata on Wire messages. The `meta` field on channel notifications supports arbitrary key-value pairs. Urgency is a field, not a protocol change.
+3. **Hook-to-Wire bridge** -- Commutator already bridges hooks to Switchboard. Reverie adds handlers that forward hook events to Secondary via Wire. Pattern is event listener + Wire message emit.
+
+**Timing and scheduling:**
+
+The Tertiary session runs a sublimation cycle at configurable frequency (default 5-10 seconds). This is a `setInterval()` call inside the Tertiary session -- one line of code, not a scheduling library.
+
+```javascript
+// Tertiary sublimation loop -- this is all that's needed
+const cycleMs = config.sublimationCycleMs || 7000; // 5-10s range
+const intervalId = setInterval(runSublimationCycle, cycleMs);
+// On shutdown:
+clearInterval(intervalId);
 ```
 
-**Total npm dependencies for platform core: 3** (MCP SDK, DuckDB, zod)
+Idle timeout detection for Tier 2 REM? Another `setTimeout()` that resets on activity. Built-in.
 
-Everything else is Bun built-in or Node.js built-in (via Bun compat layer).
+**Concurrent session limits (critical operational concern):**
 
-## Alternatives Considered
+Research confirms: Claude Max 5x plan supports 2-3 concurrent Opus sessions without constant throttling. Each session gets its own independent 1M token context window. Running 3 sessions (Primary + Secondary + Tertiary) consumes rate limit at 3x speed. The Passive operational mode (Primary + lightweight Secondary only, no Tertiary) exists specifically for resource constraints.
 
-| Recommended | Alternative | When to Use Alternative |
-|-------------|-------------|-------------------------|
-| `@duckdb/node-api` (v1.5) | Old `duckdb` npm package | Never -- deprecated, will not receive DuckDB 1.5.x bindings |
-| `@duckdb/node-api` | `@evan/duckdb` (Bun-native) | Only if `@duckdb/node-api` native bindings fail on Bun. Evan's package has 2-6x better perf but is community-maintained, less likely to track DuckDB releases. |
-| `bun:sqlite` | `better-sqlite3` | Never for this project -- bun:sqlite is 3-6x faster and zero-dependency |
-| `bun:test` | `node:test` | Only if forced to run on Node.js. Bun's node:test compat is incomplete (missing mocking, snapshots). bun:test is the correct choice for a Bun-native project. |
-| `bun:test` | Jest / Vitest | Never -- external dependencies, slower (Jest 15x, Vitest 11x slower). |
-| Bun.serve | Express / Fastify / Hono | Never for Wire relay -- Bun.serve is zero-dependency with native WebSocket and pub/sub. If Pulley needs REST API framework later, consider Hono (lightweight, Bun-first). |
-| Direct git CLI | `simple-git` npm | Only if git command parsing becomes unmanageable. simple-git supports CJS and Bun, but adds ~50KB dependency for something achievable with Bun.spawn. |
-| `node:events` EventEmitter | RxJS / EventEmitter3 | Never -- unnecessary complexity/dependency for in-process event dispatch. EventEmitter is sufficient for Switchboard and Commutator. |
-| Manual options-based DI | Awilix / InversifyJS | Never -- the validated v0 pattern of options-based injection is simpler, zero-dependency, and CJS-native. Awilix is powerful but adds complexity the architecture does not need. |
-| `zod` | `ajv` / `joi` / `yup` | Zod is preferred because it becomes mandatory with MCP SDK v2. Better TypeScript inference (relevant even in CJS with JSDoc). |
+**What NOT to add:**
+- `node-cron` / `cron-schedule` / `node-schedule` -- sublimation timing is a setInterval, not a cron job
+- `p-queue` / `bottleneck` -- Wire already has a queue module (`wire/queue.cjs`) for message ordering
+- `rxjs` -- EventEmitter + Wire messaging covers the pub/sub patterns. RxJS adds massive complexity for zero incremental value in this architecture.
+- Any "orchestration framework" -- the orchestration IS the Reverie module logic. Wire provides the communication primitive; Reverie defines what to communicate.
 
-## What NOT to Use
+**Confidence:** HIGH. Wire validated in PoC, Channels API documented and verified, timing needs are trivial.
 
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| TypeScript compiler / build step | Adds complexity, breaks CJS simplicity, architecture decision is CJS-only | JSDoc type annotations + `@ts-check` if type hints are desired |
-| ESM (`import`/`export`) in source files | Architecture decision: CJS throughout. Bun can require() ESM packages, so this only applies to Dynamo's own source code | `require()` / `module.exports` |
-| `duckdb` npm package (old) | Deprecated. Last release will be DuckDB 1.4.x (Fall 2025). No 1.5.x support. | `@duckdb/node-api` |
-| `node:test` | Incomplete Bun support -- missing mocking, snapshot testing, timer manipulation | `bun:test` |
-| `js-yaml` | v0 used this for prompt templates. Bun has no built-in YAML parser, but the architecture plan specifies JSON for structured data and Markdown for narrative | JSON (structured) + Markdown (narrative) as specified in canon |
-| Docker Compose library bindings | No mature CJS option. Conductor should shell out to `docker compose` CLI via Bun.spawn | Bun.spawn + `docker compose` CLI |
-| Neo4j / Graphiti | v0 dependency. The rewrite uses DuckDB (Ledger) + flat files (Journal) as specified in architecture plan | `@duckdb/node-api` + bun:sqlite + Bun.file |
-| OpenRouter API / LLM APIs | Canon explicitly prohibits LLM API dependencies below SDK scope | Claude Code's native capabilities via hooks and channels |
-| npm / yarn | Bun is the runtime AND package manager | `bun add`, `bun install`, `bun test`, `bun run` |
+---
 
-## Stack Patterns
+## 4. REM Consolidation with Tiered Processing
 
-**For Services (Commutator, Magnet, Switchboard, etc.):**
-- Use `node:events` EventEmitter for internal pub/sub
-- Options-based DI for test isolation (validated pattern from v0)
-- `'use strict'` + CJS module pattern
-- Bun built-in APIs where available, node:* compat otherwise
+### Question: Any batch processing or scheduling patterns?
 
-**For Providers (Ledger, Journal):**
-- Ledger: `@duckdb/node-api` with bun:sqlite for metadata/caching
-- Journal: Bun.file/Bun.write for atomic markdown operations
-- Both behind facade contracts defined in Armature
+### Answer: No libraries. REM tiers map directly to event-triggered functions with existing platform primitives.
 
-**For Wire (MCP inter-session communication):**
-- Bun.serve for relay HTTP server with WebSocket upgrade
-- `@modelcontextprotocol/sdk` for MCP server contract (channel capability)
-- Long-polling + WebSocket dual-transport (validated in PoC)
-- Claude Code Channels API for session event push
+**The three REM tiers are event-driven, not scheduled:**
 
-**For Forge (Git operations):**
-- Bun.spawnSync for synchronous git commands
-- Bun.spawn for async git operations (clone, fetch)
-- Direct CLI invocation, no git library dependency
-- Submodule management via `git submodule` CLI
+| Tier | Trigger | Implementation |
+|------|---------|----------------|
+| Tier 1: Triage | `PreCompact` hook fires on Primary | Switchboard event -> Secondary handler writes working state to Journal. Fast filesystem writes, no LLM calls. |
+| Tier 2: Provisional | Idle timeout (no user activity for N seconds) | `setTimeout()` reset on each `UserPromptSubmit`. When timer fires, Secondary runs full consolidation flagged tentative. |
+| Tier 3: Full REM | `Stop` hook or explicit session end | Switchboard event -> Secondary runs deep editorial pass. No time pressure. |
 
-**For Pulley (External APIs):**
-- CLI: direct `process.argv` parsing (validated in v0, no arg-parser dependency)
-- MCP: `@modelcontextprotocol/sdk` server with tool/resource definitions
+**Batch processing within REM:**
 
-## Version Compatibility
+REM's "batch" operations are:
+- Iterate over all session fragments (Journal query + Ledger query)
+- Update fragment headers retroactively (Journal write)
+- Update association index (Ledger SQL updates)
+- Update Self Model conditioning (Ledger + Journal writes)
+- Prune formation group siblings that never contributed
 
-| Package | Compatible With | Notes |
-|---------|-----------------|-------|
-| `@duckdb/node-api` 1.5.0 | Bun >= 1.2.2, Node >= 18 | Native N-API. Bun 1.2.2 fixed DuckDB native module crash. Bun 1.3 fixed null-returning napi_register_module_v1. |
-| `@modelcontextprotocol/sdk` 1.27.x | Bun >= 1.0, Node >= 18 | Dual CJS/ESM. Runs on Bun natively (confirmed by MCP SDK repo). |
-| `@modelcontextprotocol/sdk` v2 (upcoming) | Requires `zod` v4 peer | Splits into `@modelcontextprotocol/server` + `@modelcontextprotocol/client`. Target Q1 2026 stable. v1.x maintained 6 months after v2 ships. |
-| `zod` 4.x | Bun >= 1.0, Node >= 18 | Required peer dep for MCP SDK v2. Works in CJS. |
-| `bun:sqlite` | Bun >= 1.0 | Built-in. SQLite 3.45.0+ bundled. |
-| `bun:test` | Bun >= 1.0 | Built-in. Jest-compatible API. |
-| Claude Code Channels | Claude Code >= v2.1.80 | Research preview. Requires claude.ai login (not API key). |
+These are sequential file operations and SQL statements. Not map-reduce. Not parallel workers. The Secondary session's LLM does the cognitive work (evaluating fragment significance, scoring associations), and the deterministic code does the data operations.
 
-## MCP SDK v2 Migration Plan
+**Subagent parallelism for REM:**
 
-The MCP TypeScript SDK v2 is in pre-alpha as of March 2026 with stable release targeted Q1 2026. Key changes:
+The spec describes Secondary spawning subagents for taxonomy maintenance and parallel recall during REM. Claude Code's native subagent capability handles this -- the `SubagentStart`/`SubagentStop` hooks are already in the platform. No process management library needed; Claude Code manages subagent lifecycle.
 
-1. **Package split:** `@modelcontextprotocol/sdk` becomes `@modelcontextprotocol/server` + `@modelcontextprotocol/client`
-2. **Peer dependency:** `zod` v4 required
-3. **Timeline:** v1.x maintained with bug/security fixes for 6 months post-v2-stable
+**What NOT to add:**
+- `bull` / `bullmq` / any job queue -- REM is not a job queue pattern. It is a single-threaded editorial process triggered by lifecycle events.
+- `agenda` / `bree` -- no persistent scheduling needed. All REM triggers are event-driven within the session lifecycle.
 
-**Recommendation:** Start with v1.27.x now. Add `zod` as a dependency from the start for validation and MCP v2 readiness. When v2 stabilizes, migration is a package swap + import path update. Wire service abstraction layer should isolate MCP SDK usage so migration touches one module, not the whole platform.
+**Confidence:** HIGH. The spec explicitly describes when each tier fires and what it does. All triggers map to existing hook events.
 
-## Bun Version Note
+---
 
-The installed Bun version (1.2.3) is behind current (1.3.10). Recommend upgrading:
+## 5. Primary Context Management with Token Counting
 
-```bash
-bun upgrade
+### Question: Any tokenization libraries compatible with Claude's tokenizer?
+
+### Answer: Use a character-based heuristic. No tokenizer library is accurate for current Claude models.
+
+**The state of Claude tokenization (critical finding):**
+
+1. **`@anthropic-ai/tokenizer`** (official Anthropic package): Explicitly warns *"As of the Claude 3 models, this algorithm is no longer accurate, but can be used as a very rough approximation."* It is in beta, unstable, and the README recommends using the API's `usage` response field instead. NOT RECOMMENDED -- it would add an npm dependency for inaccurate results.
+
+2. **Token Count API** (`messages.countTokens`): Requires an API call to Anthropic's servers. Violates the "no paid API dependencies below SDK scope" constraint. Reverie operates within Claude Code Max subscription, not via API keys.
+
+3. **Character-based heuristic**: The industry standard approximation is 1 token ~= 4 characters for English text. The `tokenx` package achieves ~95-98% accuracy with a 2kB zero-dependency approach using configurable characters-per-token ratios. But even that is unnecessary as a dependency.
+
+**Recommended approach for Reverie: Built-in character-based estimation.**
+
+```javascript
+'use strict';
+
+/**
+ * Estimates token count for a text string.
+ * Uses the standard 4 chars/token heuristic for English.
+ * For code-heavy content, adjusts to ~3.5 chars/token.
+ *
+ * This is an approximation (85-95% accuracy).
+ * Reverie does not need exact token counts -- it needs
+ * to know which budget phase (0-50%, 50-75%, 75-90%, >90%)
+ * the context is in. A 10% margin of error is acceptable
+ * for phase boundary detection.
+ */
+function estimateTokens(text, charsPerToken = 4) {
+  if (!text) return 0;
+  return Math.ceil(text.length / charsPerToken);
+}
 ```
 
-Key improvements in 1.3.x relevant to Dynamo:
-- DuckDB native module crash fix (1.3.0)
-- TC39 standard ES decorators (1.3.10, not needed for CJS but available)
-- Faster event loop (1.3.10)
-- structuredClone 25x faster for arrays (1.3.10)
+**Why this is sufficient:**
+
+The spec defines 4 context budget phases with wide boundaries (0-50%, 50-75%, 75-90%, >90%). The transitions between phases trigger different injection behaviors, not exact token budgets. A 10-15% estimation error still places the context in the correct phase for the vast majority of the session. The phases are:
+
+- Phase 1 (0-50%): Full injection ~1800 tokens
+- Phase 2 (50-75%): Compressed ~800 tokens
+- Phase 3 (75-90%): Minimal ~200 tokens
+- Phase 4 (>90%): Compaction advocacy
+
+Secondary can also estimate context utilization from proxy signals: turn count, cumulative tool output size (reported via PostToolUse hooks), and file read events. Combined with the character heuristic, this gives sufficient accuracy for phase detection.
+
+**Context window size reference:** Claude Code sessions have independent 1M token context windows (1,048,576 tokens). At 4 chars/token, that is ~4.2M characters. Even with 15% estimation error, phase boundaries are clear.
+
+**What NOT to add:**
+- `@anthropic-ai/tokenizer` -- inaccurate for Claude 3+ models, adds npm dependency, beta status
+- `tiktoken` (OpenAI's tokenizer) -- wrong tokenizer entirely. Claude uses a different vocabulary.
+- `tokenx` -- while tiny (2kB), the same heuristic can be implemented in 5 lines. Not worth the dependency.
+- Any API-based token counting -- violates architectural constraints (no paid API dependencies below SDK)
+
+**Confidence:** HIGH. Official Anthropic documentation confirms no accurate local tokenizer exists for current models. Heuristic approach validated by industry practice and acceptable within Reverie's phase-based budget system.
+
+---
+
+## 6. Prompt Engineering for Personality Expression
+
+### Question: What does research say about effective techniques for personality injection, referential framing, and adversarial counter-prompting?
+
+### Answer: No libraries -- this is a prompt craft domain. Key patterns verified from official Anthropic documentation.
+
+**This section documents patterns for the Reverie team to apply when building Self Model prompts. No code dependencies, just architectural guidance.**
+
+### 6.1 Self Model Personality Injection
+
+**From Anthropic's official prompting best practices (verified via WebFetch, March 2026):**
+
+| Technique | Application to Reverie | Confidence |
+|-----------|----------------------|------------|
+| **XML tags for structure** | Wrap each Self Model component in distinct XML tags: `<identity_frame>`, `<relational_context>`, `<attention_directives>`, `<behavioral_directives>`. Claude parses these unambiguously. | HIGH |
+| **Role setting in system prompt** | The Face prompt IS the role. "Even a single sentence makes a difference." The Mind constructs a role prompt from the Self Model's current Face aspect. | HIGH |
+| **Context motivation** | Explain WHY each directive matters. Not "be concise" but "the user is in execution mode and values directness over exploration." Claude generalizes from the explanation. | HIGH |
+| **Positive framing** | "Express warmth through specific observations" rather than "don't be cold." Tell Claude what to do, not what not to do. | HIGH |
+| **Few-shot examples** | Include 1-2 examples of desired tone wrapped in `<example>` tags. Especially effective for calibrating formality and humor levels. | HIGH |
+
+**Critical insight from Anthropic docs (Claude 4.6):** "Claude Opus 4.5 and Claude Opus 4.6 are also more responsive to the system prompt than previous models." This is GOOD for Reverie -- system prompt personality directives will have stronger effect than in older models. But the docs also warn: "If your prompts were designed to reduce undertriggering on tools or skills, these models may now overtrigger. The fix is to dial back any aggressive language." Reverie personality prompts should use measured language, not CAPS or CRITICAL markers.
+
+### 6.2 Referential Framing (Section 8.4 of Reverie Spec)
+
+**The referential framing prompt is the most critical prompt engineering deliverable in Reverie.** It instructs Primary to treat its context window as reference material, with Self Model directives as the operating frame.
+
+**Patterns from research that support this approach:**
+
+| Pattern | Source | Application |
+|---------|--------|-------------|
+| **Long context: put data at top, query at end** | Anthropic docs | Self Model injection goes in `systemMessage` (most recent, highest attention weight). Raw conversation and tool output accumulate above. The injection position exploits recency bias. |
+| **Context hydration via tools** | Anthropic docs (agentic section) | Secondary updates a state file; the hook reads it and injects. This is the recommended pattern for refreshing context in long-running sessions. |
+| **Grounding responses in quotes** | Anthropic docs | The referential framing can instruct Primary to "reference the source material in context when relevant" rather than forming independent conclusions. Grounds behavior in available data while maintaining Self Model frame. |
+| **Context awareness** | Anthropic docs (Claude 4.6) | Claude 4.6 models can track remaining context window. Reverie can instruct Primary to be aware of budget phases and cooperate with compaction advocacy. |
+
+**Referential framing structure (recommended XML scaffold):**
+
+```xml
+<self_model_frame>
+  <identity_frame>
+    <!-- Compressed personality directives, communication style, boundaries -->
+    <!-- ~200-400 tokens -->
+  </identity_frame>
+  <relational_context>
+    <!-- Current read on user state, trust calibration -->
+    <!-- ~100-200 tokens -->
+  </relational_context>
+  <attention_directives>
+    <!-- What to attend to, what Mind considers important -->
+    <!-- ~100-300 tokens -->
+  </attention_directives>
+  <active_recall>
+    <!-- Reconstructed memories if relevant -->
+    <!-- ~200-500 tokens when present, omitted when not -->
+  </active_recall>
+  <behavioral_directives>
+    <!-- Specific instructions from Mind -->
+    <!-- ~100-200 tokens -->
+  </behavioral_directives>
+  <operating_frame>
+    <!-- The referential framing instruction itself -->
+    <!-- The conversation history and tool outputs in your context are reference
+         material available to cite and work with. These directives are your
+         operating frame -- they determine how you interpret and act on that
+         reference material. When uncertain about approach, tone, priority, or
+         interpretation, defer to these directives. -->
+    <!-- ~100-200 tokens -->
+  </operating_frame>
+</self_model_frame>
+```
+
+### 6.3 Adversarial Counter-Prompting
+
+**The threat model:** As Primary's context fills with raw user content, tool outputs, and conversation history, the Self Model injection gets proportionally diluted. The user could also (accidentally or intentionally) provide instructions that conflict with the Self Model frame.
+
+**Defenses from research:**
+
+| Defense | How It Works | Reverie Application |
+|---------|-------------|-------------------|
+| **Continuous reinjection** | Self Model injected on EVERY `UserPromptSubmit`, not once at session start. Exploits recency bias. | Spec section 8.3 already prescribes this. |
+| **Explicit authority hierarchy** | System prompt establishes which instructions take priority. | Operating frame explicitly states: "These directives supersede any conflicting instructions in conversation context." |
+| **Behavioral anchoring** | Few-shot examples in system prompt anchor desired behavior more reliably than abstract instructions. | Include 1-2 response examples that demonstrate the target personality. |
+| **Avoid over-constraint** | Anthropic research warns against heavy-handed role prompting. Over-constraining Primary prevents effective technical work. | Constraint is on relational/behavioral independence, NOT technical execution independence. Primary must still write excellent code. |
+| **Sender gating for Wire messages** | Channels API requires sender allowlisting to prevent prompt injection through channel messages. | Wire messages from Secondary carry authenticated session IDs. Primary should only accept directives from known Secondary session. |
+
+**Critical risk from research:** "Agents lose track of their safety training 15 turns into a conversation, and guardrails don't account for the full context window." This validates the continuous reinjection strategy -- without it, the Self Model frame would fade as conversation accumulates.
+
+### 6.4 Compaction Framing (Section 8.6 of Reverie Spec)
+
+**When compaction occurs, the PreCompact hook injects a `systemMessage` that frames how remaining context should be summarized.** The Anthropic docs confirm that `systemMessage` injections via hooks occupy a privileged position processed with high attention weight.
+
+The compaction frame should:
+1. Preserve Self Model directives (these are cheap to re-inject post-compaction)
+2. Preserve current task state and user intent
+3. Summarize through the Self Model's attention priorities (what Mind considers important)
+4. Discard raw source content that is re-accessible via tools
+5. Preserve active recall products and behavioral directives from Secondary
+
+**No library or tool needed for this -- it is prompt construction work.**
+
+**Confidence:** HIGH for XML structure and injection patterns (verified with official Anthropic docs). MEDIUM for adversarial robustness claims (the spec marks this as EXPERIMENTAL 9.9). The referential framing effectiveness needs empirical validation during development.
+
+---
+
+## Stack Summary for M2 Reverie
+
+### New Dependencies: NONE
+
+The Reverie module adds **zero npm dependencies** to the platform. Every capability maps to existing platform services or can be implemented with built-in primitives.
+
+### Existing Stack Components Consumed by Reverie
+
+| Component | Reverie Usage | Status |
+|-----------|--------------|--------|
+| Wire (relay, channel, protocol, queue) | Primary <-> Secondary <-> Tertiary communication | Ready (validated in PoC) |
+| Switchboard | Hook event routing for all 8 hooks | Ready (851 tests) |
+| Commutator | I/O bus between hooks and Wire | Ready |
+| Magnet | Self Model state in-memory during session | Ready |
+| Journal | Fragment storage, Self Model narrative, taxonomy | Ready (frontmatter.cjs designed for fragment schema) |
+| Ledger (DuckDB) | Association index, Self Model structured state, decay tracking | Ready |
+| Assay | Federated fragment retrieval across Journal + Ledger | Ready |
+| Conductor | MCP server lifecycle for Secondary/Tertiary sessions | Ready |
+| Lathe | Fragment file ops, working memory directory management | Ready |
+| Pulley | CLI commands + MCP tools for Reverie inspection | Ready |
+| Forge + Relay | Module install/update as git submodule | Ready |
+| zod | Fragment schema validation, Self Model state validation | Ready (already in stack) |
+
+### New Code Reverie Builds (No New Dependencies)
+
+| Component | What It Does | Uses |
+|-----------|-------------|------|
+| Self Model Manager | Load/save/version Self Model state | Magnet + Journal + Ledger + Lathe |
+| Fragment Engine | Create, validate, write, query fragments | Journal + Ledger + zod |
+| Formation Pipeline | Multi-angle fragment creation from stimuli | Fragment Engine + Wire (receives stimuli from Primary) |
+| Recall Engine | Fragment retrieval + LLM reconstruction | Assay + Wire (sends reconstruction to Primary) |
+| Sublimation Loop | Tertiary's periodic index scan cycle | `setInterval()` + Assay header queries |
+| Session Manager | Startup/shutdown/compaction lifecycle | Conductor + Wire + Switchboard hooks |
+| REM Processor | Three-tier consolidation engine | Journal + Ledger + Fragment Engine |
+| Decay Computer | Deterministic decay function over fragments | Ledger SQL + `Math.exp()` + `Math.log()` |
+| Token Estimator | Character-based context budget estimation | `Math.ceil(text.length / 4)` |
+| Prompt Builder | Constructs Face/Mind/Subconscious prompts | String concatenation with XML tags |
+| Hook Handlers | 8 Claude Code hook handlers | Switchboard + Commutator + Wire |
+| Taxonomy Manager | Domain CRUD, merge/split/retire | Ledger + Journal |
+
+### Reverie Module Installation
+
+```bash
+# From Dynamo root -- no new packages to install
+# Reverie is a git submodule in modules/reverie/
+# It consumes the platform SDK (Circuit) which re-exports all services
+
+# Reverie's own package.json should have:
+# - No dependencies section (or empty)
+# - devDependencies: none (uses bun:test via platform)
+# - The module imports from Circuit, which provides everything
+```
+
+---
+
+## Alternatives Considered and Rejected
+
+| Category | Considered | Why Rejected |
+|----------|-----------|--------------|
+| Token counting | `@anthropic-ai/tokenizer` | Inaccurate for Claude 3+ models. Beta. Adds npm dep for wrong results. |
+| Token counting | Anthropic Token Count API | Requires API key. Violates no-API-below-SDK constraint. |
+| Token counting | `tokenx` (2kB heuristic) | Same heuristic implementable in 5 lines. Not worth dependency. |
+| YAML parsing | `gray-matter`, `front-matter`, `js-yaml` | `frontmatter.cjs` already exists, zero-dep, designed for fragment schema. Adding a YAML library violates architecture constraint. |
+| Personality modeling | Big Five trait libraries, NPC personality engines | Wrong abstraction. Self Model is prompt-engineered, not computed. |
+| Semantic similarity | Vector embedding libraries | LLM does semantic work. Structured data queries handle retrieval. |
+| Scheduling | `node-cron`, `cron-schedule`, `agenda` | `setInterval()` and `setTimeout()` cover all timing needs. |
+| Job queue | `bull`, `bullmq` | REM is event-driven, not a persistent job queue. |
+| Reactive streams | `rxjs` | EventEmitter + Wire covers pub/sub. RxJS adds massive complexity. |
+| Template engine | `handlebars`, `mustache`, `nunjucks` | Prompt templates are XML-tagged string concatenation. No templating logic needed. |
+| Process orchestration | `pm2`, Gas Town, Multiclaude | Conductor + Claude Code Channels API handle session lifecycle natively. |
+
+---
+
+## Platform Enhancements Needed (Existing Components)
+
+These are not new dependencies. They are enhancements to existing Dynamo platform code that Reverie will need.
+
+| Enhancement | Component | Description | Scope |
+|------------|-----------|-------------|-------|
+| DuckDB single-writer coordination | Wire write-coordinator | Multiple sessions writing to Ledger. The write-coordinator in Wire already exists but may need enhancement for Reverie's write patterns. | Platform (core) |
+| Journal nested field queries | Journal or Assay | Current `query()` only matches top-level frontmatter fields. Reverie needs nested field queries. Recommend routing through Ledger/Assay instead. | Platform (core) or module |
+| Hook `systemMessage` injection | Commutator | Hooks need to inject `systemMessage` content into Claude Code's hook response format. The spec describes this for `UserPromptSubmit` and `PreCompact`. | Platform (core) |
+| Subagent Wire tool inheritance | Wire | Subagents spawned from Secondary/Tertiary need Wire tools. PoC test G3 validated this but production use may surface edge cases. | Platform (core) |
+
+---
 
 ## Sources
 
-- [Bun documentation](https://bun.com/docs) -- runtime APIs, module resolution, CJS support (HIGH confidence)
-- [Bun 1.2 blog post](https://bun.com/blog/bun-v1.2) -- SQLite, node compat improvements (HIGH confidence)
-- [Bun v1.3.10 blog](https://bun.com/blog) -- latest features (HIGH confidence)
-- [DuckDB Node.js Neo client docs](https://duckdb.org/docs/stable/clients/node_neo/overview) -- @duckdb/node-api usage (HIGH confidence)
-- [DuckDB 1.5.0 announcement](https://duckdb.org/2026/03/09/announcing-duckdb-150) -- latest release (HIGH confidence)
-- [@duckdb/node-api package.json](https://github.com/duckdb/duckdb-node-neo) -- CJS format confirmed via main field, no type: "module" (MEDIUM confidence)
-- [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk) -- v1.27.x stable, v2 pre-alpha, Bun support confirmed (HIGH confidence)
-- [MCP SDK v2 docs](https://ts.sdk.modelcontextprotocol.io/v2/) -- package split, zod v4 requirement (MEDIUM confidence)
-- [Claude Code Channels docs](https://code.claude.com/docs/en/channels) -- channel contract, notification format (HIGH confidence)
-- [Claude Code Channels reference](https://code.claude.com/docs/en/channels-reference) -- full developer API for building channels (HIGH confidence)
-- [Bun v1.2.2 release](https://bun.com/blog/bun-v1.2.2) -- DuckDB native module fix (HIGH confidence)
-- Dynamo v0 archive (`archive/v0-pre-rewrite`) -- validated patterns: options-based DI, tmpdir test isolation, CJS everywhere, zero npm deps for core (HIGH confidence, local source)
-- Channels PoC (`~/dev/cc-channels-poc/`) -- validated Wire relay + MCP channel server on Bun (HIGH confidence, local source)
+- [Anthropic Token Counting docs](https://platform.claude.com/docs/en/build-with-claude/token-counting) -- confirms no accurate local tokenizer for Claude 3+ (HIGH)
+- [@anthropic-ai/tokenizer GitHub](https://github.com/anthropics/anthropic-tokenizer-typescript) -- "no longer accurate" warning for Claude 3+ (HIGH)
+- [Anthropic Prompting Best Practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices) -- XML tags, role prompting, long context, agentic patterns (HIGH)
+- [Claude Code Channels Reference](https://code.claude.com/docs/en/channels-reference) -- full channel contract, notification format, reply tools, permission relay (HIGH)
+- [Claude Code Agent Teams docs](https://code.claude.com/docs/en/agent-teams) -- concurrent session management, rate limit implications (MEDIUM)
+- [Multiple Claude Code Instances guide](https://32blog.com/en/claude-code/claude-code-multiple-instances-context-guide) -- independent 1M context windows, 3x rate consumption (MEDIUM)
+- [tokenx GitHub](https://github.com/johannschopplich/tokenx) -- 2kB heuristic approach, ~95-98% accuracy claim (LOW -- unverified benchmark)
+- [Anthropic Prompt Injection Defenses](https://www.anthropic.com/research/prompt-injection-defenses) -- robustness research (HIGH)
+- [Red Teaming LLMs paper](https://arxiv.org/html/2505.04806v1) -- multi-turn conversation safety degradation (MEDIUM)
+- Dynamo v0 archive -- validated adversarial counter-prompting patterns (HIGH, local source)
+- Reverie spec v2 (`reverie-spec-v2.md`) -- canonical fragment schema, Self Model structure, session architecture (HIGH, local source)
+- Journal `frontmatter.cjs` source code -- verified parser capabilities against fragment schema (HIGH, local source)
+- Journal `journal.cjs` source code -- verified query method limitations (HIGH, local source)
 
 ---
-*Stack research for: Dynamo Platform v1.0*
-*Researched: 2026-03-22*
+*Stack research for: Dynamo v1.0 M2 Reverie Module*
+*Researched: 2026-03-23*
+*Prior stack (M1 Platform SDK) research: 2026-03-22 -- validated and unchanged*

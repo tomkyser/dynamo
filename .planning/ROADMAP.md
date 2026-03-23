@@ -96,10 +96,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Assay executes federated queries across Ledger (SQL) and Journal (markdown frontmatter) providers, returning merged results with provider metadata identifying the source of each result
   2. Assay supports provider-specific query optimization (SQL queries to Ledger, frontmatter scans to Journal) rather than lowest-common-denominator queries
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 03.2 to break down)
+- [ ] 03.2-01-PLAN.md -- Assay service factory: federated search with parallel dispatch, capability-based routing, provider metadata tagging, Switchboard events
 
 ### Phase 4: Framework
 **Goal**: Compose services and providers into a coherent platform through Armature -- the IoC container, lifecycle, contracts, and integration layer that modules and plugins will consume
@@ -149,6 +149,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 3.1 -> 3.2 -> 4 -> 5
 | 2. Foundational Services | 4/4 | Complete | 2026-03-22 |
 | 3. Data Providers & Infrastructure Services | 5/5 | Complete | 2026-03-23 |
 | 3.1 Wire Communication Service | 4/4 | Complete | 2026-03-23 |
-| 3.2 Assay Federated Search | 0/? | Not started | - |
+| 3.2 Assay Federated Search | 0/1 | Not started | - |
 | 4. Framework | 0/? | Not started | - |
 | 5. SDK & Platform Infrastructure | 0/? | Not started | - |

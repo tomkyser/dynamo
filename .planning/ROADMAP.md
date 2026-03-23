@@ -149,10 +149,11 @@ Plans:
   2. Magnet state persists across process restart via JSON file provider
   3. `dynamo update` pulls from remote via forge.pull() before submodule update
   4. All services with implicit switchboard dependency declare it in deps[]
-**Plans**: 0 plans (to be created via /gsd:plan-phase)
+**Plans**: 2 plans
 
 Plans:
-(none yet)
+- [ ] 06-01-PLAN.md -- Fix deps[] declarations in core.cjs, wire Magnet persistence via mapDeps+config, implement forge.pull()
+- [ ] 06-02-PLAN.md -- Bootstrap integration tests validating all 4 success criteria end-to-end
 
 ### ~~Phase 6 (original): Search & Communication~~ (REMOVED — moved to Phase 3.1 and Phase 3.2)
 Wire (SVC-08) → Phase 3.1 | Assay (SVC-09) → Phase 3.2
@@ -171,4 +172,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 3.1 -> 3.2 -> 4 -> 5 -> 6
 | 3.2 Assay Federated Search | 1/1 | Complete | 2026-03-23 |
 | 4. Framework | 4/4 | Complete | 2026-03-23 |
 | 5. SDK & Platform Infrastructure | 5/5 | Complete | 2026-03-23 |
-| 6. Bootstrap Integration Fixes | 0/0 | Not started | - |
+| 6. Bootstrap Integration Fixes | 0/2 | In progress | - |

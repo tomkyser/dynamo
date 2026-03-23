@@ -46,12 +46,13 @@ Plans:
   2. Commutator bridges Claude Code hook payloads into Switchboard events with semantic routing (e.g., PostToolUse with Write tool routed as file-change, not generic hook)
   3. Magnet stores and retrieves scoped state (global, session, module namespaces) with provider-backed persistence surviving process restart
   4. Lathe performs all filesystem operations (read, write, delete, list, exists, atomic write) through a single facade over Bun native APIs
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
-- [ ] 02-03: TBD
+- [ ] 02-01-PLAN.md -- Lathe filesystem facade: Bun.file/Bun.write wrapper, directory ops, atomic write via tmp+rename
+- [ ] 02-02-PLAN.md -- Switchboard event bus: action dispatch, filter pipeline with priority ordering, prefix wildcard matching
+- [ ] 02-03-PLAN.md -- Magnet state management: three-tier scoping, Switchboard event emission, JSON file provider via Lathe
+- [ ] 02-04-PLAN.md -- Commutator I/O bridge: Claude Code hook semantic routing, tool-to-domain mapping, outbound adapters
 
 ### Phase 3: Data Providers & Infrastructure Services
 **Goal**: Stand up the data layer (SQL and markdown) and the infrastructure services (git, Docker, install/update) that the framework will compose
@@ -128,7 +129,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Core Library | 0/3 | Planned | - |
-| 2. Foundational Services | 0/3 | Not started | - |
+| 2. Foundational Services | 0/4 | Planned | - |
 | 3. Data Providers & Infrastructure Services | 0/3 | Not started | - |
 | 4. Framework | 0/3 | Not started | - |
 | 5. SDK & Platform Infrastructure | 0/3 | Not started | - |

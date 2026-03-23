@@ -20,6 +20,11 @@ const { createAssay } = require('./services/assay/assay.cjs');
 const { createLedger } = require('./providers/ledger/ledger.cjs');
 const { createJournal } = require('./providers/journal/journal.cjs');
 
+// SDK factories
+const { createCircuit } = require('./sdk/circuit/circuit.cjs');
+const { createPulley } = require('./sdk/pulley/pulley.cjs');
+const { registerPlatformCommands } = require('./sdk/pulley/platform-commands.cjs');
+
 /**
  * Bootstraps the entire Dynamo platform.
  *
@@ -35,7 +40,7 @@ const { createJournal } = require('./providers/journal/journal.cjs');
  * @param {Object} [options.paths] - Pre-built paths object (for test isolation with tmpdir)
  * @param {Object} [options.configOverrides] - Config overrides merged into loaded config
  * @param {string} [options.pluginsDir] - Override plugins directory
- * @returns {Promise<import('../lib/result.cjs').Result<{container: Object, lifecycle: Object, config: Object, paths: Object}>>}
+ * @returns {Promise<import('../lib/result.cjs').Result<{container: Object, lifecycle: Object, config: Object, paths: Object, circuit: Object, pulley: Object}>>}
  */
 async function bootstrap(options = {}) {
   // 1. Resolve paths
@@ -148,8 +153,36 @@ async function bootstrap(options = {}) {
     return bootResult;
   }
 
+  // 7.5a. Create Pulley CLI framework
+  const pulleyResult = createPulley();
+  if (!pulleyResult.ok) {
+    return pulleyResult;
+  }
+  const pulley = pulleyResult.value;
+
+  // 7.5b. Create Circuit module API
+  const circuitResult = createCircuit({
+    lifecycle,
+    container,
+    pulley,
+  });
+  if (!circuitResult.ok) {
+    return circuitResult;
+  }
+  const circuit = circuitResult.value;
+
+  // 7.5c. Register platform CLI commands
+  const packageVersion = config.version || '0.0.0';
+  registerPlatformCommands(pulley, {
+    lifecycle,
+    container,
+    config,
+    paths,
+    packageVersion,
+  });
+
   // 8. Return success
-  return ok({ container, lifecycle, config, paths });
+  return ok({ container, lifecycle, config, paths, circuit, pulley });
 }
 
 module.exports = { bootstrap };

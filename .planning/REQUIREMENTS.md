@@ -32,12 +32,12 @@
 
 #### Framework (Armature)
 
-- [ ] **FWK-01**: Service container with IoC (bind/singleton/factory, automatic dependency resolution, contextual binding, scoped resolution, deferred/lazy loading)
+- [x] **FWK-01**: Service container with IoC (bind/singleton/factory, automatic dependency resolution, contextual binding, scoped resolution, deferred/lazy loading)
 - [ ] **FWK-02**: Provider contracts and facade system (import by domain of responsibility or by name)
 - [ ] **FWK-03**: Register/boot two-phase lifecycle
 - [ ] **FWK-04**: Plugin API contracts (manifest, domain extension, domain introduction, dependency checking, enable/disable toggle)
 - [ ] **FWK-05**: Hook definitions and Claude Code integration layer
-- [ ] **FWK-06**: Configuration validation (JSON Schema at boot)
+- [x] **FWK-06**: Configuration validation (JSON Schema at boot)
 
 #### SDK
 
@@ -182,12 +182,12 @@ Deferred to future release. Tracked but not in current roadmap.
 | SVC-09 | Phase 6 | Complete |
 | PRV-01 | Phase 3 | Complete |
 | PRV-02 | Phase 3 | Complete |
-| FWK-01 | Phase 4 | Pending |
+| FWK-01 | Phase 4 | Complete |
 | FWK-02 | Phase 4 | Pending |
 | FWK-03 | Phase 4 | Pending |
 | FWK-04 | Phase 4 | Pending |
 | FWK-05 | Phase 4 | Pending |
-| FWK-06 | Phase 4 | Pending |
+| FWK-06 | Phase 4 | Complete |
 | SDK-01 | Phase 5 | Pending |
 | SDK-02 | Phase 5 | Pending |
 | SDK-03 | Phase 5 | Pending |

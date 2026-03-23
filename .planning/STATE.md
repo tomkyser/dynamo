@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Ready to plan
-stopped_at: Phase 4 context gathered
-last_updated: "2026-03-23T15:52:21.877Z"
+status: Ready to execute
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-03-23T16:21:58.346Z"
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 17
-  completed_plans: 17
+  total_plans: 21
+  completed_plans: 18
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-22)
 
 **Core value:** Everything routes through Dynamo -- the holistic wrapper via its APIs and interfaces. No component bypasses the patterns and paths Dynamo defines.
-**Current focus:** Phase 03.2 — assay-federated-search
+**Current focus:** Phase 04 — framework
 
 ## Current Position
 
-Phase: 4
-Plan: Not started
+Phase: 04 (framework) — EXECUTING
+Plan: 2 of 4
 
 ## Performance Metrics
 
@@ -63,6 +63,7 @@ Plan: Not started
 | Phase 03.1 P03 | 4min | 2 tasks | 7 files |
 | Phase 03.1 P04 | 6min | 2 tasks | 4 files |
 | Phase 03.2 P01 | 3min | 2 tasks | 2 files |
+| Phase 04 P01 | 4min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -123,6 +124,10 @@ Recent decisions affecting current work:
 - [Phase 03.2]: Provider metadata via spread not mutation -- original provider results never modified
 - [Phase 03.2]: Promise.allSettled for partial failure resilience -- one provider error does not block others
 - [Phase 03.2]: Capability routing uses supports.sql flag -- SQL providers receive _raw_sql, non-SQL providers skipped
+- [Phase 04]: Container is infrastructure (not a service) -- uses createContainer() not createContract()
+- [Phase 04]: Container creates instances but does NOT call init() -- lifecycle manager handles initialization
+- [Phase 04]: Kahn's algorithm for topological sort -- O(V+E) boot order with cycle detection
+- [Phase 04]: Enum validation runs after type check -- TYPE_MISMATCH takes precedence over ENUM_INVALID
 
 ### Roadmap Evolution
 
@@ -141,6 +146,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T15:52:21.874Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-framework/04-CONTEXT.md
+Last session: 2026-03-23T16:21:58.343Z
+Stopped at: Completed 04-01-PLAN.md
+Resume file: None

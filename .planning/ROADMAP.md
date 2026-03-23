@@ -47,7 +47,15 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
   3. FragmentWriter abstraction performs atomic dual-provider writes (Journal file + Ledger index rows) as a logical unit, with rollback removing partial state when either write fails
   4. Self Model schema (Identity Core, Relational Model, Conditioning) persists to Journal + Ledger + Magnet with cold start initialization producing valid sparse defaults from a seed prompt
   5. Association index tables exist in Ledger with the deterministic decay function computing correct survival scores for synthetic fragment histories
-**Plans**: TBD
+**Plans:** 5 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Reverie module structure + JSON frontmatter parser
+- [ ] 07-02-PLAN.md — Wire write coordinator retry + WAJ
+- [ ] 07-03-PLAN.md — Zod schemas, association index DDL, decay function
+- [ ] 07-04-PLAN.md — Self Model state manager + cold start + entropy engine
+- [ ] 07-05-PLAN.md — FragmentWriter atomic dual-provider writes
+
 **Research flag**: STANDARD PATTERNS -- write coordinator enhancement, schema definitions, and zod validation are well-specified in research
 
 ### Phase 8: Single-Session Personality Injection
@@ -127,7 +135,7 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 4. Framework | M1 | 4/4 | Complete | 2026-03-23 |
 | 5. SDK & Platform Infra | M1 | 5/5 | Complete | 2026-03-23 |
 | 6. Bootstrap Integration | M1 | 2/2 | Complete | 2026-03-23 |
-| 7. Foundation Infrastructure | M2 | 0/TBD | Not started | - |
+| 7. Foundation Infrastructure | M2 | 0/5 | Planned | - |
 | 8. Single-Session Personality | M2 | 0/TBD | Not started | - |
 | 9. Fragment Memory Engine | M2 | 0/TBD | Not started | - |
 | 10. Three-Session Architecture | M2 | 0/TBD | Not started | - |

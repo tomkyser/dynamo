@@ -115,7 +115,7 @@ Plans:
 
 Plans:
 - [x] 04-01-PLAN.md -- IoC container with bind/resolve/singleton/factory/tagged/deferred and schema validator enum enhancement
-- [ ] 04-02-PLAN.md -- Facade generator with hook points, override, domain metadata and hook definitions with wiring registry
+- [x] 04-02-PLAN.md -- Facade generator with hook points, override, domain metadata and hook definitions with wiring registry
 - [ ] 04-03-PLAN.md -- Plugin manifest validation, dependency checking, enable/disable and two-phase lifecycle orchestrator
 - [ ] 04-04-PLAN.md -- Armature barrel export, core.cjs bootstrap entry point, and full integration test
 

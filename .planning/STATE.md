@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to execute
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-03-23T16:21:58.346Z"
+stopped_at: Completed 04-03-PLAN.md
+last_updated: "2026-03-23T16:35:33.690Z"
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 21
-  completed_plans: 18
+  completed_plans: 19
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 ## Current Position
 
 Phase: 04 (framework) — EXECUTING
-Plan: 2 of 4
+Plan: 4 of 4
 
 ## Performance Metrics
 
@@ -64,6 +64,8 @@ Plan: 2 of 4
 | Phase 03.1 P04 | 6min | 2 tasks | 4 files |
 | Phase 03.2 P01 | 3min | 2 tasks | 2 files |
 | Phase 04 P01 | 4min | 2 tasks | 4 files |
+| Phase 04 P02 | 3min | 2 tasks | 4 files |
+| Phase 04 P03 | 3min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -128,6 +130,14 @@ Recent decisions affecting current work:
 - [Phase 04]: Container creates instances but does NOT call init() -- lifecycle manager handles initialization
 - [Phase 04]: Kahn's algorithm for topological sort -- O(V+E) boot order with cycle detection
 - [Phase 04]: Enum validation runs after type check -- TYPE_MISMATCH takes precedence over ENUM_INVALID
+- [Phase 04]: Facade creates NEW object delegating to frozen contract -- never modifies the contract
+- [Phase 04]: Around hooks use recursive next() chain -- outermost wraps innermost wraps core
+- [Phase 04]: Hook schemas are documentation/reference -- Commutator handles runtime payload processing
+- [Phase 04]: loadFromConfig registers placeholder handlers -- lifecycle manager replaces at boot
+- [Phase 04]: Plugin manifest validated via lib/schema.cjs validate() -- reuses existing validation infrastructure
+- [Phase 04]: Plugin boot failures isolated by name.startsWith('plugins.') -- core services abort on failure
+- [Phase 04]: Lifecycle normalizes sync/async init via Promise.resolve() -- both patterns supported
+- [Phase 04]: Boot options from mapDeps (resolved to facades) merged with config values -- options-based DI preserved
 
 ### Roadmap Evolution
 
@@ -146,6 +156,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T16:21:58.343Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-03-23T16:35:33.686Z
+Stopped at: Completed 04-03-PLAN.md
 Resume file: None

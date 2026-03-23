@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Core Library** - Shared utilities, patterns, path resolution, and configuration loader that everything else imports
 - [x] **Phase 2: Foundational Services** - Event bus, I/O bridge, state management, and filesystem facade that all subsequent services depend on
 - [x] **Phase 3: Data Providers & Infrastructure Services** - Data layer (DuckDB + markdown), git ops, infrastructure management, and install/update orchestration
-- [ ] **Phase 3.1: Wire Communication Service** - MCP server toolkit for inter-session communication via Claude Code Channels (INSERTED — moved from Phase 6)
+- [x] **Phase 3.1: Wire Communication Service** - MCP server toolkit for inter-session communication via Claude Code Channels (INSERTED — moved from Phase 6)
 - [ ] **Phase 3.2: Assay Federated Search** - Unified search and indexing across Ledger and Journal data providers (INSERTED — moved from Phase 6)
 - [ ] **Phase 4: Framework** - Service container, provider contracts, lifecycle hooks, plugin API contracts, and Claude Code integration layer
 - [ ] **Phase 5: SDK & Platform Infrastructure** - Module API, CLI framework, MCP endpoints, health checks, versioning, and self-management
@@ -87,7 +87,7 @@ Plans:
 - [x] 03.1-01-PLAN.md -- Protocol types and priority queue: message envelope with typed urgency, urgency-based priority queue with backpressure
 - [x] 03.1-02-PLAN.md -- Session registry and write coordinator: capability tracking, lifecycle events, reconnection buffering, Ledger write serialization
 - [x] 03.1-03-PLAN.md -- Transport layer and relay server: transport abstraction, Channels + relay transports, standalone Bun.serve relay process
-- [ ] 03.1-04-PLAN.md -- Wire service factory and channel server: compose all modules into service contract, MCP channel server, multi-session integration test
+- [x] 03.1-04-PLAN.md -- Wire service factory and channel server: compose all modules into service contract, MCP channel server, multi-session integration test
 
 ### Phase 3.2: Assay Federated Search (INSERTED — moved from Phase 6)
 **Goal**: Deliver federated search across all data providers — Assay executes provider-specific queries against Ledger (SQL) and Journal (markdown frontmatter), returning merged results with provider metadata
@@ -148,7 +148,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 3.1 -> 3.2 -> 4 -> 5
 | 1. Core Library | 3/3 | Complete | 2026-03-22 |
 | 2. Foundational Services | 4/4 | Complete | 2026-03-22 |
 | 3. Data Providers & Infrastructure Services | 5/5 | Complete | 2026-03-23 |
-| 3.1 Wire Communication Service | 3/4 | In Progress|  |
+| 3.1 Wire Communication Service | 4/4 | Complete | 2026-03-23 |
 | 3.2 Assay Federated Search | 0/? | Not started | - |
 | 4. Framework | 0/? | Not started | - |
 | 5. SDK & Platform Infrastructure | 0/? | Not started | - |

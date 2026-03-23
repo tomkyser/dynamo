@@ -110,62 +110,62 @@
 
 | Phase | Flag | Reason |
 |-------|------|--------|
-| Phase 3 (est.) | NEEDS RESEARCH | Formation fan-out signal-to-noise ratio (EXPERIMENTAL 9.10), recall reconstruction quality (EXPERIMENTAL 9.8) |
-| Phase 4 (est.) | NEEDS RESEARCH | Channels API stability, Claude Max concurrent session limits (EXPERIMENTAL 9.4), referential framing calibration (EXPERIMENTAL 9.9) |
-| Phase 5 (est.) | NEEDS RESEARCH | Decay constant tuning (EXPERIMENTAL 9.3), conditioning update calibration (EXPERIMENTAL 9.6) |
-| Phase 6 (est.) | NEEDS RESEARCH | Backfill formation pathway design — retrospective vs. experiential framing, provenance model |
-| Phases 1-2 | STANDARD | Well-specified in research, validated by Claude-Mem and existing platform patterns |
+| Phase 7-8 | STANDARD | Write coordinator enhancement, schema definitions, hook wiring -- well-specified in research, validated by Claude-Mem |
+| Phase 9 | NEEDS RESEARCH | Formation fan-out signal-to-noise ratio (EXPERIMENTAL 9.10), recall reconstruction quality (EXPERIMENTAL 9.8) |
+| Phase 10 | NEEDS RESEARCH | Channels API stability, Claude Max concurrent session limits (EXPERIMENTAL 9.4), referential framing calibration (EXPERIMENTAL 9.9) |
+| Phase 11 | NEEDS RESEARCH | Decay constant tuning (EXPERIMENTAL 9.3), conditioning update calibration (EXPERIMENTAL 9.6) |
+| Phase 12 | NEEDS RESEARCH | Backfill formation pathway design -- retrospective vs. experiential framing, provenance model |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SM-01 | TBD | Pending |
-| SM-02 | TBD | Pending |
-| SM-03 | TBD | Pending |
-| SM-04 | TBD | Pending |
-| SM-05 | TBD | Pending |
-| FRG-01 | TBD | Pending |
-| FRG-02 | TBD | Pending |
-| FRG-03 | TBD | Pending |
-| FRG-04 | TBD | Pending |
-| FRG-05 | TBD | Pending |
-| FRG-06 | TBD | Pending |
-| FRG-07 | TBD | Pending |
-| FRG-08 | TBD | Pending |
-| FRG-09 | TBD | Pending |
-| FRG-10 | TBD | Pending |
-| SES-01 | TBD | Pending |
-| SES-02 | TBD | Pending |
-| SES-03 | TBD | Pending |
-| SES-04 | TBD | Pending |
-| SES-05 | TBD | Pending |
-| REM-01 | TBD | Pending |
-| REM-02 | TBD | Pending |
-| REM-03 | TBD | Pending |
-| REM-04 | TBD | Pending |
-| REM-05 | TBD | Pending |
-| REM-06 | TBD | Pending |
-| REM-07 | TBD | Pending |
-| CTX-01 | TBD | Pending |
-| CTX-02 | TBD | Pending |
-| CTX-03 | TBD | Pending |
-| CTX-04 | TBD | Pending |
-| CTX-05 | TBD | Pending |
-| OPS-01 | TBD | Pending |
-| OPS-02 | TBD | Pending |
-| OPS-03 | TBD | Pending |
-| OPS-04 | TBD | Pending |
-| INT-01 | TBD | Pending |
-| INT-02 | TBD | Pending |
-| INT-03 | TBD | Pending |
-| PLT-01 | TBD | Pending |
+| SM-01 | Phase 7 | Pending |
+| SM-02 | Phase 7 | Pending |
+| SM-03 | Phase 7 | Pending |
+| SM-04 | Phase 11 | Pending |
+| SM-05 | Phase 7 | Pending |
+| FRG-01 | Phase 7 | Pending |
+| FRG-02 | Phase 7 | Pending |
+| FRG-03 | Phase 9 | Pending |
+| FRG-04 | Phase 9 | Pending |
+| FRG-05 | Phase 7 | Pending |
+| FRG-06 | Phase 7 | Pending |
+| FRG-07 | Phase 12 | Pending |
+| FRG-08 | Phase 12 | Pending |
+| FRG-09 | Phase 7 | Pending |
+| FRG-10 | Phase 12 | Pending |
+| SES-01 | Phase 10 | Pending |
+| SES-02 | Phase 10 | Pending |
+| SES-03 | Phase 10 | Pending |
+| SES-04 | Phase 10 | Pending |
+| SES-05 | Phase 10 | Pending |
+| REM-01 | Phase 11 | Pending |
+| REM-02 | Phase 11 | Pending |
+| REM-03 | Phase 11 | Pending |
+| REM-04 | Phase 11 | Pending |
+| REM-05 | Phase 11 | Pending |
+| REM-06 | Phase 11 | Pending |
+| REM-07 | Phase 11 | Pending |
+| CTX-01 | Phase 8 | Pending |
+| CTX-02 | Phase 10 | Pending |
+| CTX-03 | Phase 8 | Pending |
+| CTX-04 | Phase 8 | Pending |
+| CTX-05 | Phase 8 | Pending |
+| OPS-01 | Phase 10 | Pending |
+| OPS-02 | Phase 10 | Pending |
+| OPS-03 | Phase 11 | Pending |
+| OPS-04 | Phase 11 | Pending |
+| INT-01 | Phase 8 | Pending |
+| INT-02 | Phase 12 | Pending |
+| INT-03 | Phase 12 | Pending |
+| PLT-01 | Phase 7 | Pending |
 
 **Coverage:**
 - M2 requirements: 40 total
-- Mapped to phases: 0 (roadmap pending)
-- Unmapped: 40
+- Mapped to phases: 40/40
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-23*
-*Last updated: 2026-03-23*
+*Last updated: 2026-03-23 -- phase assignments from roadmap*

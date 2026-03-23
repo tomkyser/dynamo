@@ -16,9 +16,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Foundational Services** - Event bus, I/O bridge, state management, and filesystem facade that all subsequent services depend on
 - [x] **Phase 3: Data Providers & Infrastructure Services** - Data layer (DuckDB + markdown), git ops, infrastructure management, and install/update orchestration
 - [x] **Phase 3.1: Wire Communication Service** - MCP server toolkit for inter-session communication via Claude Code Channels (INSERTED — moved from Phase 6)
-- [ ] **Phase 3.2: Assay Federated Search** - Unified search and indexing across Ledger and Journal data providers (INSERTED — moved from Phase 6)
-- [ ] **Phase 4: Framework** - Service container, provider contracts, lifecycle hooks, plugin API contracts, and Claude Code integration layer
-- [ ] **Phase 5: SDK & Platform Infrastructure** - Module API, CLI framework, MCP endpoints, health checks, versioning, and self-management
+- [x] **Phase 3.2: Assay Federated Search** - Unified search and indexing across Ledger and Journal data providers (INSERTED — moved from Phase 6)
+- [x] **Phase 4: Framework** - Service container, provider contracts, lifecycle hooks, plugin API contracts, and Claude Code integration layer
+- [x] **Phase 5: SDK & Platform Infrastructure** - Module API, CLI framework, MCP endpoints, health checks, versioning, and self-management
+- [ ] **Phase 6: Bootstrap Integration Fixes** - Fix cross-phase wiring gaps found in milestone audit (Assay deps, Magnet persistence, forge.pull, switchboard deps)
 
 ## Phase Details
 
@@ -36,7 +37,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 - [x] 01-01-PLAN.md -- Shared utility patterns: Result types (Ok/Err), contract validation factory, schema validator
 - [x] 01-02-PLAN.md -- Path resolution: root discovery via .dynamo marker, central path registry for all layout directories
-- [ ] 01-03-PLAN.md -- Configuration loader: 5-level hierarchical deep merge, env var mapping, schema validation, barrel export
+- [x] 01-03-PLAN.md -- Configuration loader: 5-level hierarchical deep merge, env var mapping, schema validation, barrel export
 
 ### Phase 2: Foundational Services
 **Goal**: Deliver the four services that form the substrate for all other services -- events, I/O bridging, state, and filesystem access
@@ -52,7 +53,7 @@ Plans:
 Plans:
 - [x] 02-01-PLAN.md -- Lathe filesystem facade: Bun.file/Bun.write wrapper, directory ops, atomic write via tmp+rename
 - [x] 02-02-PLAN.md -- Switchboard event bus: action dispatch, filter pipeline with priority ordering, prefix wildcard matching
-- [ ] 02-03-PLAN.md -- Magnet state management: three-tier scoping, Switchboard event emission, JSON file provider via Lathe
+- [x] 02-03-PLAN.md -- Magnet state management: three-tier scoping, Switchboard event emission, JSON file provider via Lathe
 - [x] 02-04-PLAN.md -- Commutator I/O bridge: Claude Code hook semantic routing, tool-to-domain mapping, outbound adapters
 
 ### Phase 3: Data Providers & Infrastructure Services
@@ -117,7 +118,7 @@ Plans:
 - [x] 04-01-PLAN.md -- IoC container with bind/resolve/singleton/factory/tagged/deferred and schema validator enum enhancement
 - [x] 04-02-PLAN.md -- Facade generator with hook points, override, domain metadata and hook definitions with wiring registry
 - [x] 04-03-PLAN.md -- Plugin manifest validation, dependency checking, enable/disable and two-phase lifecycle orchestrator
-- [ ] 04-04-PLAN.md -- Armature barrel export, core.cjs bootstrap entry point, and full integration test
+- [x] 04-04-PLAN.md -- Armature barrel export, core.cjs bootstrap entry point, and full integration test
 
 ### Phase 5: SDK & Platform Infrastructure
 **Goal**: Make the platform consumable -- Circuit exports the framework safely for modules, Pulley provides CLI and MCP surface, and infrastructure services handle health, versioning, and self-management
@@ -136,15 +137,30 @@ Plans:
 - [x] 05-02-PLAN.md -- Pulley CLI framework: output formatter, help generator, command registry with subcommand routing, CLI entry point
 - [x] 05-03-PLAN.md -- Health aggregation and Forge versioning: lifecycle-driven diagnostics, GitHub Releases API, semver comparison
 - [x] 05-04-PLAN.md -- Platform commands and MCP server: 6 CLI commands, 6 MCP tools, self-management orchestration
-- [ ] 05-05-PLAN.md -- SDK barrel export, extended bootstrap, and end-to-end integration test
+- [x] 05-05-PLAN.md -- SDK barrel export, extended bootstrap, and end-to-end integration test
 
-### ~~Phase 6: Search & Communication~~ (REMOVED — moved to Phase 3.1 and Phase 3.2)
+### Phase 6: Bootstrap Integration Fixes
+**Goal**: Close cross-phase wiring gaps found in v1.0 milestone audit -- fix Assay provider injection, wire Magnet persistence, implement forge.pull(), and declare implicit switchboard dependencies
+**Depends on**: Phase 5
+**Requirements**: SVC-09, SVC-03, SVC-05, INF-02
+**Gap Closure**: Closes INT-GAP-01, INT-GAP-02, INT-GAP-03, tech debt from v1.0-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. Assay.search() returns results from both Ledger and Journal after full bootstrap (not empty)
+  2. Magnet state persists across process restart via JSON file provider
+  3. `dynamo update` pulls from remote via forge.pull() before submodule update
+  4. All services with implicit switchboard dependency declare it in deps[]
+**Plans**: 0 plans (to be created via /gsd:plan-phase)
+
+Plans:
+(none yet)
+
+### ~~Phase 6 (original): Search & Communication~~ (REMOVED — moved to Phase 3.1 and Phase 3.2)
 Wire (SVC-08) → Phase 3.1 | Assay (SVC-09) → Phase 3.2
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 3.1 -> 3.2 -> 4 -> 5
+Phases execute in numeric order: 1 -> 2 -> 3 -> 3.1 -> 3.2 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -152,6 +168,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 3.1 -> 3.2 -> 4 -> 5
 | 2. Foundational Services | 4/4 | Complete | 2026-03-22 |
 | 3. Data Providers & Infrastructure Services | 5/5 | Complete | 2026-03-23 |
 | 3.1 Wire Communication Service | 4/4 | Complete | 2026-03-23 |
-| 3.2 Assay Federated Search | 0/1 | Not started | - |
-| 4. Framework | 0/4 | Not started | - |
-| 5. SDK & Platform Infrastructure | 3/5 | In Progress|  |
+| 3.2 Assay Federated Search | 1/1 | Complete | 2026-03-23 |
+| 4. Framework | 4/4 | Complete | 2026-03-23 |
+| 5. SDK & Platform Infrastructure | 5/5 | Complete | 2026-03-23 |
+| 6. Bootstrap Integration Fixes | 0/0 | Not started | - |

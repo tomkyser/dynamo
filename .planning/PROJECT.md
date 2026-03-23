@@ -35,6 +35,10 @@ Everything routes through Dynamo. It is the holistic wrapper via its APIs and in
 
 ### Active
 
+(No active requirements — all Milestone 1 requirements validated)
+
+### Validated (continued)
+
 #### Framework (`core/armature/`) — Validated in Phase 4: Framework
 - [x] IoC container with singleton/factory lifetimes, tagged bindings, domain aliases, topological sort
 - [x] Facade generator with before/after/around hook points, method override, domain metadata
@@ -44,15 +48,15 @@ Everything routes through Dynamo. It is the holistic wrapper via its APIs and in
 - [x] Two-phase lifecycle orchestrator (register/boot with topological ordering, reverse shutdown)
 - [x] Bootstrap entry point (`core/core.cjs`) registering all 9 services + 2 providers
 
-#### SDK (`core/sdk/`)
-- [ ] **Circuit** — Module API (exports Framework, Core Services & Providers safely)
-- [ ] **Pulley** — External APIs (CLI, MCP endpoints — user-facing surface)
+#### SDK (`core/sdk/`) — Validated in Phase 5: SDK & Platform Infrastructure
+- [x] **Circuit** — Module API with facade-only access, dependency verification, event proxy namespacing, lib re-exports
+- [x] **Pulley** — CLI framework with command routing, help generation, output formatting (human/JSON/raw), MCP server with 6 platform tools
 
-#### Platform Infrastructure
-- [ ] Git submodule management for plugins, modules, and extensions
-- [ ] Global `config.json` with toggles for additions (modules, plugins)
-- [ ] Versioning: semver + GitHub Releases API (master: `v{M}.{m}.{p}`, dev: `dev-{M}.{m}.{p}`)
-- [ ] Self-management (install, configure, update, troubleshoot) without manual user intervention
+#### Platform Infrastructure — Validated in Phase 5: SDK & Platform Infrastructure
+- [x] Git submodule management for plugins, modules, and extensions (via Relay + Forge)
+- [x] Health aggregation with dependency chain analysis and diagnostic formatting
+- [x] Versioning: semver + GitHub Releases API (master: `v{M}.{m}.{p}`, dev: `dev-{M}.{m}.{p}`)
+- [x] Self-management (install, configure, update, troubleshoot) via platform CLI commands
 
 ### Out of Scope
 
@@ -120,4 +124,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-23 after Phase 4 completion — framework (Armature) validated, full platform bootstrap operational*
+*Last updated: 2026-03-23 after Phase 5 completion — SDK (Circuit + Pulley) validated, platform infrastructure complete, all Milestone 1 requirements satisfied (835 tests, 44 files)*

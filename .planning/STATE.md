@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to plan
-stopped_at: Phase 3 context gathered
-last_updated: "2026-03-23T02:14:57.154Z"
+stopped_at: Completed 03-05-PLAN.md
+last_updated: "2026-03-23T03:43:08.083Z"
 progress:
   total_phases: 6
-  completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
+  completed_phases: 3
+  total_plans: 12
+  completed_plans: 12
 ---
 
 # Project State
@@ -19,11 +19,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-22)
 
 **Core value:** Everything routes through Dynamo -- the holistic wrapper via its APIs and interfaces. No component bypasses the patterns and paths Dynamo defines.
-**Current focus:** Phase 02 — foundational-services
+**Current focus:** Phase 03 — data-providers-infrastructure-services
 
 ## Current Position
 
-Phase: 3
+Phase: 4
 Plan: Not started
 
 ## Performance Metrics
@@ -53,6 +53,11 @@ Plan: Not started
 | Phase 02 P02 | 2min | 2 tasks | 2 files |
 | Phase 02 P04 | 2min | 2 tasks | 2 files |
 | Phase 02 P03 | 4min | 2 tasks | 5 files |
+| Phase 03 P04 | 2min | 2 tasks | 2 files |
+| Phase 03 P03 | 3min | 2 tasks | 2 files |
+| Phase 03 P02 | 5min | 2 tasks | 5 files |
+| Phase 03 P01 | 6min | 2 tasks | 8 files |
+| Phase 03 P05 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -83,6 +88,20 @@ Recent decisions affecting current work:
 - [Phase 02]: Debounced writes (1000ms) with flush:true override for stop() -- prevents write storms on rapid state changes
 - [Phase 02]: structuredClone for old value capture before mutation -- ensures immutable event payloads
 - [Phase 02]: Namespaced event keys for session/module scopes (e.g., 'sess-1.activeTab') -- flat key space with scope prefix
+- [Phase 03]: Events emitted on compose attempt (when Docker available) not just on success -- signals operation was tried
+- [Phase 03]: Test override via options._dockerAvailable for Docker availability mocking -- simpler than mocking Bun.spawnSync
+- [Phase 03]: Used stdout inspection alongside stderr for git commit nothing-to-commit detection
+- [Phase 03]: Added protocol.file.allow=always to submodule commands for local file transport security (CVE-2022-39253)
+- [Phase 03]: Forge sync is async (Lathe APIs) while all git operations are synchronous via Bun.spawnSync
+- [Phase 03]: Shared provider-contract.cjs at core/providers/ level for both Ledger and Journal to reference DATA_PROVIDER_SHAPE
+- [Phase 03]: Zero-dependency YAML parser uses stack-based line processing for arbitrary nesting depth
+- [Phase 03]: Journal query does in-memory frontmatter scan -- indexing deferred to Assay (Phase 6)
+- [Phase 03]: DuckDB N-API works on Bun 1.3.11 -- D-04 validated, no fallback needed for smoke tests
+- [Phase 03]: DATA_PROVIDER_SHAPE is separate from STATE_PROVIDER_SHAPE per D-01 -- 8 required methods (init/start/stop/healthCheck/read/write/query/delete)
+- [Phase 03]: Dual backend pattern: try DuckDB first, fall back to SQLite on N-API failure -- auto-selection in Ledger factory
+- [Phase 03]: json_extract returns raw values (unquoted strings) -- criteria params use String() casting, not JSON quoting
+- [Phase 03]: Relay uses _withBackup() internal helper for all modify operations -- centralizes backup-modify-rollback pattern
+- [Phase 03]: Sync operation skips backup/commit -- lighter-weight hot-sync for repo-to-.claude/ scenarios
 
 ### Pending Todos
 
@@ -96,6 +115,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T02:14:57.151Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-data-providers-infrastructure-services/03-CONTEXT.md
+Last session: 2026-03-23T03:37:12.951Z
+Stopped at: Completed 03-05-PLAN.md
+Resume file: None

@@ -67,10 +67,10 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 03-01-PLAN.md -- Ledger data provider: DATA_PROVIDER_SHAPE contract, DuckDB backend with bun:sqlite fallback, uniform read/write/query/delete interface
-- [ ] 03-02-PLAN.md -- Journal data provider: YAML frontmatter parser, markdown file storage via Lathe, frontmatter-based queries
-- [ ] 03-03-PLAN.md -- Forge git service: git CLI operations via Bun.spawnSync, submodule management, repo-to-deploy sync
-- [ ] 03-04-PLAN.md -- Conductor infrastructure service: Docker Compose lifecycle, dependency health checks, graceful degradation
+- [x] 03-01-PLAN.md -- Ledger data provider: DATA_PROVIDER_SHAPE contract, DuckDB backend with bun:sqlite fallback, uniform read/write/query/delete interface
+- [x] 03-02-PLAN.md -- Journal data provider: YAML frontmatter parser, markdown file storage via Lathe, frontmatter-based queries
+- [x] 03-03-PLAN.md -- Forge git service: git CLI operations via Bun.spawnSync, submodule management, repo-to-deploy sync
+- [x] 03-04-PLAN.md -- Conductor infrastructure service: Docker Compose lifecycle, dependency health checks, graceful degradation
 - [ ] 03-05-PLAN.md -- Relay operations service: install/update/sync orchestration, git-tag rollback, plugin/module management, config migration
 
 ### Phase 4: Framework
@@ -132,7 +132,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 |-------|----------------|--------|-----------|
 | 1. Core Library | 0/3 | Planned | - |
 | 2. Foundational Services | 0/4 | Planned | - |
-| 3. Data Providers & Infrastructure Services | 0/5 | Planned | - |
+| 3. Data Providers & Infrastructure Services | 4/5 | In Progress|  |
 | 4. Framework | 0/3 | Not started | - |
 | 5. SDK & Platform Infrastructure | 0/3 | Not started | - |
 | 6. Search & Communication | 0/3 | Not started | - |

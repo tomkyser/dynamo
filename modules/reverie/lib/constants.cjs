@@ -1,0 +1,193 @@
+'use strict';
+
+/**
+ * Shared constants for the Reverie module.
+ *
+ * All values are derived from the Reverie specification (reverie-spec-v2.md)
+ * and the Phase 7 implementation decisions (07-CONTEXT.md).
+ *
+ * These constants are referenced across multiple Reverie components
+ * and provide a single source of truth for type enumerations,
+ * directory layouts, decay parameters, and naming patterns.
+ *
+ * @module reverie/lib/constants
+ */
+
+/**
+ * Fragment types per spec Section 3.5.
+ *
+ * - experiential: Direct interaction experience
+ * - meta-recall: Reflection on previous memories
+ * - sublimation: Subconscious pattern recognition
+ * - consolidation: REM-produced merged fragments
+ * - source-reference: External content references
+ *
+ * @type {ReadonlyArray<string>}
+ */
+const FRAGMENT_TYPES = Object.freeze([
+  'experiential',
+  'meta-recall',
+  'sublimation',
+  'consolidation',
+  'source-reference',
+]);
+
+/**
+ * Fragment lifecycle directories per D-09.
+ *
+ * - working: Pre-REM fragments (current session)
+ * - active: Post-REM consolidated fragments
+ * - archive: Decayed below threshold (soft-delete per Pitfall 4)
+ *
+ * @type {Readonly<{ working: string, active: string, archive: string }>}
+ */
+const LIFECYCLE_DIRS = Object.freeze({
+  working: 'working',
+  active: 'active',
+  archive: 'archive',
+});
+
+/**
+ * Self Model aspects per spec Section 2.1.
+ *
+ * - identity-core: Stable foundation, changes slowly via REM
+ * - relational-model: User relationship state
+ * - conditioning: Behavioral patterns and environmental adaptation
+ *
+ * @type {ReadonlyArray<string>}
+ */
+const SM_ASPECTS = Object.freeze([
+  'identity-core',
+  'relational-model',
+  'conditioning',
+]);
+
+/**
+ * Decay function default parameters per spec Section 3.9.
+ *
+ * The decay function determines how fragment weights diminish over time.
+ * These defaults can be overridden via configuration.
+ *
+ * @type {Readonly<{
+ *   base_decay_rate: number,
+ *   consolidation_protection: number,
+ *   access_weight: number,
+ *   relevance_weights: Readonly<{ identity: number, relational: number, conditioning: number }>,
+ *   archive_threshold: number
+ * }>}
+ */
+const DECAY_DEFAULTS = Object.freeze({
+  base_decay_rate: 0.05,
+  consolidation_protection: 0.3,
+  access_weight: 0.1,
+  relevance_weights: Object.freeze({
+    identity: 0.3,
+    relational: 0.5,
+    conditioning: 0.2,
+  }),
+  archive_threshold: 0.1,
+});
+
+/**
+ * Composite scoring weight defaults for recall ranking per Phase 9.
+ *
+ * Six factors weighted to sum to 1.0:
+ * - domain_overlap: How many of the fragment's domains match active query domains
+ * - entity_cooccurrence: How many of the fragment's entities match active query entities
+ * - attention_tag_match: How many attention tags overlap
+ * - decay_weight: Pre-computed fragment survival weight (from decay.cjs lifecycle)
+ * - self_model_relevance: Weighted average of identity/relational/conditioning scores
+ * - temporal_proximity: Exponential decay by days since fragment creation
+ *
+ * @type {Readonly<{
+ *   domain_overlap: number,
+ *   entity_cooccurrence: number,
+ *   attention_tag_match: number,
+ *   decay_weight: number,
+ *   self_model_relevance: number,
+ *   temporal_proximity: number
+ * }>}
+ */
+const SCORING_DEFAULTS = Object.freeze({
+  domain_overlap: 0.25,
+  entity_cooccurrence: 0.20,
+  attention_tag_match: 0.15,
+  decay_weight: 0.15,
+  self_model_relevance: 0.15,
+  temporal_proximity: 0.10,
+});
+
+/**
+ * Formation pipeline defaults per Phase 9.
+ *
+ * - min_prompt_length: Minimum user prompt character count to trigger formation
+ * - max_fragments_per_stimulus: Cap on fragments produced per turn
+ * - target_fragments_per_session: Expected fragments for a ~50-turn session
+ * - formation_group_prefix: Prefix for formation group IDs
+ *
+ * @type {Readonly<{
+ *   min_prompt_length: number,
+ *   max_fragments_per_stimulus: number,
+ *   target_fragments_per_session: number,
+ *   formation_group_prefix: string
+ * }>}
+ */
+const FORMATION_DEFAULTS = Object.freeze({
+  min_prompt_length: 20,
+  max_fragments_per_stimulus: 3,
+  target_fragments_per_session: 15,
+  formation_group_prefix: 'fg-',
+});
+
+/**
+ * Nudge file coordination defaults per Phase 9.
+ *
+ * Nudges are the filesystem-based coordination bus between the formation
+ * subagent and the Context Manager (per Pattern 2: Filesystem as Coordination Bus).
+ *
+ * - nudge_dir: Relative path from data root to nudge directory
+ * - latest_nudge_filename: Well-known filename for the most recent nudge
+ * - max_nudge_age_ms: Staleness threshold -- nudges older than this are ignored
+ * - max_nudge_tokens: Token budget cap for passive nudge injection
+ *
+ * @type {Readonly<{
+ *   nudge_dir: string,
+ *   latest_nudge_filename: string,
+ *   max_nudge_age_ms: number,
+ *   max_nudge_tokens: number
+ * }>}
+ */
+const NUDGE_DEFAULTS = Object.freeze({
+  nudge_dir: 'data/formation/nudges',
+  latest_nudge_filename: 'latest-nudge.md',
+  max_nudge_age_ms: 60000,
+  max_nudge_tokens: 200,
+});
+
+/**
+ * Default data directory path per D-03.
+ * Outside the repo -- keeps data separate from code, survives module updates.
+ *
+ * @type {string}
+ */
+const DATA_DIR_DEFAULT = '~/.dynamo/reverie';
+
+/**
+ * Fragment ID naming pattern per D-10.
+ * Format: frag-YYYY-MM-DD-{8 hex chars}
+ *
+ * @type {RegExp}
+ */
+const FRAGMENT_ID_PATTERN = /^frag-\d{4}-\d{2}-\d{2}-[a-f0-9]{8}$/;
+
+module.exports = {
+  FRAGMENT_TYPES,
+  LIFECYCLE_DIRS,
+  SM_ASPECTS,
+  DECAY_DEFAULTS,
+  SCORING_DEFAULTS,
+  FORMATION_DEFAULTS,
+  NUDGE_DEFAULTS,
+  DATA_DIR_DEFAULT,
+  FRAGMENT_ID_PATTERN,
+};

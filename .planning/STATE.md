@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
-status: Ready to execute
-stopped_at: Completed 09-01-PLAN.md
-last_updated: "2026-03-24T17:24:06.957Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 09-04-PLAN.md
+last_updated: "2026-03-24T17:44:44.974Z"
 progress:
   total_phases: 7
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 11
-  completed_plans: 9
+  completed_plans: 11
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-23)
 ## Current Position
 
 Phase: 09 (fragment-memory-engine) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 
 ## Performance Metrics
 
@@ -62,6 +62,8 @@ Plan: 3 of 4
 | Phase 08 P02 | 6min | 2 tasks | 6 files |
 | Phase 09 P02 | 5min | 2 tasks | 6 files |
 | Phase 09 P01 | 6min | 2 tasks | 8 files |
+| Phase 09 P03 | 6min | 2 tasks | 5 files |
+| Phase 09 P04 | 6min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -95,6 +97,11 @@ Recent decisions affecting current work:
 - [Phase 09]: Temporal schema mapped to actual Zod fields (absolute/session_relative/sequence) not plan approximation
 - [Phase 09]: Associations schema includes emotional_valence per actual Zod schema -- plan interface block omitted this field
 - [Phase 09]: Attention gate returns pure_tool_turn over empty_prompt when tools_used populated and user_prompt falsy
+- [Phase 09]: Formation pipeline populates master association tables via Wire upserts BEFORE fragment writes to prevent FK gaps (Pitfall 5)
+- [Phase 09]: Recall engine uses same composite scorer instance for both passive and explicit paths per D-12
+- [Phase 09]: Formation agent definition placed at .claude/agents/ (Claude Code discovery path), not modules/reverie/agents/
+- [Phase 09]: handleSubagentStop filters by agent_name to only process reverie-formation output, passes through for all other subagents
+- [Phase 09]: Combined additionalContext injection: face prompt + nudge + recall with labeled delimiters
 
 ### Roadmap Evolution
 
@@ -116,6 +123,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T17:24:06.954Z
-Stopped at: Completed 09-01-PLAN.md
+Last session: 2026-03-24T17:44:44.972Z
+Stopped at: Completed 09-04-PLAN.md
 Resume file: None

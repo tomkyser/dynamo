@@ -88,8 +88,8 @@ Plans:
 Plans:
 - [x] 09-01-PLAN.md — Formation components: attention gate, prompt templates, fragment assembler, nudge manager
 - [x] 09-02-PLAN.md — Recall components: composite scorer, query builder, reconstruction prompt
-- [ ] 09-03-PLAN.md — Formation pipeline orchestrator + recall engine orchestrator
-- [ ] 09-04-PLAN.md — Hook wiring, agent definition, Context Manager nudge integration, Reverie module wiring
+- [x] 09-03-PLAN.md — Formation pipeline orchestrator + recall engine orchestrator
+- [x] 09-04-PLAN.md — Hook wiring, agent definition, Context Manager nudge integration, Reverie module wiring
 
 **Research flag**: NEEDS RESEARCH -- formation fan-out signal-to-noise ratio (EXPERIMENTAL 9.10) and recall reconstruction quality (EXPERIMENTAL 9.8) have no validated production references. Empirical measurement required during this phase.
 **Design note**: Single-session mode uses turn-scoped background subagents (fire-and-forget via Agent tool) as an intuitive inner voice — high-perception, low-deliberation formation. Self Model framing shifts to ISFP/INFP cognitive style (impressionistic, not analytical). Phase 9.1 (Lithograph) will later enable richer transcript-based stimulus context for these agents. See `.planning/phases/09.1-claude-code-integration-layer/09.1-RESEARCH-TRANSCRIPT-CONTROL.md`.

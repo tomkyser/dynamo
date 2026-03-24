@@ -53,8 +53,8 @@ Plans:
 - [x] 07-01-PLAN.md — Reverie module structure + JSON frontmatter parser
 - [x] 07-02-PLAN.md — Wire write coordinator retry + WAJ
 - [x] 07-03-PLAN.md — Zod schemas, association index DDL, decay function
-- [ ] 07-04-PLAN.md — Self Model state manager + cold start + entropy engine
-- [ ] 07-05-PLAN.md — FragmentWriter atomic dual-provider writes
+- [x] 07-04-PLAN.md — Self Model state manager + cold start + entropy engine
+- [x] 07-05-PLAN.md — FragmentWriter atomic dual-provider writes
 
 **Research flag**: STANDARD PATTERNS -- write coordinator enhancement, schema definitions, and zod validation are well-specified in research
 

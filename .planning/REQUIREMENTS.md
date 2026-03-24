@@ -7,11 +7,11 @@
 
 ### Self Model
 
-- [ ] **SM-01**: Self Model with three aspects (Face/Mind/Subconscious) persisting across sessions via Magnet + Journal + Ledger
-- [ ] **SM-02**: Identity Core — stable personality traits, communication style, value orientations, expertise map, boundaries
-- [ ] **SM-03**: Relational Model — user communication patterns, domain map, preference history, trust calibration, interaction rhythm
+- [x] **SM-01**: Self Model with three aspects (Face/Mind/Subconscious) persisting across sessions via Magnet + Journal + Ledger
+- [x] **SM-02**: Identity Core — stable personality traits, communication style, value orientations, expertise map, boundaries
+- [x] **SM-03**: Relational Model — user communication patterns, domain map, preference history, trust calibration, interaction rhythm
 - [ ] **SM-04**: Conditioning — attention biases, association priors, sublimation sensitivity, recall strategies, error history
-- [ ] **SM-05**: Cold start initialization from seed prompt with sparse defaults
+- [x] **SM-05**: Cold start initialization from seed prompt with sparse defaults
 
 ### Fragment Memory Engine
 
@@ -23,7 +23,7 @@
 - [x] **FRG-06**: Deterministic decay function (time decay, consolidation protection, access bonus, relevance factor)
 - [ ] **FRG-07**: Self-organizing taxonomy (domain creation/merge/split/retire during REM)
 - [ ] **FRG-08**: Source-reference model (association chain termini, source locator pointers, experiential relationship to sources)
-- [ ] **FRG-09**: FragmentWriter abstraction — atomic dual-provider writes (Journal + Ledger) with rollback to prevent split-storage inconsistency
+- [x] **FRG-09**: FragmentWriter abstraction — atomic dual-provider writes (Journal + Ledger) with rollback to prevent split-storage inconsistency
 - [ ] **FRG-10**: Historical data backfill — import Claude conversation exports (or analogous app data) through backfill-specific formation pathway with retrospective framing, provenance marking, and appropriate trust/decay parameters for reconstructed (non-experiential) memories
 
 ### Three-Session Architecture
@@ -120,11 +120,11 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SM-01 | Phase 7 | Pending |
-| SM-02 | Phase 7 | Pending |
-| SM-03 | Phase 7 | Pending |
+| SM-01 | Phase 7 | Complete |
+| SM-02 | Phase 7 | Complete |
+| SM-03 | Phase 7 | Complete |
 | SM-04 | Phase 11 | Pending |
-| SM-05 | Phase 7 | Pending |
+| SM-05 | Phase 7 | Complete |
 | FRG-01 | Phase 7 | Complete |
 | FRG-02 | Phase 7 | Complete |
 | FRG-03 | Phase 9 | Pending |
@@ -133,7 +133,7 @@
 | FRG-06 | Phase 7 | Complete |
 | FRG-07 | Phase 12 | Pending |
 | FRG-08 | Phase 12 | Pending |
-| FRG-09 | Phase 7 | Pending |
+| FRG-09 | Phase 7 | Complete |
 | FRG-10 | Phase 12 | Pending |
 | SES-01 | Phase 10 | Pending |
 | SES-02 | Phase 10 | Pending |

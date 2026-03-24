@@ -4,6 +4,9 @@ const { describe, it, expect, beforeEach, afterEach } = require('bun:test');
 const { createWriteCoordinator } = require('../write-coordinator.cjs');
 const { MESSAGE_TYPES, URGENCY_LEVELS, createEnvelope } = require('../protocol.cjs');
 const { ok, err } = require('../../../../lib/result.cjs');
+const fs = require('node:fs');
+const path = require('node:path');
+const os = require('node:os');
 
 /**
  * Creates a mock ledger with a write method that tracks calls.
@@ -480,6 +483,184 @@ describe('WriteCoordinator', () => {
       expect(completedEvents[0].table).toBe('memories');
       expect(coord.getQueueDepth()).toBe(0);
 
+      coord.stop();
+    });
+  });
+
+  describe('write-ahead journal (WAJ)', () => {
+    let tmpDir;
+    let wajPath;
+
+    beforeEach(() => {
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'waj-test-'));
+      wajPath = path.join(tmpDir, 'write-ahead.jsonl');
+    });
+
+    afterEach(() => {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    });
+
+    it('appends pending entry to WAJ before executing write', () => {
+      const coord = createWriteCoordinator({ ledger: mockLedger, wajPath });
+
+      coord.queueWrite(makeWriteIntent({ from: 'sess-1', table: 'memories', data: [{ x: 1 }] }));
+      coord.processNext();
+
+      // WAJ file should exist and contain entries
+      expect(fs.existsSync(wajPath)).toBe(true);
+      const lines = fs.readFileSync(wajPath, 'utf8').trim().split('\n');
+      const pendingEntry = JSON.parse(lines[0]);
+
+      expect(pendingEntry.status).toBe('pending');
+      expect(pendingEntry.table).toBe('memories');
+      expect(pendingEntry.id).toBeDefined();
+      expect(pendingEntry.timestamp).toBeDefined();
+
+      coord.stop();
+    });
+
+    it('appends completed entry to WAJ after successful write', () => {
+      const coord = createWriteCoordinator({ ledger: mockLedger, wajPath });
+
+      coord.queueWrite(makeWriteIntent({ from: 'sess-1', table: 'memories', data: [{ x: 1 }] }));
+      coord.processNext();
+
+      const lines = fs.readFileSync(wajPath, 'utf8').trim().split('\n');
+      expect(lines.length).toBe(2); // pending + completed
+      const completedEntry = JSON.parse(lines[1]);
+
+      expect(completedEntry.status).toBe('completed');
+      expect(completedEntry.id).toBeDefined();
+
+      coord.stop();
+    });
+
+    it('WAJ entry has correct format: id, table, data, timestamp, status, retries', () => {
+      const coord = createWriteCoordinator({ ledger: mockLedger, wajPath });
+
+      coord.queueWrite(makeWriteIntent({ from: 'sess-1', table: 'memories', data: [{ x: 1 }] }));
+      coord.processNext();
+
+      const lines = fs.readFileSync(wajPath, 'utf8').trim().split('\n');
+      const entry = JSON.parse(lines[0]);
+
+      expect(typeof entry.id).toBe('string');
+      expect(entry.table).toBe('memories');
+      expect(Array.isArray(entry.data)).toBe(true);
+      expect(typeof entry.timestamp).toBe('string');
+      expect(entry.status).toBe('pending');
+      expect(typeof entry.retries).toBe('number');
+
+      coord.stop();
+    });
+
+    it('replays pending WAJ entries on init as new writes', async () => {
+      // Pre-populate WAJ with a pending entry
+      const pendingEntry = JSON.stringify({
+        id: 'replay-1',
+        table: 'memories',
+        data: [{ replayed: true }],
+        timestamp: new Date().toISOString(),
+        status: 'pending',
+        retries: 0,
+      });
+      fs.writeFileSync(wajPath, pendingEntry + '\n');
+
+      const coord = createWriteCoordinator({ ledger: mockLedger, wajPath });
+      await coord.init();
+
+      // The pending entry should have been replayed as a queued write
+      expect(coord.getQueueDepth()).toBe(1);
+
+      // Process it -- should write to ledger
+      coord.processNext();
+      expect(mockLedger.calls.length).toBe(1);
+      expect(mockLedger.calls[0].table).toBe('memories');
+
+      coord.stop();
+    });
+
+    it('compacts WAJ on startup -- removes completed entries, keeps only pending', async () => {
+      // Pre-populate WAJ with both pending and completed entries
+      const entries = [
+        JSON.stringify({ id: 'entry-1', table: 'memories', data: [{ a: 1 }], timestamp: new Date().toISOString(), status: 'pending', retries: 0 }),
+        JSON.stringify({ id: 'entry-1', status: 'completed', timestamp: new Date().toISOString() }),
+        JSON.stringify({ id: 'entry-2', table: 'associations', data: [{ b: 2 }], timestamp: new Date().toISOString(), status: 'pending', retries: 0 }),
+      ];
+      fs.writeFileSync(wajPath, entries.join('\n') + '\n');
+
+      const coord = createWriteCoordinator({ ledger: mockLedger, wajPath });
+      await coord.init();
+
+      // After compaction, only entry-2 (pending) should remain
+      const content = fs.readFileSync(wajPath, 'utf8').trim();
+      const lines = content ? content.split('\n') : [];
+
+      // entry-1 was completed so should be removed, entry-2 is still pending
+      expect(lines.length).toBe(1);
+      const remaining = JSON.parse(lines[0]);
+      expect(remaining.id).toBe('entry-2');
+      expect(remaining.status).toBe('pending');
+
+      // Should have replayed entry-2
+      expect(coord.getQueueDepth()).toBe(1);
+
+      coord.stop();
+    });
+
+    it('WAJ is disabled when no wajPath is provided (backward compatible)', () => {
+      const coord = createWriteCoordinator({ ledger: mockLedger });
+
+      coord.queueWrite(makeWriteIntent({ from: 'sess-1', table: 'memories' }));
+      coord.processNext();
+
+      // No WAJ file should be created
+      expect(fs.existsSync(wajPath)).toBe(false);
+
+      coord.stop();
+    });
+
+    it('WAJ file creation is lazy -- created on first write, not on init', async () => {
+      const coord = createWriteCoordinator({ ledger: mockLedger, wajPath });
+      await coord.init();
+
+      // WAJ file should NOT exist yet (no writes have happened)
+      expect(fs.existsSync(wajPath)).toBe(false);
+
+      // Now write something
+      coord.queueWrite(makeWriteIntent({ from: 'sess-1', table: 'memories' }));
+      coord.processNext();
+
+      // Now WAJ file should exist
+      expect(fs.existsSync(wajPath)).toBe(true);
+
+      coord.stop();
+    });
+
+    it('multiple writes produce multiple lines in WAJ file (JSON-lines, one per line)', () => {
+      const coord = createWriteCoordinator({ ledger: mockLedger, wajPath });
+
+      coord.queueWrite(makeWriteIntent({ from: 'sess-1', table: 'memories', data: [{ a: 1 }] }));
+      coord.queueWrite(makeWriteIntent({ from: 'sess-2', table: 'associations', data: [{ b: 2 }] }));
+
+      coord.processNext();
+      coord.processNext();
+
+      const lines = fs.readFileSync(wajPath, 'utf8').trim().split('\n');
+      // 2 writes = 2 pending + 2 completed = 4 lines
+      expect(lines.length).toBe(4);
+
+      // Each line should be valid JSON
+      lines.forEach((line) => {
+        expect(() => JSON.parse(line)).not.toThrow();
+      });
+
+      coord.stop();
+    });
+
+    it('returns object with init method', () => {
+      const coord = createWriteCoordinator({ ledger: mockLedger, wajPath });
+      expect(typeof coord.init).toBe('function');
       coord.stop();
     });
   });

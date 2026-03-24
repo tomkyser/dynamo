@@ -36,7 +36,18 @@ const REVERIE_MANIFEST = {
       'journal',
     ],
   },
-  hooks: {},
+  hooks: {
+    listeners: {
+      SessionStart: ['reverie'],
+      UserPromptSubmit: ['reverie'],
+      PreToolUse: ['reverie'],
+      PostToolUse: ['reverie'],
+      Stop: ['reverie'],
+      PreCompact: ['reverie'],
+      SubagentStart: ['reverie'],
+      SubagentStop: ['reverie'],
+    },
+  },
 };
 
 module.exports = { REVERIE_MANIFEST };

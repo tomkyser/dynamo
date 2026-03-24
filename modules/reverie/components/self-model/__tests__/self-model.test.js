@@ -120,8 +120,8 @@ describe('Self Model Manager', () => {
 
   it('save validates frontmatter against identityCoreSchema and rejects invalid data', async () => {
     const frontmatter = {
-      aspect: 'identity-core',
-      version: 'bad-version', // Invalid: does not match /^sm-identity-v\d+$/
+      aspect: 'wrong-aspect', // Invalid: literal must be 'identity-core'
+      version: 'sm-identity-v1',
       updated: new Date().toISOString(),
     };
 

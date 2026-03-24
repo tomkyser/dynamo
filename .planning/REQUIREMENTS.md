@@ -46,9 +46,9 @@
 
 ### Primary Context Management
 
-- [ ] **CTX-01**: Continuous Self Model reinjection on every UserPromptSubmit (~800-1800 token budget)
+- [x] **CTX-01**: Continuous Self Model reinjection on every UserPromptSubmit (~800-1800 token budget)
 - [ ] **CTX-02**: Referential framing prompt (Primary treats context as reference material, Self Model directives as operating frame)
-- [ ] **CTX-03**: Context budget management (4 phases: full -> compressed -> minimal -> compaction advocacy)
+- [x] **CTX-03**: Context budget management (4 phases: full -> compressed -> reinforced -> compaction advocacy)
 - [ ] **CTX-04**: Self Model as compaction frame (PreCompact preserves Self Model perspective, not neutral summary)
 - [ ] **CTX-05**: Warm-start face prompt cache — persist final Face prompt from prior session's REM for instant personality on SessionStart before Secondary is ready
 
@@ -147,9 +147,9 @@
 | REM-05 | Phase 11 | Pending |
 | REM-06 | Phase 11 | Pending |
 | REM-07 | Phase 11 | Pending |
-| CTX-01 | Phase 8 | Pending |
+| CTX-01 | Phase 8 | Complete |
 | CTX-02 | Phase 10 | Pending |
-| CTX-03 | Phase 8 | Pending |
+| CTX-03 | Phase 8 | Complete |
 | CTX-04 | Phase 8 | Pending |
 | CTX-05 | Phase 8 | Pending |
 | OPS-01 | Phase 10 | Pending |

@@ -71,7 +71,7 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — Budget tracker state machine + template composer 5-slot system
+- [x] 08-01-PLAN.md — Budget tracker state machine + template composer 5-slot system
 - [ ] 08-02-PLAN.md — Context Manager orchestrator + hook handlers + Armature wiring
 
 **Research flag**: STANDARD PATTERNS for hook wiring and state file pattern (validated by Claude-Mem). Personality injection size at high context utilization needs empirical measurement (PITFALLS research contradicts spec's "minimal injection at 75-90%").
@@ -141,7 +141,7 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 5. SDK & Platform Infra | M1 | 5/5 | Complete | 2026-03-23 |
 | 6. Bootstrap Integration | M1 | 2/2 | Complete | 2026-03-23 |
 | 7. Foundation Infrastructure | M2 | 0/5 | Planned | - |
-| 8. Single-Session Personality | M2 | 0/2 | Planned | - |
+| 8. Single-Session Personality | M2 | 1/2 | In Progress | - |
 | 9. Fragment Memory Engine | M2 | 0/TBD | Not started | - |
 | 10. Three-Session Architecture | M2 | 0/TBD | Not started | - |
 | 11. REM Consolidation | M2 | 0/TBD | Not started | - |

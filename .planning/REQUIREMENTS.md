@@ -19,8 +19,8 @@
 - [x] **FRG-02**: Five fragment types — experiential, meta-recall, sublimation, consolidation, source-reference
 - [ ] **FRG-03**: Multi-angle formation pipeline (attention check, domain fan-out, parallel per-fragment processing, formation group tagging)
 - [ ] **FRG-04**: Real-time recall via Assay (retrieval, composite ranking, reconstruction through current Self Model frame)
-- [ ] **FRG-05**: Association index in Ledger (domains, entities, associations, attention tags, formation groups, source locators, fragment decay)
-- [ ] **FRG-06**: Deterministic decay function (time decay, consolidation protection, access bonus, relevance factor)
+- [x] **FRG-05**: Association index in Ledger (domains, entities, associations, attention tags, formation groups, source locators, fragment decay)
+- [x] **FRG-06**: Deterministic decay function (time decay, consolidation protection, access bonus, relevance factor)
 - [ ] **FRG-07**: Self-organizing taxonomy (domain creation/merge/split/retire during REM)
 - [ ] **FRG-08**: Source-reference model (association chain termini, source locator pointers, experiential relationship to sources)
 - [ ] **FRG-09**: FragmentWriter abstraction — atomic dual-provider writes (Journal + Ledger) with rollback to prevent split-storage inconsistency
@@ -129,8 +129,8 @@
 | FRG-02 | Phase 7 | Complete |
 | FRG-03 | Phase 9 | Pending |
 | FRG-04 | Phase 9 | Pending |
-| FRG-05 | Phase 7 | Pending |
-| FRG-06 | Phase 7 | Pending |
+| FRG-05 | Phase 7 | Complete |
+| FRG-06 | Phase 7 | Complete |
 | FRG-07 | Phase 12 | Pending |
 | FRG-08 | Phase 12 | Pending |
 | FRG-09 | Phase 7 | Pending |

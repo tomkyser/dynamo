@@ -139,13 +139,13 @@ describe('journal CRUD operations', () => {
     expect(fs.existsSync(filePath)).toBe(true);
   });
 
-  it('written file contains YAML frontmatter with fields', async () => {
+  it('written file contains JSON frontmatter with fields', async () => {
     await journal.write('doc-1', { type: 'note', title: 'Hello' }, 'Body content');
     const filePath = path.join(tmpDir, 'doc-1.md');
     const content = fs.readFileSync(filePath, 'utf-8');
     expect(content).toContain('---');
-    expect(content).toContain('type: note');
-    expect(content).toContain('title: Hello');
+    expect(content).toContain('"type": "note"');
+    expect(content).toContain('"title": "Hello"');
     expect(content).toContain('Body content');
   });
 

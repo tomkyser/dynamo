@@ -24,6 +24,27 @@ const path = require('node:path');
 // ---------------------------------------------------------------------------
 
 /**
+ * Recall keyword regex for explicit recall trigger detection.
+ * When a user prompt matches any of these patterns, explicit recall is invoked.
+ * @type {RegExp}
+ */
+const RECALL_KEYWORDS = /\b(remember when|recall|what do you remember|do you remember)\b/i;
+
+/**
+ * Agent name for the formation background subagent.
+ * Used to filter SubagentStop events and only process formation output.
+ * @type {string}
+ */
+const FORMATION_AGENT_NAME = 'reverie-formation';
+
+/**
+ * Well-known directory paths for stimulus/output file coordination.
+ * @type {string}
+ */
+const FORMATION_STIMULUS_DIR = 'data/formation/stimulus';
+const FORMATION_OUTPUT_DIR = 'data/formation/output';
+
+/**
  * Compaction framing text injected via PreCompact additionalContext.
  * Per D-09: best-effort framing guidance for how compaction should summarize.
  * @type {string}
@@ -53,6 +74,8 @@ const COMPACTION_FRAMING = [
  */
 function createHookHandlers(options) {
   const { contextManager, switchboard, lathe, dataDir } = options || {};
+  const formationPipeline = (options && options.formationPipeline) || null;
+  const recallEngine = (options && options.recallEngine) || null;
 
   // Resolve ~ to HOME for dataDir
   const resolvedDataDir = dataDir && dataDir.startsWith('~')
@@ -122,10 +145,62 @@ function createHookHandlers(options) {
 
     const injection = contextManager.getInjection();
 
+    // --- Phase 9: Formation trigger ---
+    // Per D-01: Spawn fire-and-forget background formation after each significant turn.
+    // Formation pipeline prepares stimulus synchronously for the subagent.
+    if (formationPipeline) {
+      const sessionContext = {
+        recentTools: [],
+        position: 0,
+        turnNumber: 0,
+        userName: 'the user',
+        sessionId: 'reverie',
+      };
+      try {
+        formationPipeline.prepareStimulus(payload || {}, sessionContext);
+      } catch (_e) {
+        // Formation preparation failure is non-fatal -- log but continue
+      }
+    }
+
+    // --- Phase 9: Nudge injection ---
+    let nudgeText = null;
+    if (contextManager.getNudge) {
+      nudgeText = await contextManager.getNudge();
+    }
+
+    // --- Phase 9: Explicit recall ---
+    let recallText = null;
+    if (recallEngine && RECALL_KEYWORDS.test(promptText)) {
+      try {
+        const recallResult = await recallEngine.recallExplicit({
+          domains: [],
+          entities: [],
+          attention_tags: [],
+          user_prompt: promptText,
+          turn_number: 0,
+        });
+        if (recallResult.ok && recallResult.value.reconstructionPrompt) {
+          recallText = recallResult.value.reconstructionPrompt;
+        }
+      } catch (_e) {
+        // Recall failure is non-fatal
+      }
+    }
+
+    // Build combined additionalContext
+    let combinedInjection = injection || '';
+    if (nudgeText) {
+      combinedInjection += '\n\n---\n[Inner impression: ' + nudgeText + ']';
+    }
+    if (recallText) {
+      combinedInjection += '\n\n---\n[Memory reconstruction: ' + recallText + ']';
+    }
+
     return {
       hookSpecificOutput: {
         hookEventName: 'UserPromptSubmit',
-        additionalContext: injection,
+        additionalContext: combinedInjection || injection,
       },
     };
   }
@@ -173,6 +248,23 @@ function createHookHandlers(options) {
     const outputBytes = Buffer.byteLength(outputStr, 'utf8');
 
     contextManager.trackBytes(outputBytes, 'tool_output');
+
+    // --- Phase 9: Formation trigger for tool-heavy turns ---
+    // Per CONTEXT.md: PostToolUse triggers formation for tool-heavy turns
+    if (formationPipeline) {
+      // Only trigger if there is meaningful tool output (not empty)
+      if (outputStr.length > 100) {
+        // Fire-and-forget
+        try {
+          const stimResult = formationPipeline.prepareStimulus(
+            { user_prompt: '', tool_output: outputStr, tool_name: payload && payload.tool_name },
+            { recentTools: [payload && payload.tool_name], sessionId: 'reverie' }
+          );
+        } catch (_e) {
+          // Non-fatal
+        }
+      }
+    }
 
     const nudge = contextManager.getMicroNudge();
     if (nudge) {
@@ -253,13 +345,75 @@ function createHookHandlers(options) {
   /**
    * SubagentStop hook handler.
    *
-   * Tracks estimated bytes (~500) for subagent output overhead.
+   * Processes formation subagent output when the reverie-formation agent completes.
+   * Per D-01: The formation subagent runs in the background and writes its
+   * output (JSON with fragments + nudge) to a well-known output file. When
+   * the subagent stops, this handler reads that output and routes it through
+   * formationPipeline.processFormationOutput() which:
+   *   1. Parses the JSON via fragment-assembler
+   *   2. Populates association index master tables
+   *   3. Writes validated fragments via FragmentWriter
+   *   4. Writes nudge via nudge-manager
+   *
+   * Without this handler, prepareStimulus fires but nothing ever processes
+   * the subagent's response -- no fragments are written, FRG-03 is incomplete.
    *
    * @param {Object} payload - Hook payload
-   * @returns {Promise<Object>} Empty object
+   * @returns {Promise<Object>} Hook output
    */
   async function handleSubagentStop(payload) {
     contextManager.trackBytes(500, 'subagent_stop');
+
+    // Only process output from the reverie-formation subagent
+    const agentName = payload && payload.agent_name;
+    if (agentName === FORMATION_AGENT_NAME && formationPipeline) {
+      try {
+        // Read the formation output file written by the subagent.
+        // The output path follows the convention: {dataDir}/{FORMATION_OUTPUT_DIR}/latest-output.json
+        const outputPath = path.join(
+          resolvedDataDir, FORMATION_OUTPUT_DIR, 'latest-output.json'
+        );
+
+        // Read output file via lathe (injected dependency)
+        const readResult = await lathe.readFile(outputPath);
+        if (readResult && readResult.ok && readResult.value) {
+          const rawOutput = readResult.value;
+
+          // Build session context for formation processing
+          const sessionContext = {
+            sessionId: 'reverie',
+            selfModelVersion: '0.0.0',
+            sessionStart: new Date().toISOString(),
+            sessionPosition: 0,
+            turnNumber: 0,
+            trigger: 'subagent_stop',
+          };
+
+          // Process the formation output: parse -> populate master tables -> write fragments -> write nudge
+          const processResult = await formationPipeline.processFormationOutput(rawOutput, sessionContext);
+
+          if (processResult && processResult.ok) {
+            // Emit formation completion event for observability
+            if (switchboard && switchboard.emit) {
+              switchboard.emit('reverie:formation:subagent-complete', {
+                formed: processResult.value.formed,
+                formationGroup: processResult.value.formationGroup,
+              });
+            }
+          }
+        }
+      } catch (_e) {
+        // Formation output processing failure is non-fatal.
+        // The formation pipeline handles its own error cases internally.
+        // We catch here to prevent the hook from crashing the primary session.
+      }
+
+      return {
+        hookSpecificOutput: {
+          hookEventName: 'SubagentStop',
+        },
+      };
+    }
 
     if (switchboard) {
       switchboard.emit('reverie:hook:subagent-stop', {

@@ -19,6 +19,10 @@ const { createContextManager } = require('./components/context/context-manager.c
 const { createHookHandlers } = require('./hooks/hook-handlers.cjs');
 const { createSelfModel } = require('./components/self-model/self-model.cjs');
 const { createEntropyEngine } = require('./components/self-model/entropy-engine.cjs');
+const { createFragmentWriter } = require('./components/fragments/fragment-writer.cjs');
+const { createFormationPipeline } = require('./components/formation/formation-pipeline.cjs');
+const { createRecallEngine } = require('./components/recall/recall-engine.cjs');
+const { createNudgeManager } = require('./components/formation/nudge-manager.cjs');
 const { DATA_DIR_DEFAULT } = require('./lib/constants.cjs');
 
 /**
@@ -50,7 +54,18 @@ function register(facade) {
   // Create entropy engine for session variance
   const entropy = createEntropyEngine({});
 
-  // Create Context Manager orchestrator
+  // Resolve additional services for Phase 9
+  const assay = getService('assay');
+
+  // Create FragmentWriter for formation
+  const fragmentWriter = createFragmentWriter({
+    journal, wire, switchboard, sessionId: 'reverie-formation',
+  });
+
+  // Create nudge manager for formation -> context manager coordination
+  const nudgeManager = createNudgeManager({ lathe, dataDir: DATA_DIR_DEFAULT });
+
+  // Create Context Manager orchestrator (with Phase 9 nudge integration)
   const ctxResult = createContextManager({
     selfModel,
     lathe,
@@ -58,18 +73,33 @@ function register(facade) {
     entropy,
     journal,
     dataDir: DATA_DIR_DEFAULT,
+    nudgeManager,
   });
   if (!ctxResult.ok) {
     return { name: 'reverie', status: 'error', error: ctxResult.error };
   }
   const contextManager = ctxResult.value;
 
+  // Create formation pipeline (FRG-03)
+  const formationPipeline = createFormationPipeline({
+    fragmentWriter, selfModel, lathe, wire, switchboard, assay,
+    dataDir: DATA_DIR_DEFAULT,
+  });
+
+  // Create recall engine (FRG-04)
+  const recallEngine = createRecallEngine({
+    assay, selfModel, switchboard,
+  });
+
   // Create hook handlers (lathe + dataDir needed for Stop snapshot writes)
+  // Phase 9: formation pipeline and recall engine wired for formation triggers and recall injection
   const handlers = createHookHandlers({
     contextManager,
     switchboard,
     lathe,
     dataDir: DATA_DIR_DEFAULT,
+    formationPipeline,
+    recallEngine,
   });
 
   // Register all 8 hooks via Armature hook registry (per INT-01)
@@ -90,7 +120,7 @@ function register(facade) {
   // This connects registry entries to switchboard.on(HOOK_EVENT_NAMES[hookType], handler)
   registry.wireToSwitchboard(switchboard);
 
-  return { name: 'reverie', status: 'registered', hooks: 8 };
+  return { name: 'reverie', status: 'registered', hooks: 8, formation: true, recall: true };
 }
 
 module.exports = { register };

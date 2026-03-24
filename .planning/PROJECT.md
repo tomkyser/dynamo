@@ -83,6 +83,18 @@ Everything routes through Dynamo. It is the holistic wrapper via its APIs and in
 - [x] All 8 Claude Code hook handlers (SessionStart, UserPromptSubmit, PostToolUse, PreCompact, post-compaction, Stop, plus 2 auxiliary) wired through Armature hook registry
 - [x] Sparse/null Self Model handling — valid output even with no personality data loaded
 
+#### Three-Session Architecture — Validated in Phase 10
+- [x] Session topology config (Primary/Secondary/Tertiary identities, 8-state lifecycle, topology rules, framing modes)
+- [x] Conductor expanded with session spawning via Bun.spawn (spawn/stop/health/list)
+- [x] Session Manager state machine orchestrating Conductor and Wire for session lifecycle
+- [x] Mode Manager (Active/Passive) with automatic health-based fallback on Tertiary failure
+- [x] Mind cognitive cycle (attention, formation orchestration, recall, sublimation evaluation, directive generation)
+- [x] Wire topology enforcement (Primary<->Secondary<->Tertiary routing, ACK protocol for critical messages)
+- [x] Referential framing (full/dual/soft modes for slot 5) controlling Secondary authority over Primary behavior
+- [x] Sublimation loop config with system prompt generator for Tertiary self-prompting cycles
+- [x] Secondary face prompt authority pipeline (Wire subscription routes directives to Context Manager)
+- [x] Hook handlers trigger Session Manager lifecycle, forward snapshots to Secondary via Wire
+
 ### Out of Scope
 
 - **LLM API integrations below SDK scope** — Dynamo is built on Claude Code within what Max subscription offers natively
@@ -95,12 +107,12 @@ Everything routes through Dynamo. It is the holistic wrapper via its APIs and in
 
 Dynamo is a ground-up rebuild. Prior experimental work (v0, archived at `archive/v0-pre-rewrite`) produced a working 6-subsystem monolith through 6 milestones (~7,081 LOC, 525 tests). That system validated core concepts — hook-based memory, cognitive pipelines, dual-path routing, adversarial framing — but grew organically without proper platform architecture. This rebuild applies the lessons learned to a properly layered system.
 
-**Current state (Phase 8 complete):**
+**Current state (Phase 10 complete):**
 - 9 services, 2 providers, 1 framework, 1 SDK — all wired through IoC container
-- Reverie module: Self Model (3 aspects), Context Manager (budget tracker + template composer + orchestrator), 8 hook handlers
-- 1,075 tests passing, 0 failures
-- Phase 8 delivers single-session personality injection — face prompts composed from Self Model data, budget-aware sizing, compaction survival
-- Next: Phase 9 (Fragment Memory Engine)
+- Reverie module: Self Model, Context Manager, Fragment Memory Engine, Formation Pipeline, Recall Engine, Lithograph, Exciter, Session Manager, Mode Manager, Mind Cycle, Wire Topology, Referential Framing, Sublimation Loop
+- 1,445 tests passing, 0 failures across 79 files
+- Phase 10 delivers three-session architecture — Primary/Secondary/Tertiary via Wire, lifecycle state machine, cognitive orchestration, referential framing authority, Active/Passive modes with automatic fallback
+- Next: Phase 11 (REM Consolidation)
 
 **Canonical architecture documents:**
 - `.claude/new-plan.md` — The architecture plan. Absolute canon.
@@ -159,4 +171,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-24 — Phase 7 (Foundation Infrastructure) complete — module skeleton, JSON frontmatter, write coordinator, schemas, Self Model, FragmentWriter (958 tests)*
+*Last updated: 2026-03-24 — Phase 10 (Three-Session Architecture) complete — session topology, lifecycle management, cognitive orchestration, inter-session communication (1,445 tests)*

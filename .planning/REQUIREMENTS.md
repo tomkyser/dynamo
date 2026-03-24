@@ -30,9 +30,9 @@
 
 - [ ] **SES-01**: Primary session (Face) — user-facing session with Self Model personality expression via hook-injected context
 - [ ] **SES-02**: Secondary session (Mind) — cognitive center managing attention, fragments, recall, taxonomy, Self Model authority
-- [ ] **SES-03**: Tertiary session (Subconscious) — continuous sublimation stream with configurable cycle frequency
-- [ ] **SES-04**: Wire-based inter-session communication (Primary <-> Secondary <-> Tertiary) with urgency levels (background/active/directive/urgent)
-- [ ] **SES-05**: Session lifecycle (startup sequence, active operation, compaction handling, clean shutdown)
+- [x] **SES-03**: Tertiary session (Subconscious) — continuous sublimation stream with configurable cycle frequency
+- [x] **SES-04**: Wire-based inter-session communication (Primary <-> Secondary <-> Tertiary) with urgency levels (background/active/directive/urgent)
+- [x] **SES-05**: Session lifecycle (startup sequence, active operation, compaction handling, clean shutdown)
 
 ### REM Consolidation
 
@@ -47,7 +47,7 @@
 ### Primary Context Management
 
 - [x] **CTX-01**: Continuous Self Model reinjection on every UserPromptSubmit (~800-1800 token budget)
-- [ ] **CTX-02**: Referential framing prompt (Primary treats context as reference material, Self Model directives as operating frame)
+- [x] **CTX-02**: Referential framing prompt (Primary treats context as reference material, Self Model directives as operating frame)
 - [x] **CTX-03**: Context budget management (4 phases: full -> compressed -> reinforced -> compaction advocacy)
 - [x] **CTX-04**: Self Model as compaction frame (PreCompact preserves Self Model perspective, not neutral summary)
 - [x] **CTX-05**: Warm-start face prompt cache — persist final Face prompt from prior session's REM for instant personality on SessionStart before Secondary is ready
@@ -139,9 +139,9 @@
 | FRG-10 | Phase 12 | Pending |
 | SES-01 | Phase 10 | Pending |
 | SES-02 | Phase 10 | Pending |
-| SES-03 | Phase 10 | Pending |
-| SES-04 | Phase 10 | Pending |
-| SES-05 | Phase 10 | Pending |
+| SES-03 | Phase 10 | Complete |
+| SES-04 | Phase 10 | Complete |
+| SES-05 | Phase 10 | Complete |
 | REM-01 | Phase 11 | Pending |
 | REM-02 | Phase 11 | Pending |
 | REM-03 | Phase 11 | Pending |
@@ -150,7 +150,7 @@
 | REM-06 | Phase 11 | Pending |
 | REM-07 | Phase 11 | Pending |
 | CTX-01 | Phase 8 | Complete |
-| CTX-02 | Phase 10 | Pending |
+| CTX-02 | Phase 10 | Complete |
 | CTX-03 | Phase 8 | Complete |
 | CTX-04 | Phase 8 | Complete |
 | CTX-05 | Phase 8 | Complete |

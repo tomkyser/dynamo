@@ -75,6 +75,13 @@ Everything routes through Dynamo. It is the holistic wrapper via its APIs and in
 - [x] forge.pull() implemented as optional contract method (unblocks `dynamo update`)
 - [x] Assay receives initialized Ledger and Journal facades after full bootstrap
 
+#### Single-Session Personality Injection — Validated in Phase 8
+- [x] Budget tracker state machine with research-backed thresholds (30/60/80%) for 4-phase context budget management
+- [x] Template composer producing 5-slot face prompts sized per budget phase (1200/800/1900/1800 tokens)
+- [x] Context Manager orchestrator with budget-driven face prompt lifecycle, checkpoint, warm-start
+- [x] All 8 Claude Code hook handlers (SessionStart, UserPromptSubmit, PostToolUse, PreCompact, post-compaction, Stop, plus 2 auxiliary) wired through Armature hook registry
+- [x] Sparse/null Self Model handling — valid output even with no personality data loaded
+
 ### Out of Scope
 
 - **LLM API integrations below SDK scope** — Dynamo is built on Claude Code within what Max subscription offers natively
@@ -87,12 +94,12 @@ Everything routes through Dynamo. It is the holistic wrapper via its APIs and in
 
 Dynamo is a ground-up rebuild. Prior experimental work (v0, archived at `archive/v0-pre-rewrite`) produced a working 6-subsystem monolith through 6 milestones (~7,081 LOC, 525 tests). That system validated core concepts — hook-based memory, cognitive pipelines, dual-path routing, adversarial framing — but grew organically without proper platform architecture. This rebuild applies the lessons learned to a properly layered system.
 
-**Current state (after Milestone 1):**
+**Current state (Phase 8 complete):**
 - 9 services, 2 providers, 1 framework, 1 SDK — all wired through IoC container
-- 9,932 LOC source, 11,394 LOC tests (52 source files, 45 test files)
-- 851 tests passing, 0 failures
-- Platform is consumable: Circuit exports services safely, Pulley exposes CLI + MCP surface
-- Next: Milestone 2 (Reverie) builds the first module on top of this platform
+- Reverie module: Self Model (3 aspects), Context Manager (budget tracker + template composer + orchestrator), 8 hook handlers
+- 1,075 tests passing, 0 failures
+- Phase 8 delivers single-session personality injection — face prompts composed from Self Model data, budget-aware sizing, compaction survival
+- Next: Phase 9 (Fragment Memory Engine)
 
 **Canonical architecture documents:**
 - `.claude/new-plan.md` — The architecture plan. Absolute canon.

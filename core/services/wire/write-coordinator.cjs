@@ -19,12 +19,16 @@ const { createPriorityQueue } = require('./queue.cjs');
  * @param {Object} [options]
  * @param {Object} options.ledger - Injected Ledger provider with write(table, data) method
  * @param {Object} [options.queueConfig] - Configuration for the internal priority queue
+ * @param {number} [options.maxRetries=3] - Maximum retry attempts before emitting write:fatal
+ * @param {number} [options.baseBackoff=50] - Base backoff delay in ms (actual delay: baseBackoff * 2^retryCount)
  * @returns {Object} Write coordinator instance
  */
 function createWriteCoordinator(options = {}) {
   const _ledger = options.ledger;
   const _queue = createPriorityQueue(options.queueConfig || {});
   const _emitter = new EventEmitter();
+  const _maxRetries = options.maxRetries !== undefined ? options.maxRetries : 3;
+  const _baseBackoff = options.baseBackoff !== undefined ? options.baseBackoff : 50;
   let _processing = false;
   let _timer = null;
 
@@ -50,6 +54,10 @@ function createWriteCoordinator(options = {}) {
    * if the next item in the queue targets the same table, it is dequeued
    * and merged into a single write with combined data arrays.
    *
+   * Retry logic: On write failure, items are re-enqueued with exponential
+   * backoff (baseBackoff * 2^retryCount). After maxRetries failures,
+   * write:fatal is emitted and the item is dropped.
+   *
    * @returns {import('../../../lib/result.cjs').Result<Object|null>} Ok with write result, ok(null) if empty, or the ledger result
    */
   function processNext() {
@@ -58,14 +66,21 @@ function createWriteCoordinator(options = {}) {
       return ok(null);
     }
 
+    // Skip items awaiting retry delay -- re-enqueue and try the next item
+    if (item._nextRetryAt && item._nextRetryAt > Date.now()) {
+      _queue.enqueue(item);
+      return ok(null);
+    }
+
     // Greedy batching: merge consecutive items targeting the same table
+    // Only batch items that are NOT awaiting retry delay
     const table = item.payload.table;
     let batchedData = [...(item.payload.data || [])];
     const batchedFrom = item.from;
 
     while (!_queue.isEmpty()) {
       const next = _queue.peek();
-      if (next && next.payload && next.payload.table === table) {
+      if (next && next.payload && next.payload.table === table && !next._nextRetryAt) {
         const merged = _queue.dequeue();
         batchedData = batchedData.concat(merged.payload.data || []);
       } else {
@@ -83,11 +98,42 @@ function createWriteCoordinator(options = {}) {
         result: result.value,
       });
     } else {
+      // Emit write:failed for the immediate failure (preserves existing event listeners)
       _emitter.emit('write:failed', {
         sessionId: batchedFrom,
         table,
         error: result.error,
       });
+
+      // Retry logic: _retryCount tracks how many retries have been attempted.
+      // Starts at 0 (not yet retried). Retry if _retryCount < _maxRetries.
+      const currentRetryCount = item._retryCount || 0;
+
+      if (currentRetryCount < _maxRetries) {
+        // Re-enqueue with incremented retry count and backoff delay
+        const nextRetryCount = currentRetryCount + 1;
+        item._retryCount = nextRetryCount;
+        item._nextRetryAt = Date.now() + (_baseBackoff * Math.pow(2, nextRetryCount));
+        // Restore original data for retry (use batchedData since we may have merged)
+        item.payload.data = batchedData;
+        _queue.enqueue(item);
+
+        _emitter.emit('write:retry', {
+          sessionId: batchedFrom,
+          table,
+          retryCount: nextRetryCount,
+          nextRetryAt: item._nextRetryAt,
+          error: result.error,
+        });
+      } else {
+        // Max retries exceeded -- emit fatal, do NOT re-enqueue
+        _emitter.emit('write:fatal', {
+          sessionId: batchedFrom,
+          table,
+          retryCount: currentRetryCount,
+          error: result.error,
+        });
+      }
     }
 
     return result;

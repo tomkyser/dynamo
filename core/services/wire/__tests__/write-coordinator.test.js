@@ -283,4 +283,204 @@ describe('WriteCoordinator', () => {
       coord.stop();
     });
   });
+
+  describe('retry with exponential backoff', () => {
+    it('re-enqueues failed write with incremented retryCount', () => {
+      const failLedger = createFailingLedger();
+      const coord = createWriteCoordinator({ ledger: failLedger, maxRetries: 3, baseBackoff: 50 });
+
+      const retryEvents = [];
+      coord.on('write:retry', (data) => retryEvents.push(data));
+
+      coord.queueWrite(makeWriteIntent({ from: 'sess-1', table: 'memories' }));
+      coord.processNext();
+
+      // After failure, item should be re-enqueued (queue depth should be 1)
+      expect(coord.getQueueDepth()).toBe(1);
+      expect(retryEvents.length).toBe(1);
+      expect(retryEvents[0].retryCount).toBe(1);
+
+      coord.stop();
+    });
+
+    it('uses exponential backoff delay: 50ms * 2^retryCount', () => {
+      const failLedger = createFailingLedger();
+      const coord = createWriteCoordinator({ ledger: failLedger, maxRetries: 3, baseBackoff: 50 });
+
+      const retryEvents = [];
+      coord.on('write:retry', (data) => retryEvents.push(data));
+
+      coord.queueWrite(makeWriteIntent({ from: 'sess-1', table: 'memories' }));
+
+      // First failure -> retryCount 1, delay = 50 * 2^1 = 100ms
+      coord.processNext();
+      expect(retryEvents.length).toBe(1);
+      expect(retryEvents[0].retryCount).toBe(1);
+
+      coord.stop();
+    });
+
+    it('emits write:fatal after maxRetries exceeded and does NOT re-enqueue', () => {
+      const failLedger = createFailingLedger();
+      const coord = createWriteCoordinator({ ledger: failLedger, maxRetries: 3, baseBackoff: 0 });
+
+      const fatalEvents = [];
+      const retryEvents = [];
+      coord.on('write:fatal', (data) => fatalEvents.push(data));
+      coord.on('write:retry', (data) => retryEvents.push(data));
+
+      coord.queueWrite(makeWriteIntent({ from: 'sess-1', table: 'memories' }));
+
+      // Process 3 retries (retryCount 1, 2, 3) + 1 initial = 4 processNext calls
+      // With baseBackoff 0, items are immediately processable
+      coord.processNext(); // fail -> retry 1
+      coord.processNext(); // fail -> retry 2
+      coord.processNext(); // fail -> retry 3
+      coord.processNext(); // fail -> fatal (retryCount >= maxRetries)
+
+      expect(retryEvents.length).toBe(3);
+      expect(fatalEvents.length).toBe(1);
+      expect(fatalEvents[0].sessionId).toBe('sess-1');
+      expect(fatalEvents[0].table).toBe('memories');
+      expect(fatalEvents[0].retryCount).toBe(3);
+      expect(fatalEvents[0].error).toBeDefined();
+      expect(coord.getQueueDepth()).toBe(0); // NOT re-enqueued
+
+      coord.stop();
+    });
+
+    it('emits write:completed after successful retry', () => {
+      let callCount = 0;
+      const sometimesFailLedger = {
+        calls: [],
+        write(table, data) {
+          callCount++;
+          sometimesFailLedger.calls.push({ table, data });
+          if (callCount <= 2) {
+            return err('WRITE_FAILED', 'Temporary failure');
+          }
+          return ok({ id: 'success-' + callCount });
+        },
+      };
+      const coord = createWriteCoordinator({ ledger: sometimesFailLedger, maxRetries: 3, baseBackoff: 0 });
+
+      const completedEvents = [];
+      const retryEvents = [];
+      coord.on('write:completed', (data) => completedEvents.push(data));
+      coord.on('write:retry', (data) => retryEvents.push(data));
+
+      coord.queueWrite(makeWriteIntent({ from: 'sess-1', table: 'memories' }));
+
+      coord.processNext(); // fail -> retry 1
+      coord.processNext(); // fail -> retry 2
+      coord.processNext(); // success!
+
+      expect(retryEvents.length).toBe(2);
+      expect(completedEvents.length).toBe(1);
+      expect(completedEvents[0].sessionId).toBe('sess-1');
+
+      coord.stop();
+    });
+
+    it('tracks retryCount per-envelope independently', () => {
+      const failLedger = createFailingLedger();
+      const coord = createWriteCoordinator({ ledger: failLedger, maxRetries: 3, baseBackoff: 0 });
+
+      const retryEvents = [];
+      coord.on('write:retry', (data) => retryEvents.push(data));
+
+      // Queue two separate writes to different tables
+      coord.queueWrite(makeWriteIntent({ from: 'sess-1', table: 'memories' }));
+      coord.queueWrite(makeWriteIntent({ from: 'sess-2', table: 'associations' }));
+
+      // Process first (memories) -> fails, retry 1
+      coord.processNext();
+      // Process second (associations) -> fails, retry 1
+      coord.processNext();
+
+      // Both should have retryCount 1 independently
+      expect(retryEvents.length).toBe(2);
+      expect(retryEvents[0].retryCount).toBe(1);
+      expect(retryEvents[1].retryCount).toBe(1);
+
+      coord.stop();
+    });
+
+    it('maxRetries defaults to 3 when not provided', () => {
+      const failLedger = createFailingLedger();
+      const coord = createWriteCoordinator({ ledger: failLedger, baseBackoff: 0 });
+
+      const fatalEvents = [];
+      const retryEvents = [];
+      coord.on('write:fatal', (data) => fatalEvents.push(data));
+      coord.on('write:retry', (data) => retryEvents.push(data));
+
+      coord.queueWrite(makeWriteIntent({ from: 'sess-1', table: 'memories' }));
+
+      coord.processNext(); // retry 1
+      coord.processNext(); // retry 2
+      coord.processNext(); // retry 3
+      coord.processNext(); // fatal
+
+      expect(retryEvents.length).toBe(3);
+      expect(fatalEvents.length).toBe(1);
+
+      coord.stop();
+    });
+
+    it('baseBackoff defaults to 50 when not provided', () => {
+      const failLedger = createFailingLedger();
+      const coord = createWriteCoordinator({ ledger: failLedger, maxRetries: 3 });
+
+      const retryEvents = [];
+      coord.on('write:retry', (data) => retryEvents.push(data));
+
+      coord.queueWrite(makeWriteIntent({ from: 'sess-1', table: 'memories' }));
+      coord.processNext(); // fail -> retry, should have delay based on 50ms base
+
+      expect(retryEvents.length).toBe(1);
+      // The nextRetryAt should be in the future (baseBackoff * 2^1 = 100ms from now)
+      expect(retryEvents[0].nextRetryAt).toBeDefined();
+      expect(typeof retryEvents[0].nextRetryAt).toBe('number');
+
+      coord.stop();
+    });
+
+    it('maxRetries is configurable via options', () => {
+      const failLedger = createFailingLedger();
+      const coord = createWriteCoordinator({ ledger: failLedger, maxRetries: 1, baseBackoff: 0 });
+
+      const fatalEvents = [];
+      const retryEvents = [];
+      coord.on('write:fatal', (data) => fatalEvents.push(data));
+      coord.on('write:retry', (data) => retryEvents.push(data));
+
+      coord.queueWrite(makeWriteIntent({ from: 'sess-1', table: 'memories' }));
+
+      coord.processNext(); // retry 1
+      coord.processNext(); // fatal (only 1 retry allowed)
+
+      expect(retryEvents.length).toBe(1);
+      expect(fatalEvents.length).toBe(1);
+
+      coord.stop();
+    });
+
+    it('existing behavior unchanged -- successful writes still emit write:completed', () => {
+      const coord = createWriteCoordinator({ ledger: mockLedger, maxRetries: 3, baseBackoff: 50 });
+
+      const completedEvents = [];
+      coord.on('write:completed', (data) => completedEvents.push(data));
+
+      coord.queueWrite(makeWriteIntent({ from: 'sess-1', table: 'memories' }));
+      coord.processNext();
+
+      expect(completedEvents.length).toBe(1);
+      expect(completedEvents[0].sessionId).toBe('sess-1');
+      expect(completedEvents[0].table).toBe('memories');
+      expect(coord.getQueueDepth()).toBe(0);
+
+      coord.stop();
+    });
+  });
 });

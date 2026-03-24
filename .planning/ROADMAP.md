@@ -86,8 +86,8 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 09-01-PLAN.md — Formation components: attention gate, prompt templates, fragment assembler, nudge manager
-- [ ] 09-02-PLAN.md — Recall components: composite scorer, query builder, reconstruction prompt
+- [x] 09-01-PLAN.md — Formation components: attention gate, prompt templates, fragment assembler, nudge manager
+- [x] 09-02-PLAN.md — Recall components: composite scorer, query builder, reconstruction prompt
 - [ ] 09-03-PLAN.md — Formation pipeline orchestrator + recall engine orchestrator
 - [ ] 09-04-PLAN.md — Hook wiring, agent definition, Context Manager nudge integration, Reverie module wiring
 

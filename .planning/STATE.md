@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
-status: Ready to plan
-stopped_at: Phase 9 context gathered
-last_updated: "2026-03-24T16:37:38.551Z"
+status: Ready to execute
+stopped_at: Completed 09-02-PLAN.md
+last_updated: "2026-03-24T17:23:49.460Z"
 progress:
   total_phases: 7
   completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 11
+  completed_plans: 9
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** Everything routes through Dynamo -- the holistic wrapper via its APIs and interfaces. No component bypasses the patterns and paths Dynamo defines.
-**Current focus:** Phase 08 — single-session-personality-injection
+**Current focus:** Phase 09 — fragment-memory-engine
 
 ## Current Position
 
-Phase: 9
-Plan: Not started
+Phase: 09 (fragment-memory-engine) — EXECUTING
+Plan: 3 of 4
 
 ## Performance Metrics
 
@@ -60,6 +60,8 @@ Plan: Not started
 | Phase 07 P05 | 4min | 2 tasks | 2 files |
 | Phase 08 P01 | 4min | 2 tasks | 4 files |
 | Phase 08 P02 | 6min | 2 tasks | 6 files |
+| Phase 09 P02 | 5min | 2 tasks | 6 files |
+| Phase 09 P01 | 6min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -88,6 +90,8 @@ Recent decisions affecting current work:
 - [Phase 08]: All hook injection uses additionalContext not systemMessage per Pitfall 1 -- corrects CONTEXT.md D-02/D-09
 - [Phase 08]: Context Manager in-memory cache for zero-I/O getInjection() hot path per Pitfall 4
 - [Phase 08]: Hook registration via Armature createHookRegistry not events.on() per INT-01 for discoverability
+- [Phase 09]: Self Model relevance uses fixed aspect weights matching DECAY_DEFAULTS.relevance_weights for system-wide consistency
+- [Phase 09]: Passive nudge forbids explicit memory language; explicit reconstruction drives full re-experiencing through Self Model frame
 
 ### Roadmap Evolution
 
@@ -109,6 +113,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T16:37:38.547Z
-Stopped at: Phase 9 context gathered
-Resume file: .planning/phases/09-fragment-memory-engine/09-CONTEXT.md
+Last session: 2026-03-24T17:23:32.570Z
+Stopped at: Completed 09-02-PLAN.md
+Resume file: None

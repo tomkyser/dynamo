@@ -25,6 +25,15 @@ const { createRecallEngine } = require('./components/recall/recall-engine.cjs');
 const { createNudgeManager } = require('./components/formation/nudge-manager.cjs');
 const { DATA_DIR_DEFAULT } = require('./lib/constants.cjs');
 
+// Phase 10: Three-session architecture components
+const { createSessionManager } = require('./components/session/session-manager.cjs');
+const { createSessionConfig, FRAMING_MODES } = require('./components/session/session-config.cjs');
+const { createMindCycle } = require('./components/session/mind-cycle.cjs');
+const { createSublimationLoop } = require('./components/session/sublimation-loop.cjs');
+const { createWireTopology } = require('./components/session/wire-topology.cjs');
+const { createModeManager } = require('./components/modes/mode-manager.cjs');
+const { createReferentialFraming } = require('./components/context/referential-framing.cjs');
+
 /**
  * Registers the Reverie module with the Circuit API.
  *
@@ -95,8 +104,60 @@ function register(facade) {
     assay, selfModel, switchboard,
   });
 
+  // -------------------------------------------------------------------------
+  // Phase 10: Three-session architecture components
+  // -------------------------------------------------------------------------
+
+  // Resolve Conductor for session spawning
+  const conductor = getService('conductor');
+
+  // Create session config (defaults: dual framing, opus secondary, sonnet tertiary)
+  const sessionConfig = createSessionConfig({});
+
+  // Create referential framing templates for face prompt slot 5
+  const referentialFraming = createReferentialFraming({ mode: sessionConfig.framing_mode });
+
+  // Create sublimation loop (Tertiary cycle config + system prompt)
+  const sublimationLoop = createSublimationLoop({ config: sessionConfig });
+
+  // Create Wire topology (topology-validated Wire wrapper with ACK protocol)
+  const wireTopology = createWireTopology({ wire, switchboard, config: sessionConfig });
+
+  // Create Mind cognitive cycle (Secondary processing center)
+  const mindCycle = createMindCycle({
+    selfModel,
+    formationPipeline,
+    recallEngine,
+    templateComposer: null, // Mind composes face prompts via referentialFraming + selfModel directly
+    referentialFraming,
+    sublimationLoop,
+    switchboard,
+    wire,
+    lithograph,
+    config: sessionConfig,
+  });
+
+  // Create Session Manager (lifecycle state machine, spawns Secondary/Tertiary)
+  const sessionManager = createSessionManager({
+    conductor,
+    wire,
+    selfModel,
+    switchboard,
+    sublimationLoop,
+    config: sessionConfig,
+  });
+
+  // Create Mode Manager (Active/Passive with automatic fallback)
+  const modeManager = createModeManager({
+    sessionManager,
+    conductor,
+    switchboard,
+    config: sessionConfig,
+  });
+
   // Create hook handlers (lathe + dataDir needed for Stop snapshot writes)
   // Phase 9: formation pipeline and recall engine wired for formation triggers and recall injection
+  // Phase 10: session manager, wire topology, and mode manager for three-session lifecycle
   const handlers = createHookHandlers({
     contextManager,
     switchboard,
@@ -105,6 +166,9 @@ function register(facade) {
     formationPipeline,
     recallEngine,
     lithograph,
+    sessionManager,    // Phase 10
+    wireTopology,      // Phase 10
+    modeManager,       // Phase 10
   });
 
   // Register all 8 hooks via Exciter integration surface (per D-09)
@@ -124,7 +188,15 @@ function register(facade) {
     return { name: 'reverie', status: 'error', error: hookResult.error };
   }
 
-  return { name: 'reverie', status: 'registered', hooks: hookResult.value, formation: true, recall: true };
+  return {
+    name: 'reverie',
+    status: 'registered',
+    hooks: hookResult.value,
+    formation: true,
+    recall: true,
+    sessions: true,     // Phase 10: three-session architecture
+    modes: true,        // Phase 10: operational mode management
+  };
 }
 
 module.exports = { register };

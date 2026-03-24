@@ -103,7 +103,7 @@ Plans:
   1. Lithograph provider reads Claude Code transcript JSONL, parses conversation turns and tool use blocks, and supports atomic content manipulation (replace block content, clear inputs) with rollback on failure
   2. Exciter service owns Claude Code integration surface: hook registration/wiring, agent definition management, skill definitions, settings.json management (project + user scope), CLAUDE.md management — other services and modules access Claude Code features through Exciter's contract
   3. Reverie's existing hook registration (Phase 8) can be migrated to use Exciter without breaking existing tests or behavior
-**Plans:** 3 plans
+**Plans:** 0/3 plans executed
 **Canonical refs**: `.claude/reverie-spec-v2.md`, `core/armature/hooks.cjs`, `core/services/commutator/commutator.cjs`, `.planning/phases/09.1-claude-code-integration-layer/09.1-RESEARCH-TRANSCRIPT-CONTROL.md`
 **Research flag**: RESEARCH COMPLETE — transcript control mechanism verified via claude-mem source code analysis (2026-03-24). Transcript JSONL is read/write via hook `transcript_path`. `additionalContext` for injection, direct JSONL manipulation for removal.
 
@@ -169,7 +169,7 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 9.1 -> 10 -> 11 -> 12
 | 7. Foundation Infrastructure | M2 | 0/5 | Planned | - |
 | 8. Single-Session Personality | M2 | 1/2 | In Progress | - |
 | 9. Fragment Memory Engine | M2 | 0/4 | Planned | - |
-| 9.1 Claude Code Integration | M2 | 0/3 | Planned | - |
+| 9.1 Claude Code Integration | M2 | 0/3 | Planned    |  |
 | 10. Three-Session Architecture | M2 | 0/TBD | Not started | - |
 | 11. REM Consolidation | M2 | 0/TBD | Not started | - |
 | 12. Integration Surface | M2 | 0/TBD | Not started | - |

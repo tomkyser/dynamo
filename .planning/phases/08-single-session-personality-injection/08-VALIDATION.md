@@ -2,8 +2,8 @@
 phase: 8
 slug: single-session-personality-injection
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-03-24
 ---
 
@@ -38,16 +38,10 @@ created: 2026-03-24
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 08-01-01 | 01 | 1 | CTX-01 | unit | `bun test modules/reverie/components/context/__tests__/template-composer.test.js` | ❌ W0 | ⬜ pending |
-| 08-01-02 | 01 | 1 | CTX-01 | unit | `bun test modules/reverie/hooks/__tests__/hook-handlers.test.js` | ❌ W0 | ⬜ pending |
-| 08-02-01 | 02 | 1 | CTX-03 | unit | `bun test modules/reverie/components/context/__tests__/budget-tracker.test.js` | ❌ W0 | ⬜ pending |
-| 08-02-02 | 02 | 1 | CTX-03 | unit | `bun test modules/reverie/components/context/__tests__/template-composer.test.js` | ❌ W0 | ⬜ pending |
-| 08-03-01 | 03 | 1 | CTX-04 | unit | `bun test modules/reverie/hooks/__tests__/hook-handlers.test.js` | ❌ W0 | ⬜ pending |
-| 08-03-02 | 03 | 1 | CTX-04 | unit | `bun test modules/reverie/components/context/__tests__/context-manager.test.js` | ❌ W0 | ⬜ pending |
-| 08-04-01 | 04 | 1 | CTX-05 | unit | `bun test modules/reverie/hooks/__tests__/hook-handlers.test.js` | ❌ W0 | ⬜ pending |
-| 08-04-02 | 04 | 1 | CTX-05 | unit | `bun test modules/reverie/hooks/__tests__/hook-handlers.test.js` | ❌ W0 | ⬜ pending |
-| 08-05-01 | 05 | 1 | INT-01 | unit | `bun test modules/reverie/hooks/__tests__/hook-handlers.test.js` | ❌ W0 | ⬜ pending |
-| 08-05-02 | 05 | 1 | INT-01 | unit | `bun test modules/reverie/hooks/__tests__/hook-handlers.test.js` | ❌ W0 | ⬜ pending |
+| 08-01-01 | 01 | 1 | CTX-03 | unit | `bun test modules/reverie/components/context/__tests__/budget-tracker.test.js` | TDD inline | ⬜ pending |
+| 08-01-02 | 01 | 1 | CTX-01 | unit | `bun test modules/reverie/components/context/__tests__/template-composer.test.js` | TDD inline | ⬜ pending |
+| 08-02-01 | 02 | 2 | CTX-01, CTX-03, CTX-04, CTX-05 | unit | `bun test modules/reverie/components/context/__tests__/context-manager.test.js` | TDD inline | ⬜ pending |
+| 08-02-02 | 02 | 2 | INT-01, CTX-04, CTX-05 | unit | `bun test modules/reverie/hooks/__tests__/hook-handlers.test.js` | TDD inline | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -55,12 +49,12 @@ created: 2026-03-24
 
 ## Wave 0 Requirements
 
-- [ ] `modules/reverie/components/context/__tests__/context-manager.test.js` — stubs for CTX-01, CTX-03, CTX-04
-- [ ] `modules/reverie/components/context/__tests__/budget-tracker.test.js` — stubs for CTX-03
-- [ ] `modules/reverie/components/context/__tests__/template-composer.test.js` — stubs for CTX-01
-- [ ] `modules/reverie/hooks/__tests__/hook-handlers.test.js` — stubs for INT-01, CTX-04, CTX-05
+*Wave 0 satisfied inline: Both plans use `tdd="true"` — test files are created within each task (test first, then implementation). No separate Wave 0 plan required.*
 
-*Existing infrastructure covers test runner (bun:test). Test files need creation in Wave 0.*
+- [x] `modules/reverie/components/context/__tests__/budget-tracker.test.js` — created inline by Plan 01 Task 1
+- [x] `modules/reverie/components/context/__tests__/template-composer.test.js` — created inline by Plan 01 Task 2
+- [x] `modules/reverie/components/context/__tests__/context-manager.test.js` — created inline by Plan 02 Task 1
+- [x] `modules/reverie/hooks/__tests__/hook-handlers.test.js` — created inline by Plan 02 Task 2
 
 ---
 

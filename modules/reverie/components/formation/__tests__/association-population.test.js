@@ -73,10 +73,7 @@ describe('association-population (Research Pitfall 5)', () => {
       wire: createMockWire(),
       switchboard: createMockSwitchboard(),
     };
-    return Object.assign(
-      createFormationPipeline(Object.assign(defaults, overrides || {})),
-      { _wire: (overrides && overrides.wire) || defaults.wire }
-    );
+    return createFormationPipeline(Object.assign(defaults, overrides || {}));
   }
 
   // Helper to make a formation output with specific associations

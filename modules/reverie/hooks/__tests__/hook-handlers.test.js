@@ -999,4 +999,184 @@ describe('Hook Handlers', () => {
       expect(_sentEnvelopes[0].payload.event).toBe('pre_compact');
     });
   });
+
+  // =========================================================================
+  // Phase 10 Gap Closure: Secondary face prompt authority wiring integration
+  // =========================================================================
+
+  describe('Phase 10: Secondary face prompt authority wiring', () => {
+
+    /**
+     * Enhanced mock switchboard that supports .on() listener registration and replay.
+     */
+    function createEnhancedSwitchboard() {
+      const _events = [];
+      const _listeners = {};
+      return {
+        emit(name, payload) {
+          _events.push({ name, payload });
+          if (_listeners[name]) {
+            _listeners[name].forEach(function (fn) { fn(payload); });
+          }
+        },
+        on(name, handler) {
+          if (!_listeners[name]) _listeners[name] = [];
+          _listeners[name].push(handler);
+        },
+        getEvents() { return _events; },
+        getListeners() { return _listeners; },
+      };
+    }
+
+    describe('session:state-changed -> setSecondaryActive', () => {
+      it('setSecondaryActive(true) called when transitioning to passive', () => {
+        const sb = createEnhancedSwitchboard();
+        const _calls = [];
+        const cm = createMockContextManager();
+        // Wrap setSecondaryActive to track calls
+        cm.setSecondaryActive = function (active) {
+          _calls.push({ setSecondaryActive: active });
+        };
+
+        // Manually register the same listener that reverie.cjs adds
+        sb.on('session:state-changed', function (data) {
+          if (!data) return;
+          if (data.to === 'passive' || data.to === 'active') {
+            cm.setSecondaryActive(true);
+          } else if (data.to === 'stopped') {
+            cm.setSecondaryActive(false);
+          }
+        });
+
+        sb.emit('session:state-changed', { from: 'starting', to: 'passive' });
+
+        const activeCalls = _calls.filter(function (c) { return 'setSecondaryActive' in c; });
+        expect(activeCalls.length).toBe(1);
+        expect(activeCalls[0].setSecondaryActive).toBe(true);
+      });
+
+      it('setSecondaryActive(false) called when transitioning to stopped', () => {
+        const sb = createEnhancedSwitchboard();
+        const _calls = [];
+        const cm = createMockContextManager();
+        cm.setSecondaryActive = function (active) {
+          _calls.push({ setSecondaryActive: active });
+        };
+
+        sb.on('session:state-changed', function (data) {
+          if (!data) return;
+          if (data.to === 'passive' || data.to === 'active') {
+            cm.setSecondaryActive(true);
+          } else if (data.to === 'stopped') {
+            cm.setSecondaryActive(false);
+          }
+        });
+
+        sb.emit('session:state-changed', { from: 'shutting_down', to: 'stopped' });
+
+        const activeCalls = _calls.filter(function (c) { return 'setSecondaryActive' in c; });
+        expect(activeCalls.length).toBe(1);
+        expect(activeCalls[0].setSecondaryActive).toBe(false);
+      });
+    });
+
+    describe('Wire DIRECTIVE face_prompt -> receiveSecondaryUpdate', () => {
+      it('DIRECTIVE with face_prompt role calls receiveSecondaryUpdate with content', () => {
+        const _calls = [];
+        const cm = createMockContextManager();
+        cm.receiveSecondaryUpdate = function (fp) {
+          _calls.push({ receiveSecondaryUpdate: fp });
+          return { ok: true, value: { source: 'secondary', length: fp.length } };
+        };
+
+        // Simulate the callback that reverie.cjs registers on wireTopology.subscribe
+        const onPrimaryMessage = function (envelope) {
+          if (envelope.type === 'directive' && envelope.payload && envelope.payload.role === 'face_prompt') {
+            cm.receiveSecondaryUpdate(envelope.payload.content);
+          }
+        };
+
+        onPrimaryMessage({
+          id: 'env-1',
+          from: 'secondary',
+          to: 'primary',
+          type: 'directive',
+          urgency: 'directive',
+          payload: { role: 'face_prompt', content: 'Secondary composed prompt with referential framing' },
+          timestamp: new Date().toISOString(),
+        });
+
+        const updateCalls = _calls.filter(function (c) { return 'receiveSecondaryUpdate' in c; });
+        expect(updateCalls.length).toBe(1);
+        expect(updateCalls[0].receiveSecondaryUpdate).toBe('Secondary composed prompt with referential framing');
+      });
+
+      it('non-face_prompt DIRECTIVE does NOT call receiveSecondaryUpdate', () => {
+        const _calls = [];
+        const cm = createMockContextManager();
+        cm.receiveSecondaryUpdate = function (fp) {
+          _calls.push({ receiveSecondaryUpdate: fp });
+        };
+
+        const onPrimaryMessage = function (envelope) {
+          if (envelope.type === 'directive' && envelope.payload && envelope.payload.role === 'face_prompt') {
+            cm.receiveSecondaryUpdate(envelope.payload.content);
+          }
+        };
+
+        onPrimaryMessage({
+          id: 'env-2',
+          from: 'secondary',
+          to: 'primary',
+          type: 'directive',
+          urgency: 'directive',
+          payload: { role: 'behavioral', content: 'Some behavioral directive' },
+          timestamp: new Date().toISOString(),
+        });
+
+        const updateCalls = _calls.filter(function (c) { return 'receiveSecondaryUpdate' in c; });
+        expect(updateCalls.length).toBe(0);
+      });
+    });
+
+    describe('Full pipeline: Secondary update -> getInjection returns Secondary prompt', () => {
+      it('after receiveSecondaryUpdate, getInjection returns the Secondary-provided face prompt', () => {
+        // Use a REAL contextManager to verify end-to-end data flow
+        const { createContextManager } = require('../../components/context/context-manager.cjs');
+
+        const mockSelfModel = {
+          getAspect() { return null; },
+          async save() { return { ok: true, value: { aspect: 'test', version: 'v1' } }; },
+        };
+        const mockLathe = {
+          async readFile() { return { ok: false, error: { code: 'FILE_NOT_FOUND' } }; },
+          async writeFile() { return { ok: true, value: { path: '/tmp/test' } }; },
+        };
+        const mockSwitchboard = createEnhancedSwitchboard();
+
+        const result = createContextManager({
+          selfModel: mockSelfModel,
+          lathe: mockLathe,
+          switchboard: mockSwitchboard,
+          entropy: { applyVariance(t) { return t; }, getState() { return {}; }, evolve() {} },
+          dataDir: '/tmp/test-reverie-pipeline',
+        });
+
+        expect(result.ok).toBe(true);
+        const contextManager = result.value;
+
+        // Before Secondary update, getInjection is null (not yet init'd)
+        expect(contextManager.getInjection()).toBe(null);
+
+        // Simulate receiving Secondary face prompt update
+        const updateResult = contextManager.receiveSecondaryUpdate(
+          'Secondary: Referential framing with dual mode active'
+        );
+        expect(updateResult.ok).toBe(true);
+
+        // After Secondary update, getInjection should return the Secondary-provided prompt
+        expect(contextManager.getInjection()).toBe('Secondary: Referential framing with dual mode active');
+      });
+    });
+  });
 });

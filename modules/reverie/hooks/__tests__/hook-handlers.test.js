@@ -40,6 +40,7 @@ function createMockContextManager(overrides) {
     getSessionSnapshot() { return opts._snapshot; },
     async persistWarmStart() { _calls.push('persistWarmStart'); return opts._warmStartResult; },
     incrementTurn() { _calls.push('incrementTurn'); },
+    async getNudge() { return opts._getNudgeResult || null; },
     getCalls() { return _calls; },
   };
 }
@@ -63,6 +64,78 @@ function createMockLathe() {
   const _writes = [];
   return {
     async readFile(path) { return { ok: false, error: { code: 'FILE_NOT_FOUND' } }; },
+    async writeFile(path, content) {
+      _writes.push({ path, content });
+      return { ok: true, value: { path } };
+    },
+    getWrites() { return _writes; },
+  };
+}
+
+/**
+ * Creates a mock formation pipeline with controllable behavior.
+ */
+function createMockFormationPipeline(overrides) {
+  const opts = overrides || {};
+  const _calls = [];
+
+  return {
+    prepareStimulus(hookPayload, sessionContext) {
+      _calls.push({ prepareStimulus: { hookPayload, sessionContext } });
+      return opts._stimulusResult || {
+        turn_context: { user_prompt: hookPayload.user_prompt || '' },
+        self_model: {},
+        recalled_fragments: [],
+      };
+    },
+    async processFormationOutput(rawOutput, sessionContext) {
+      _calls.push({ processFormationOutput: { rawOutput, sessionContext } });
+      if (opts._processError) throw opts._processError;
+      return opts._processResult || { ok: true, value: { formed: 1, formationGroup: 'fg-test1234' } };
+    },
+    getFormationStats() {
+      return { totalFormed: 0, sessionFormed: 0, lastFormationTime: null };
+    },
+    getCalls() { return _calls; },
+  };
+}
+
+/**
+ * Creates a mock recall engine with controllable behavior.
+ */
+function createMockRecallEngine(overrides) {
+  const opts = overrides || {};
+  const _calls = [];
+
+  return {
+    async recallPassive(stimulus) {
+      _calls.push({ recallPassive: { stimulus } });
+      return opts._passiveResult || { ok: true, value: { fragments: [], nudgePrompt: null } };
+    },
+    async recallExplicit(conversationContext) {
+      _calls.push({ recallExplicit: { conversationContext } });
+      return opts._explicitResult || { ok: true, value: { fragments: [], reconstructionPrompt: null } };
+    },
+    getRecallStats() {
+      return { totalRecalls: 0, passiveRecalls: 0, explicitRecalls: 0 };
+    },
+    getCalls() { return _calls; },
+  };
+}
+
+/**
+ * Creates a mock Lathe with configurable readFile responses.
+ */
+function createMockLatheWithReads(readResponses) {
+  const _reads = readResponses || {};
+  const _writes = [];
+  return {
+    async readFile(path) {
+      if (_reads[path] !== undefined) {
+        return { ok: true, value: _reads[path] };
+      }
+      return { ok: false, error: { code: 'FILE_NOT_FOUND' } };
+    },
     async writeFile(path, content) {
       _writes.push({ path, content });
       return { ok: true, value: { path } };
@@ -536,6 +609,176 @@ describe('Hook Handlers', () => {
       expect(promptResult.systemMessage).toBeUndefined();
       expect(postToolResult.systemMessage).toBeUndefined();
       expect(compactResult.systemMessage).toBeUndefined();
+    });
+  });
+
+  // =========================================================================
+  // Phase 9: Formation, Recall, and Subagent Processing
+  // =========================================================================
+
+  describe('Phase 9: handleUserPromptSubmit with formationPipeline', () => {
+    it('calls formationPipeline.prepareStimulus when formationPipeline is available', async () => {
+      const fp = createMockFormationPipeline();
+      const cm = createMockContextManager({ _injection: 'face prompt' });
+      const handlers = createHookHandlers({
+        contextManager: cm,
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        formationPipeline: fp,
+      });
+
+      await handlers.handleUserPromptSubmit({ user_prompt: 'Tell me about your architecture', session_id: 'test' });
+      const fpCalls = fp.getCalls().filter(c => c.prepareStimulus);
+      expect(fpCalls.length).toBe(1);
+      expect(fpCalls[0].prepareStimulus.hookPayload.user_prompt).toBe('Tell me about your architecture');
+    });
+
+    it('still returns face prompt when formationPipeline is not provided (backward compat)', async () => {
+      const cm = createMockContextManager({ _injection: 'Phase 8 face prompt' });
+      const handlers = createHookHandlers({
+        contextManager: cm,
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+      });
+
+      const result = await handlers.handleUserPromptSubmit({ user_prompt: 'Test', session_id: 'test' });
+      expect(result.hookSpecificOutput.additionalContext).toBe('Phase 8 face prompt');
+    });
+  });
+
+  describe('Phase 9: handleUserPromptSubmit with nudge injection', () => {
+    it('appends nudge text to additionalContext when getNudge returns text', async () => {
+      const cm = createMockContextManager({
+        _injection: 'face prompt',
+        _getNudgeResult: 'I sense curiosity about architecture.',
+      });
+      const handlers = createHookHandlers({
+        contextManager: cm,
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+      });
+
+      const result = await handlers.handleUserPromptSubmit({ user_prompt: 'Hello', session_id: 'test' });
+      expect(result.hookSpecificOutput.additionalContext).toContain('face prompt');
+      expect(result.hookSpecificOutput.additionalContext).toContain('I sense curiosity about architecture.');
+      expect(result.hookSpecificOutput.additionalContext).toContain('Inner impression');
+    });
+  });
+
+  describe('Phase 9: handleUserPromptSubmit with explicit recall', () => {
+    it('detects recall keywords and calls recallEngine.recallExplicit', async () => {
+      const re = createMockRecallEngine({
+        _explicitResult: { ok: true, value: { fragments: [], reconstructionPrompt: 'You remember a deep trust moment.' } },
+      });
+      const cm = createMockContextManager({ _injection: 'face prompt' });
+      const handlers = createHookHandlers({
+        contextManager: cm,
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        recallEngine: re,
+      });
+
+      await handlers.handleUserPromptSubmit({ user_prompt: 'Do you remember when we discussed the architecture?', session_id: 'test' });
+      const reCalls = re.getCalls().filter(c => c.recallExplicit);
+      expect(reCalls.length).toBe(1);
+    });
+
+    it('appends recall reconstruction to additionalContext when keywords detected', async () => {
+      const re = createMockRecallEngine({
+        _explicitResult: { ok: true, value: { fragments: [], reconstructionPrompt: 'I remember a moment of deep collaboration on the design.' } },
+      });
+      const cm = createMockContextManager({ _injection: 'face prompt' });
+      const handlers = createHookHandlers({
+        contextManager: cm,
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        recallEngine: re,
+      });
+
+      const result = await handlers.handleUserPromptSubmit({ user_prompt: 'What do you remember about our sessions?', session_id: 'test' });
+      expect(result.hookSpecificOutput.additionalContext).toContain('Memory reconstruction');
+      expect(result.hookSpecificOutput.additionalContext).toContain('I remember a moment of deep collaboration');
+    });
+  });
+
+  describe('Phase 9: handlePostToolUse with formation trigger', () => {
+    it('triggers formation for tool-heavy turns with long output', async () => {
+      const fp = createMockFormationPipeline();
+      const cm = createMockContextManager({ _phase: 1, _nudge: null });
+      const handlers = createHookHandlers({
+        contextManager: cm,
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        formationPipeline: fp,
+      });
+
+      // Provide a long tool output (> 100 chars)
+      const longOutput = 'A'.repeat(200);
+      await handlers.handlePostToolUse({ tool_name: 'Read', tool_output: longOutput, session_id: 'test' });
+      const fpCalls = fp.getCalls().filter(c => c.prepareStimulus);
+      expect(fpCalls.length).toBe(1);
+    });
+  });
+
+  describe('Phase 9: handleSubagentStop with formation subagent', () => {
+    it('reads output file and calls processFormationOutput for reverie-formation agent', async () => {
+      const fp = createMockFormationPipeline();
+      const outputJson = JSON.stringify({ should_form: true, fragments: [{ body: 'test' }], nudge: 'test nudge' });
+      const lathe = createMockLatheWithReads({
+        '/tmp/test-reverie/data/formation/output/latest-output.json': outputJson,
+      });
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe,
+        dataDir: '/tmp/test-reverie',
+        formationPipeline: fp,
+      });
+
+      await handlers.handleSubagentStop({ agent_name: 'reverie-formation', session_id: 'test' });
+      const fpCalls = fp.getCalls().filter(c => c.processFormationOutput);
+      expect(fpCalls.length).toBe(1);
+      expect(fpCalls[0].processFormationOutput.rawOutput).toBe(outputJson);
+    });
+
+    it('does NOT call processFormationOutput for non-reverie agent', async () => {
+      const fp = createMockFormationPipeline();
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        formationPipeline: fp,
+      });
+
+      await handlers.handleSubagentStop({ agent_name: 'some-other-agent', session_id: 'test' });
+      const fpCalls = fp.getCalls().filter(c => c.processFormationOutput);
+      expect(fpCalls.length).toBe(0);
+    });
+
+    it('does not throw when processFormationOutput errors (graceful degradation)', async () => {
+      const fp = createMockFormationPipeline({ _processError: new Error('Parse error') });
+      const outputJson = JSON.stringify({ should_form: true, fragments: [] });
+      const lathe = createMockLatheWithReads({
+        '/tmp/test-reverie/data/formation/output/latest-output.json': outputJson,
+      });
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe,
+        dataDir: '/tmp/test-reverie',
+        formationPipeline: fp,
+      });
+
+      // Should NOT throw
+      const result = await handlers.handleSubagentStop({ agent_name: 'reverie-formation', session_id: 'test' });
+      expect(result.hookSpecificOutput.hookEventName).toBe('SubagentStop');
     });
   });
 });

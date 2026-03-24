@@ -124,6 +124,17 @@ function createMockRecallEngine(overrides) {
 }
 
 /**
+ * Creates a mock Lithograph provider tracking setTranscriptPath calls.
+ */
+function createMockLithograph() {
+  const _calls = [];
+  return {
+    setTranscriptPath(p) { _calls.push({ setTranscriptPath: p }); return { ok: true, value: undefined }; },
+    getCalls() { return _calls; },
+  };
+}
+
+/**
  * Creates a mock Lathe with configurable readFile responses.
  */
 function createMockLatheWithReads(readResponses) {
@@ -232,6 +243,40 @@ describe('Hook Handlers', () => {
       const events = switchboard.getEvents();
       const startEvt = events.find(e => e.name === 'reverie:hook:session-start');
       expect(startEvt).toBeDefined();
+    });
+
+    it('calls lithograph.setTranscriptPath when payload has transcript_path', async () => {
+      const mockLithograph = createMockLithograph();
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-data',
+        lithograph: mockLithograph,
+      });
+      await handlers.handleSessionStart({
+        session_id: 'test-session',
+        transcript_path: '/path/to/transcript.jsonl',
+      });
+      expect(mockLithograph.getCalls()).toEqual([
+        { setTranscriptPath: '/path/to/transcript.jsonl' },
+      ]);
+    });
+
+    it('handles missing lithograph gracefully when transcript_path present', async () => {
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-data',
+        // no lithograph provided
+      });
+      // Should not throw
+      const result = await handlers.handleSessionStart({
+        session_id: 'test-session',
+        transcript_path: '/path/to/transcript.jsonl',
+      });
+      expect(result.hookSpecificOutput.hookEventName).toBe('SessionStart');
     });
   });
 

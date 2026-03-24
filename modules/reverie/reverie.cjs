@@ -4,17 +4,17 @@
  * Reverie module entry point.
  *
  * Registers Reverie with the Dynamo platform via Circuit's module API.
- * Creates the Context Manager orchestrator, wires all 8 Claude Code hook
- * handlers through Armature's hook registry, and connects them to Switchboard.
+ * Creates the Context Manager orchestrator and registers all 8 Claude Code
+ * hook handlers through Exciter's integration surface.
  *
- * Per INT-01: All hooks are registered via createHookRegistry().register(),
- * NOT via events.on(). This ensures hooks are discoverable, inspectable,
- * and follow the Armature contract.
+ * Per INT-01 + D-09: All hooks are registered via exciter.registerHooks(),
+ * which delegates to Armature's createHookRegistry internally. This ensures
+ * hooks are discoverable, inspectable, and follow the Armature contract
+ * while routing through Dynamo's integration surface.
  *
  * @module reverie
  */
 
-const { createHookRegistry } = require('../../core/armature/hooks.cjs');
 const { createContextManager } = require('./components/context/context-manager.cjs');
 const { createHookHandlers } = require('./hooks/hook-handlers.cjs');
 const { createSelfModel } = require('./components/self-model/self-model.cjs');
@@ -56,6 +56,10 @@ function register(facade) {
 
   // Resolve additional services for Phase 9
   const assay = getService('assay');
+
+  // Resolve Exciter integration surface and Lithograph transcript provider (Phase 9.1)
+  const exciter = getService('exciter');
+  const lithograph = getProvider('lithograph');
 
   // Create FragmentWriter for formation
   const fragmentWriter = createFragmentWriter({
@@ -100,27 +104,27 @@ function register(facade) {
     dataDir: DATA_DIR_DEFAULT,
     formationPipeline,
     recallEngine,
+    lithograph,
   });
 
-  // Register all 8 hooks via Armature hook registry (per INT-01)
-  // NOT events.on() -- hooks go through the registry for discoverability
-  // and contract compliance
-  const registry = createHookRegistry();
+  // Register all 8 hooks via Exciter integration surface (per D-09)
+  // Exciter delegates to Armature's createHookRegistry internally.
+  // wireToSwitchboard is called during Exciter's start() phase.
+  const hookResult = exciter.registerHooks('reverie', {
+    SessionStart: handlers.handleSessionStart,
+    UserPromptSubmit: handlers.handleUserPromptSubmit,
+    PreToolUse: handlers.handlePreToolUse,
+    PostToolUse: handlers.handlePostToolUse,
+    Stop: handlers.handleStop,
+    PreCompact: handlers.handlePreCompact,
+    SubagentStart: handlers.handleSubagentStart,
+    SubagentStop: handlers.handleSubagentStop,
+  });
+  if (!hookResult.ok) {
+    return { name: 'reverie', status: 'error', error: hookResult.error };
+  }
 
-  registry.register('SessionStart', 'reverie', handlers.handleSessionStart);
-  registry.register('UserPromptSubmit', 'reverie', handlers.handleUserPromptSubmit);
-  registry.register('PreToolUse', 'reverie', handlers.handlePreToolUse);
-  registry.register('PostToolUse', 'reverie', handlers.handlePostToolUse);
-  registry.register('Stop', 'reverie', handlers.handleStop);
-  registry.register('PreCompact', 'reverie', handlers.handlePreCompact);
-  registry.register('SubagentStart', 'reverie', handlers.handleSubagentStart);
-  registry.register('SubagentStop', 'reverie', handlers.handleSubagentStop);
-
-  // Wire all registered hooks to Switchboard events
-  // This connects registry entries to switchboard.on(HOOK_EVENT_NAMES[hookType], handler)
-  registry.wireToSwitchboard(switchboard);
-
-  return { name: 'reverie', status: 'registered', hooks: 8, formation: true, recall: true };
+  return { name: 'reverie', status: 'registered', hooks: hookResult.value, formation: true, recall: true };
 }
 
 module.exports = { register };

@@ -15,10 +15,12 @@ const { createForge } = require('./services/forge/forge.cjs');
 const { createRelay } = require('./services/relay/relay.cjs');
 const { createWire } = require('./services/wire/wire.cjs');
 const { createAssay } = require('./services/assay/assay.cjs');
+const { createExciter } = require('./services/exciter/exciter.cjs');
 
 // Provider factories
 const { createLedger } = require('./providers/ledger/ledger.cjs');
 const { createJournal } = require('./providers/journal/journal.cjs');
+const { createLithograph } = require('./providers/lithograph/lithograph.cjs');
 
 // SDK factories
 const { createCircuit } = require('./sdk/circuit/circuit.cjs');
@@ -28,7 +30,7 @@ const { registerPlatformCommands } = require('./sdk/pulley/platform-commands.cjs
 /**
  * Bootstraps the entire Dynamo platform.
  *
- * Creates the IoC container, registers all 9 services and 2 providers with
+ * Creates the IoC container, registers all 10 services and 3 providers with
  * their dependency metadata, domain tags, and aliases, then boots them in
  * topological order via the lifecycle orchestrator.
  *
@@ -69,7 +71,7 @@ async function bootstrap(options = {}) {
   // 3. Create container
   const container = createContainer();
 
-  // 4. Register all 9 services as singletons
+  // 4. Register all 10 services as singletons
   container.singleton('services.switchboard', createSwitchboard, {
     deps: [],
     tags: ['service', 'events'],
@@ -125,7 +127,13 @@ async function bootstrap(options = {}) {
     mapDeps: { 'services.switchboard': 'switchboard', 'providers.ledger': 'ledger', 'providers.journal': 'journal' },
   });
 
-  // 5. Register both providers with domain tags and aliases
+  container.singleton('services.exciter', createExciter, {
+    deps: ['services.switchboard', 'services.lathe'],
+    tags: ['service', 'integration'],
+    mapDeps: { 'services.switchboard': 'switchboard', 'services.lathe': 'lathe' },
+  });
+
+  // 5. Register all 3 providers with domain tags and aliases
   container.singleton('providers.ledger', createLedger, {
     deps: ['services.switchboard'],
     tags: ['provider', 'data', 'sql'],
@@ -140,6 +148,13 @@ async function bootstrap(options = {}) {
     aliases: ['providers.data.files'],
     mapDeps: { 'services.lathe': 'lathe', 'services.switchboard': 'switchboard' },
     config: { basePath: paths.root + '/data/journal' },
+  });
+
+  container.singleton('providers.lithograph', createLithograph, {
+    deps: ['services.lathe'],
+    tags: ['provider', 'data', 'transcript'],
+    aliases: ['providers.data.transcript'],
+    mapDeps: { 'services.lathe': 'lathe' },
   });
 
   // 6. Create lifecycle

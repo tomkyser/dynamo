@@ -76,6 +76,7 @@ function createHookHandlers(options) {
   const { contextManager, switchboard, lathe, dataDir } = options || {};
   const formationPipeline = (options && options.formationPipeline) || null;
   const recallEngine = (options && options.recallEngine) || null;
+  const lithograph = (options && options.lithograph) || null;
 
   // Resolve ~ to HOME for dataDir
   const resolvedDataDir = dataDir && dataDir.startsWith('~')
@@ -98,6 +99,13 @@ function createHookHandlers(options) {
    * @returns {Promise<Object>} Hook output with additionalContext
    */
   async function handleSessionStart(payload) {
+    // Per D-03: Inject session-scoped transcript_path into Lithograph
+    // so all subsequent read/write/query ops target this session's transcript.
+    // transcript_path comes from Claude Code hook stdin JSON payload.
+    if (lithograph && payload && payload.transcript_path) {
+      lithograph.setTranscriptPath(payload.transcript_path);
+    }
+
     if (payload && payload.source === 'compact') {
       await contextManager.resetAfterCompaction();
     } else {

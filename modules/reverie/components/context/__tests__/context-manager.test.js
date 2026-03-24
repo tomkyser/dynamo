@@ -607,4 +607,63 @@ describe('Context Manager', () => {
       expect(snapshot2.turnCount).toBe(1);
     });
   });
+
+  describe('getNudge()', () => {
+    it('returns null when no nudgeManager provided', async () => {
+      const result = createContextManager({
+        selfModel: createMockSelfModel(),
+        lathe: createMockLathe(),
+        switchboard: createMockSwitchboard(),
+        entropy: createMockEntropy(),
+        journal: createMockJournal(),
+        dataDir: '/tmp/test-reverie',
+      });
+      const cm = result.value;
+
+      const nudge = await cm.getNudge();
+      expect(nudge).toBeNull();
+    });
+
+    it('returns nudge text when nudgeManager.readLatestNudge returns ok with value', async () => {
+      const mockNudgeManager = {
+        async readLatestNudge() {
+          return { ok: true, value: { text: 'I sense curiosity about architecture.', age: 5000 } };
+        },
+      };
+      const result = createContextManager({
+        selfModel: createMockSelfModel(),
+        lathe: createMockLathe(),
+        switchboard: createMockSwitchboard(),
+        entropy: createMockEntropy(),
+        journal: createMockJournal(),
+        dataDir: '/tmp/test-reverie',
+        nudgeManager: mockNudgeManager,
+      });
+      const cm = result.value;
+
+      const nudge = await cm.getNudge();
+      expect(nudge).toBe('I sense curiosity about architecture.');
+    });
+
+    it('returns null when nudgeManager.readLatestNudge returns ok(null) (stale/missing)', async () => {
+      const mockNudgeManager = {
+        async readLatestNudge() {
+          return { ok: true, value: null };
+        },
+      };
+      const result = createContextManager({
+        selfModel: createMockSelfModel(),
+        lathe: createMockLathe(),
+        switchboard: createMockSwitchboard(),
+        entropy: createMockEntropy(),
+        journal: createMockJournal(),
+        dataDir: '/tmp/test-reverie',
+        nudgeManager: mockNudgeManager,
+      });
+      const cm = result.value;
+
+      const nudge = await cm.getNudge();
+      expect(nudge).toBeNull();
+    });
+  });
 });

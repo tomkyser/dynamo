@@ -51,7 +51,7 @@ const CONTEXT_MANAGER_SHAPE = {
     'getSessionSnapshot',
     'persistWarmStart',
   ],
-  optional: ['incrementTurn'],
+  optional: ['incrementTurn', 'getNudge'],
 };
 
 // ---------------------------------------------------------------------------
@@ -76,6 +76,7 @@ function createContextManager(options) {
   }
 
   const { selfModel, lathe, switchboard, entropy, journal } = options;
+  const _nudgeManager = options.nudgeManager || null;
   const dataDir = options.dataDir || '~/.dynamo/reverie';
 
   // Resolve ~ to HOME
@@ -306,6 +307,20 @@ function createContextManager(options) {
     _budgetTracker.incrementTurn();
   }
 
+  /**
+   * Returns the latest formation nudge text if available and fresh.
+   * Reads from nudge manager (filesystem). Returns null if no nudge
+   * or nudge is stale.
+   *
+   * @returns {Promise<string|null>}
+   */
+  async function getNudge() {
+    if (!_nudgeManager) return null;
+    const result = await _nudgeManager.readLatestNudge();
+    if (!result.ok || !result.value) return null;
+    return result.value.text;
+  }
+
   return createContract('contextManager', CONTEXT_MANAGER_SHAPE, {
     init,
     compose,
@@ -318,6 +333,7 @@ function createContextManager(options) {
     getSessionSnapshot,
     persistWarmStart,
     incrementTurn,
+    getNudge,
   });
 }
 

@@ -68,8 +68,8 @@
 ### Platform Prerequisites
 
 - [x] **PLT-01**: Wire write coordinator retry logic with exponential backoff and write-ahead journaling — current implementation drops failed writes silently, which corrupts association index under burst formation load
-- [ ] **PLT-02**: Lithograph provider — read/write/query Claude Code transcript JSONL files (parse conversation turns, tool use blocks, tool results; atomic content manipulation with rollback)
-- [ ] **PLT-03**: Exciter service — Claude Code integration surface management (hook registration/wiring, agent definitions, skill definitions, settings.json at project and user scope, CLAUDE.md management). Single interface through which modules and extensions implement Claude Code features.
+- [x] **PLT-02**: Lithograph provider — read/write/query Claude Code transcript JSONL files (parse conversation turns, tool use blocks, tool results; atomic content manipulation with rollback)
+- [x] **PLT-03**: Exciter service — Claude Code integration surface management (hook registration/wiring, agent definitions, skill definitions, settings.json at project and user scope, CLAUDE.md management). Single interface through which modules and extensions implement Claude Code features.
 
 ## Deferred to v2
 
@@ -162,8 +162,8 @@
 | INT-02 | Phase 12 | Pending |
 | INT-03 | Phase 12 | Pending |
 | PLT-01 | Phase 7 | Complete |
-| PLT-02 | Phase 9.1 | Pending |
-| PLT-03 | Phase 9.1 | Pending |
+| PLT-02 | Phase 9.1 | Complete |
+| PLT-03 | Phase 9.1 | Complete |
 
 **Coverage:**
 - M2 requirements: 42 total

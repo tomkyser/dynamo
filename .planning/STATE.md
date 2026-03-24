@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
-status: Ready to plan
-stopped_at: Phase 9.1 context gathered
-last_updated: "2026-03-24T18:11:55.130Z"
+status: Ready to execute
+stopped_at: Completed 09.1-02-PLAN.md
+last_updated: "2026-03-24T19:00:25.690Z"
 progress:
   total_phases: 7
   completed_phases: 3
-  total_plans: 11
+  total_plans: 14
   completed_plans: 11
 ---
 
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** Everything routes through Dynamo -- the holistic wrapper via its APIs and interfaces. No component bypasses the patterns and paths Dynamo defines.
-**Current focus:** Phase 09 — fragment-memory-engine
+**Current focus:** Phase 09.1 — claude-code-integration-layer
 
 ## Current Position
 
-Phase: 09.1
-Plan: Not started
+Phase: 09.1 (claude-code-integration-layer) — EXECUTING
+Plan: 3 of 3
 
 ## Performance Metrics
 
@@ -64,6 +64,8 @@ Plan: Not started
 | Phase 09 P01 | 6min | 2 tasks | 8 files |
 | Phase 09 P03 | 6min | 2 tasks | 5 files |
 | Phase 09 P04 | 6min | 2 tasks | 6 files |
+| Phase 09.1 P01 | 4min | 2 tasks | 4 files |
+| Phase 09.1 P02 | 5min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -102,6 +104,12 @@ Recent decisions affecting current work:
 - [Phase 09]: Formation agent definition placed at .claude/agents/ (Claude Code discovery path), not modules/reverie/agents/
 - [Phase 09]: handleSubagentStop filters by agent_name to only process reverie-formation output, passes through for all other subagents
 - [Phase 09]: Combined additionalContext injection: face prompt + nudge + recall with labeled delimiters
+- [Phase 09.1]: Versioned parser with PARSERS registry (Object.freeze) for v1 format detection — future format changes add a new parser, no consumer changes
+- [Phase 09.1]: Session-scoped transcript_path via setTranscriptPath() matches Journal basePath injection pattern — sync reads, async writes
+- [Phase 09.1]: Parser metadata (_parserVersion, _lineIndex) stripped on serialize to avoid polluting transcript file
+- [Phase 09.1]: Exciter delegates to Armature createHookRegistry for hook mechanics, owning only the registration facade per D-05
+- [Phase 09.1]: wireToSwitchboard called once in start(), not per-registration, per Pitfall 6
+- [Phase 09.1]: Section markers use dynamo:section prefix to prevent false matches in content per D-07
 
 ### Roadmap Evolution
 
@@ -123,6 +131,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T18:11:55.127Z
-Stopped at: Phase 9.1 context gathered
-Resume file: .planning/phases/09.1-claude-code-integration-layer/09.1-CONTEXT.md
+Last session: 2026-03-24T19:00:25.687Z
+Stopped at: Completed 09.1-02-PLAN.md
+Resume file: None

@@ -63,12 +63,17 @@ Plans:
 **Depends on**: Phase 7
 **Requirements**: CTX-01, CTX-03, CTX-04, CTX-05, INT-01
 **Success Criteria** (what must be TRUE):
-  1. UserPromptSubmit hook injects Self Model personality into every turn via systemMessage within the target token budget (~800-1800 tokens), and the injection completes under 50ms (measured, not estimated)
-  2. Context budget manager transitions through 4 phases (full -> compressed -> minimal -> compaction advocacy) based on context utilization, with injection size adapting at each phase boundary
+  1. UserPromptSubmit hook injects Self Model personality into every turn via additionalContext within the target token budget (~800-1800 tokens), and the injection completes under 50ms (measured, not estimated)
+  2. Context budget manager transitions through 4 phases (full -> compressed -> reinforced -> compaction advocacy) based on context utilization, with injection size adapting at each phase boundary
   3. PreCompact hook preserves Self Model perspective in the compaction frame so that post-compaction context retains personality directives (not neutral summary)
   4. Warm-start face prompt cache persists the final Face prompt from the prior session and injects it on SessionStart before Secondary is ready, so the first user turn has personality
   5. All 8 Claude Code hook types (SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, Stop, PreCompact, SubagentStart, SubagentStop) are wired through Armature's hook registry to Reverie handlers
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 08-01-PLAN.md — Budget tracker state machine + template composer 5-slot system
+- [ ] 08-02-PLAN.md — Context Manager orchestrator + hook handlers + Armature wiring
+
 **Research flag**: STANDARD PATTERNS for hook wiring and state file pattern (validated by Claude-Mem). Personality injection size at high context utilization needs empirical measurement (PITFALLS research contradicts spec's "minimal injection at 75-90%").
 
 ### Phase 9: Fragment Memory Engine
@@ -136,7 +141,7 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 5. SDK & Platform Infra | M1 | 5/5 | Complete | 2026-03-23 |
 | 6. Bootstrap Integration | M1 | 2/2 | Complete | 2026-03-23 |
 | 7. Foundation Infrastructure | M2 | 0/5 | Planned | - |
-| 8. Single-Session Personality | M2 | 0/TBD | Not started | - |
+| 8. Single-Session Personality | M2 | 0/2 | Planned | - |
 | 9. Fragment Memory Engine | M2 | 0/TBD | Not started | - |
 | 10. Three-Session Architecture | M2 | 0/TBD | Not started | - |
 | 11. REM Consolidation | M2 | 0/TBD | Not started | - |

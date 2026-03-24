@@ -68,7 +68,7 @@ describe('getSystemPrompt', () => {
 
   it('includes instructions for scanning fragment index headers', () => {
     const prompt = loop.getSystemPrompt();
-    expect(prompt).toContain('scan fragment index headers');
+    expect(prompt.toLowerCase()).toContain('scan fragment index headers');
   });
 
   it('includes instructions for resonance scoring', () => {

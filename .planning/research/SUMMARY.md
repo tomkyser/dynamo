@@ -281,6 +281,11 @@ This is the correct confidence level for a novel system. The platform layer (Dyn
 - [Claude-Mem hooks architecture](https://docs.claude-mem.ai/hooks-architecture) — production hook-based memory system, 45ms p95 hook execution validated
 - [Facts as First-Class Objects](https://arxiv.org/html/2603.17781v1) — compaction destroys 60% of facts; 46% constraint retention post-compaction
 
+### Post-Milestone Research (added during M2 execution)
+- [claude-mem endless mode source code](https://github.com/thedotmack/claude-mem/tree/beta/endless-mode) — verified transcript JSONL read/write via `transcript_path` hook parameter; `additionalContext` for injection; direct JSONL manipulation for context removal; Claude Agent SDK for compressed observations (HIGH confidence, source code verified 2026-03-24)
+- [claude-mem endless mode docs](https://docs.claude-mem.ai/beta-features#the-problem-endless-mode-solves) — biomimetic two-tier memory (compressed working + full archive); O(N) vs O(N^2) context scaling claim (MEDIUM confidence, theoretical projections not production-validated)
+- Full analysis: `.planning/phases/09.1-claude-code-integration-layer/09.1-RESEARCH-TRANSCRIPT-CONTROL.md`
+
 ### Secondary (MEDIUM confidence)
 - [Kindroid dual-layer memory architecture](https://aiinsightsnews.net/character-ai-vs-kindroid-vs-nomi/) — cascaded + key memories comparison
 - [Meganova: Memory Systems in AI Characters](https://blog.meganova.ai/memory-systems-in-ai-characters-what-actually-works/) — what works vs fails in production

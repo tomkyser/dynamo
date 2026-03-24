@@ -47,6 +47,7 @@ Everything routes through Dynamo. It is the holistic wrapper via its APIs and in
 - Primary Context Management (Self Model injection, referential framing, 4-phase budget, compaction framing)
 - Operational Modes (Active/Passive/REM/Dormant)
 - Module Integration (8 Claude Code hooks, CLI surface via Pulley, submodule management)
+- Claude Code Integration Layer (Lithograph transcript provider, Exciter integration surface service)
 
 ### Validated (continued)
 

@@ -85,6 +85,7 @@ Plans:
   2. Recall via Assay returns ranked fragments using composite scoring (association pointers, domain overlap, entity co-occurrence, decay weighting, Self Model relevance) and reconstructs them through the current Self Model frame
 **Plans**: TBD
 **Research flag**: NEEDS RESEARCH -- formation fan-out signal-to-noise ratio (EXPERIMENTAL 9.10) and recall reconstruction quality (EXPERIMENTAL 9.8) have no validated production references. Empirical measurement required during this phase.
+**Design note**: Single-session mode uses turn-scoped background subagents (fire-and-forget via Agent tool) as an intuitive inner voice — high-perception, low-deliberation formation. Self Model framing shifts to ISFP/INFP cognitive style (impressionistic, not analytical). Phase 9.1 (Lithograph) will later enable richer transcript-based stimulus context for these agents. See `.planning/phases/09.1-claude-code-integration-layer/09.1-RESEARCH-TRANSCRIPT-CONTROL.md`.
 
 ### Phase 09.1: Claude Code Integration Layer (INSERTED)
 
@@ -96,7 +97,8 @@ Plans:
   2. Exciter service owns Claude Code integration surface: hook registration/wiring, agent definition management, skill definitions, settings.json management (project + user scope), CLAUDE.md management — other services and modules access Claude Code features through Exciter's contract
   3. Reverie's existing hook registration (Phase 8) can be migrated to use Exciter without breaking existing tests or behavior
 **Plans**: TBD
-**Canonical refs**: `.claude/reverie-spec-v2.md`, `core/armature/hooks.cjs`, `core/services/commutator/commutator.cjs`
+**Canonical refs**: `.claude/reverie-spec-v2.md`, `core/armature/hooks.cjs`, `core/services/commutator/commutator.cjs`, `.planning/phases/09.1-claude-code-integration-layer/09.1-RESEARCH-TRANSCRIPT-CONTROL.md`
+**Research flag**: RESEARCH COMPLETE — transcript control mechanism verified via claude-mem source code analysis (2026-03-24). Transcript JSONL is read/write via hook `transcript_path`. `additionalContext` for injection, direct JSONL manipulation for removal.
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 09.1 to break down)

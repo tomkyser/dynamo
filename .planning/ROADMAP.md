@@ -122,8 +122,16 @@ Plans:
   3. Tertiary session runs continuous sublimation cycles at a configurable frequency without overwhelming Wire or exceeding Claude Max rate limits -- measured, not assumed
   4. Active mode (three sessions) and Passive mode (Primary + lightweight Secondary only) both function end-to-end, with automatic fallback from Active to Passive when resource limits are detected
   5. Referential framing prompt causes Primary to treat injected context as reference material subordinate to Self Model directives, verified against test scenarios where technically correct answers conflict with relational directives
-**Plans**: TBD
-**Research flag**: NEEDS RESEARCH -- Channels API contract stability, Claude Max concurrent session limits (EXPERIMENTAL 9.4), referential framing dual-mode calibration (EXPERIMENTAL 9.9). Go/no-go gate: if three sessions exceed Max limits, Passive mode becomes default and Tertiary defers to v2.
+**Plans:** 5 plans
+
+Plans:
+- [ ] 10-01-PLAN.md — Session config constants + Conductor session spawning expansion
+- [ ] 10-02-PLAN.md — Referential framing prompt templates + Tertiary sublimation loop config
+- [ ] 10-03-PLAN.md — Session Manager state machine + Mode Manager (Active/Passive)
+- [ ] 10-04-PLAN.md — Mind cognitive cycle orchestrator + Wire topology enforcement
+- [ ] 10-05-PLAN.md — Hook handler migration + Reverie module wiring
+
+**Research flag**: RESEARCH COMPLETE -- Channels API contract stability verified, Claude Max concurrent session limits documented (EXPERIMENTAL 9.4), referential framing dual-mode calibration designed (EXPERIMENTAL 9.9). Go/no-go gate: if three sessions exceed Max limits, Passive mode becomes default and Tertiary defers to v2.
 
 ### Phase 11: REM Consolidation
 **Goal**: Implement the three-tier consolidation pipeline that gates all fragment promotion from working memory to long-term storage, evolves the Self Model through conditioning updates, and maintains association index integrity
@@ -170,6 +178,6 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 9.1 -> 10 -> 11 -> 12
 | 8. Single-Session Personality | M2 | 1/2 | In Progress | - |
 | 9. Fragment Memory Engine | M2 | 0/4 | Planned | - |
 | 9.1 Claude Code Integration | M2 | 0/3 | Planned    |  |
-| 10. Three-Session Architecture | M2 | 0/TBD | Not started | - |
+| 10. Three-Session Architecture | M2 | 0/5 | Planned | - |
 | 11. REM Consolidation | M2 | 0/TBD | Not started | - |
 | 12. Integration Surface | M2 | 0/TBD | Not started | - |

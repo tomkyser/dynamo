@@ -51,7 +51,7 @@ const CONTEXT_MANAGER_SHAPE = {
     'getSessionSnapshot',
     'persistWarmStart',
   ],
-  optional: ['incrementTurn', 'getNudge'],
+  optional: ['incrementTurn', 'getNudge', 'receiveSecondaryUpdate', 'setSecondaryActive'],
 };
 
 // ---------------------------------------------------------------------------
@@ -91,6 +91,7 @@ function createContextManager(options) {
   const _facePromptPath = path.join(resolvedDataDir, 'face-prompt.md');
   const _checkpointDir = path.join(resolvedDataDir, 'data', 'checkpoints');
   let _initialized = false;
+  let _secondaryActive = false;
 
   // -------------------------------------------------------------------------
   // Methods
@@ -142,6 +143,12 @@ function createContextManager(options) {
    * @returns {Promise<import('../../../../lib/result.cjs').Result<{ phase: number, path: string }>>}
    */
   async function compose() {
+    // When Secondary is active, it is the face prompt authority (per D-04).
+    // Skip local composition and return the Secondary-provided face prompt.
+    if (_secondaryActive && _currentFacePrompt) {
+      return ok({ phase: _budgetTracker.getPhase(), path: _facePromptPath, source: 'secondary' });
+    }
+
     const phase = _budgetTracker.getPhase();
     const text = _templateComposer.compose(phase);
 
@@ -308,6 +315,43 @@ function createContextManager(options) {
   }
 
   /**
+   * Receives a face prompt update from Secondary (Mind) session.
+   *
+   * When Secondary is running, face prompt composition is Secondary-driven.
+   * Context Manager caches what Secondary provides and serves it via
+   * getInjection() on the hot path.
+   *
+   * @param {string} facePrompt - Face prompt string composed by Secondary
+   * @returns {import('../../../../lib/result.cjs').Result<{ source: string, length: number }>}
+   */
+  function receiveSecondaryUpdate(facePrompt) {
+    if (!facePrompt || typeof facePrompt !== 'string' || facePrompt.length === 0) {
+      return err('INVALID_FACE_PROMPT', 'facePrompt must be a non-empty string');
+    }
+
+    _currentFacePrompt = facePrompt;
+    _secondaryActive = true;
+
+    if (switchboard) {
+      switchboard.emit('context:face-prompt-updated', { source: 'secondary', length: facePrompt.length });
+    }
+
+    return ok({ source: 'secondary', length: facePrompt.length });
+  }
+
+  /**
+   * Sets the Secondary active flag.
+   *
+   * Called by Session Manager when Secondary starts or stops to control
+   * whether compose() defers to Secondary-provided face prompts.
+   *
+   * @param {boolean} active - Whether Secondary is active
+   */
+  function setSecondaryActive(active) {
+    _secondaryActive = !!active;
+  }
+
+  /**
    * Returns the latest formation nudge text if available and fresh.
    * Reads from nudge manager (filesystem). Returns null if no nudge
    * or nudge is stale.
@@ -334,6 +378,8 @@ function createContextManager(options) {
     persistWarmStart,
     incrementTurn,
     getNudge,
+    receiveSecondaryUpdate,
+    setSecondaryActive,
   });
 }
 

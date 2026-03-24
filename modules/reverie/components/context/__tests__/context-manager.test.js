@@ -666,4 +666,158 @@ describe('Context Manager', () => {
       expect(nudge).toBeNull();
     });
   });
+
+  // =========================================================================
+  // Phase 10: Secondary-driven face prompt updates
+  // =========================================================================
+
+  describe('receiveSecondaryUpdate()', () => {
+    it('sets _currentFacePrompt from Secondary', async () => {
+      const result = createContextManager({
+        selfModel: createMockSelfModel(),
+        lathe: createMockLathe(),
+        switchboard: createMockSwitchboard(),
+        entropy: createMockEntropy(),
+        journal: createMockJournal(),
+        dataDir: '/tmp/test-reverie',
+      });
+      const cm = result.value;
+
+      const updateResult = cm.receiveSecondaryUpdate('Secondary face prompt content');
+      expect(updateResult.ok).toBe(true);
+      expect(updateResult.value.source).toBe('secondary');
+      expect(updateResult.value.length).toBe('Secondary face prompt content'.length);
+
+      // getInjection should now return the Secondary-provided content
+      expect(cm.getInjection()).toBe('Secondary face prompt content');
+    });
+
+    it('returns err for empty or invalid facePrompt', () => {
+      const result = createContextManager({
+        selfModel: createMockSelfModel(),
+        lathe: createMockLathe(),
+        switchboard: createMockSwitchboard(),
+        entropy: createMockEntropy(),
+        journal: createMockJournal(),
+        dataDir: '/tmp/test-reverie',
+      });
+      const cm = result.value;
+
+      expect(cm.receiveSecondaryUpdate('').ok).toBe(false);
+      expect(cm.receiveSecondaryUpdate(null).ok).toBe(false);
+      expect(cm.receiveSecondaryUpdate(42).ok).toBe(false);
+    });
+
+    it('emits context:face-prompt-updated event', () => {
+      const switchboard = createMockSwitchboard();
+      const result = createContextManager({
+        selfModel: createMockSelfModel(),
+        lathe: createMockLathe(),
+        switchboard,
+        entropy: createMockEntropy(),
+        journal: createMockJournal(),
+        dataDir: '/tmp/test-reverie',
+      });
+      const cm = result.value;
+
+      cm.receiveSecondaryUpdate('Updated prompt from Secondary');
+      const events = switchboard.getEvents();
+      const evt = events.find(e => e.name === 'context:face-prompt-updated');
+      expect(evt).toBeDefined();
+      expect(evt.payload.source).toBe('secondary');
+      expect(evt.payload.length).toBe('Updated prompt from Secondary'.length);
+    });
+  });
+
+  describe('compose() with Secondary authority', () => {
+    it('returns Secondary-provided prompt when _secondaryActive is true', async () => {
+      const lathe = createMockLathe();
+      const result = createContextManager({
+        selfModel: createMockSelfModel(),
+        lathe,
+        switchboard: createMockSwitchboard(),
+        entropy: createMockEntropy(),
+        journal: createMockJournal(),
+        dataDir: '/tmp/test-reverie',
+      });
+      const cm = result.value;
+
+      // Set Secondary-provided face prompt
+      cm.receiveSecondaryUpdate('Secondary authority prompt');
+      cm.setSecondaryActive(true);
+
+      const writesBefore = lathe.getWrites().length;
+      const composeResult = await cm.compose();
+      expect(composeResult.ok).toBe(true);
+      expect(composeResult.value.source).toBe('secondary');
+
+      // Should NOT write to file (Secondary is authority, no local composition)
+      expect(lathe.getWrites().length).toBe(writesBefore);
+
+      // getInjection still returns Secondary prompt
+      expect(cm.getInjection()).toBe('Secondary authority prompt');
+    });
+
+    it('falls back to local composition when _secondaryActive is false', async () => {
+      const result = createContextManager({
+        selfModel: createMockSelfModel(),
+        lathe: createMockLathe(),
+        switchboard: createMockSwitchboard(),
+        entropy: createMockEntropy(),
+        journal: createMockJournal(),
+        dataDir: '/tmp/test-reverie',
+      });
+      const cm = result.value;
+
+      // _secondaryActive defaults to false
+      const composeResult = await cm.compose();
+      expect(composeResult.ok).toBe(true);
+      expect(composeResult.value.source).toBeUndefined(); // local compose has no source field
+      expect(typeof cm.getInjection()).toBe('string');
+      expect(cm.getInjection().length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('setSecondaryActive()', () => {
+    it('enables Secondary authority when set to true', async () => {
+      const lathe = createMockLathe();
+      const result = createContextManager({
+        selfModel: createMockSelfModel(),
+        lathe,
+        switchboard: createMockSwitchboard(),
+        entropy: createMockEntropy(),
+        journal: createMockJournal(),
+        dataDir: '/tmp/test-reverie',
+      });
+      const cm = result.value;
+
+      // Pre-set a face prompt via receiveSecondaryUpdate
+      cm.receiveSecondaryUpdate('Secondary controlled prompt');
+
+      // Enable Secondary authority
+      cm.setSecondaryActive(true);
+
+      const composeResult = await cm.compose();
+      expect(composeResult.value.source).toBe('secondary');
+    });
+
+    it('disables Secondary authority when set to false', async () => {
+      const result = createContextManager({
+        selfModel: createMockSelfModel(),
+        lathe: createMockLathe(),
+        switchboard: createMockSwitchboard(),
+        entropy: createMockEntropy(),
+        journal: createMockJournal(),
+        dataDir: '/tmp/test-reverie',
+      });
+      const cm = result.value;
+
+      cm.receiveSecondaryUpdate('Secondary prompt');
+      cm.setSecondaryActive(true);
+      cm.setSecondaryActive(false);
+
+      const composeResult = await cm.compose();
+      expect(composeResult.value.source).toBeUndefined();
+    });
+  });
 });

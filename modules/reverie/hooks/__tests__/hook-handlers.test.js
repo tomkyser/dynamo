@@ -826,4 +826,177 @@ describe('Hook Handlers', () => {
       expect(result.hookSpecificOutput.hookEventName).toBe('SubagentStop');
     });
   });
+
+  // =========================================================================
+  // Phase 10: Session Manager, Wire Topology, Mode Manager integration
+  // =========================================================================
+
+  describe('Phase 10: handleSessionStart with sessionManager', () => {
+    it('calls sessionManager.start when available', async () => {
+      const _calls = [];
+      const mockSessionManager = {
+        async start() { _calls.push('start'); return { ok: true, value: { state: 'passive' } }; },
+        async stop() { _calls.push('stop'); return { ok: true, value: { state: 'stopped' } }; },
+        getState() { return { state: 'passive', secondary: 'sec-1', tertiary: null, config: {} }; },
+      };
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        sessionManager: mockSessionManager,
+      });
+
+      await handlers.handleSessionStart({ session_id: 'test' });
+      // start() is fire-and-forget, give it a tick to complete
+      await new Promise(function (r) { setTimeout(r, 10); });
+      expect(_calls).toContain('start');
+    });
+
+    it('works without sessionManager (backward compat)', async () => {
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        // no sessionManager
+      });
+
+      const result = await handlers.handleSessionStart({ session_id: 'test' });
+      expect(result.hookSpecificOutput.hookEventName).toBe('SessionStart');
+    });
+  });
+
+  describe('Phase 10: handleUserPromptSubmit with wireTopology', () => {
+    it('sends snapshot via wireTopology when available', async () => {
+      const _sentEnvelopes = [];
+      const mockWireTopology = {
+        async send(envelope) {
+          _sentEnvelopes.push(envelope);
+          return { ok: true, value: { sent: true } };
+        },
+      };
+      const mockSessionManager = {
+        getState() { return { state: 'passive', secondary: 'sec-1', tertiary: null, config: {} }; },
+      };
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        wireTopology: mockWireTopology,
+        sessionManager: mockSessionManager,
+      });
+
+      await handlers.handleUserPromptSubmit({ user_prompt: 'Hello world', session_id: 'test' });
+      // Give fire-and-forget a tick to complete
+      await new Promise(function (r) { setTimeout(r, 10); });
+      expect(_sentEnvelopes.length).toBe(1);
+      expect(_sentEnvelopes[0].from).toBe('primary');
+      expect(_sentEnvelopes[0].to).toBe('secondary');
+      expect(_sentEnvelopes[0].type).toBe('snapshot');
+      expect(_sentEnvelopes[0].payload.userPrompt).toBe('Hello world');
+    });
+
+    it('does not send when session state is stopped', async () => {
+      const _sentEnvelopes = [];
+      const mockWireTopology = {
+        async send(envelope) {
+          _sentEnvelopes.push(envelope);
+          return { ok: true, value: { sent: true } };
+        },
+      };
+      const mockSessionManager = {
+        getState() { return { state: 'stopped', secondary: null, tertiary: null, config: {} }; },
+      };
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        wireTopology: mockWireTopology,
+        sessionManager: mockSessionManager,
+      });
+
+      await handlers.handleUserPromptSubmit({ user_prompt: 'Test', session_id: 'test' });
+      await new Promise(function (r) { setTimeout(r, 10); });
+      expect(_sentEnvelopes.length).toBe(0);
+    });
+
+    it('works without wireTopology (backward compat)', async () => {
+      const cm = createMockContextManager({ _injection: 'face prompt' });
+      const handlers = createHookHandlers({
+        contextManager: cm,
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        // no wireTopology
+      });
+
+      const result = await handlers.handleUserPromptSubmit({ user_prompt: 'Test', session_id: 'test' });
+      expect(result.hookSpecificOutput.hookEventName).toBe('UserPromptSubmit');
+      expect(result.hookSpecificOutput.additionalContext).toBe('face prompt');
+    });
+  });
+
+  describe('Phase 10: handleStop with sessionManager', () => {
+    it('calls sessionManager.stop when available', async () => {
+      const _calls = [];
+      const mockSessionManager = {
+        async start() { _calls.push('start'); return { ok: true }; },
+        async stop() { _calls.push('stop'); return { ok: true, value: { state: 'stopped' } }; },
+        getState() { return { state: 'passive' }; },
+      };
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        sessionManager: mockSessionManager,
+      });
+
+      await handlers.handleStop({ session_id: 'test' });
+      expect(_calls).toContain('stop');
+    });
+
+    it('works without sessionManager (backward compat)', async () => {
+      const cm = createMockContextManager();
+      const handlers = createHookHandlers({
+        contextManager: cm,
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        // no sessionManager
+      });
+
+      await handlers.handleStop({ session_id: 'test' });
+      expect(cm.getCalls()).toContain('persistWarmStart');
+    });
+  });
+
+  describe('Phase 10: handlePreCompact with wireTopology', () => {
+    it('sends compaction notification via wireTopology', async () => {
+      const _sentEnvelopes = [];
+      const mockWireTopology = {
+        async send(envelope) {
+          _sentEnvelopes.push(envelope);
+          return { ok: true, value: { sent: true } };
+        },
+      };
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        wireTopology: mockWireTopology,
+      });
+
+      await handlers.handlePreCompact({ session_id: 'test' });
+      await new Promise(function (r) { setTimeout(r, 10); });
+      expect(_sentEnvelopes.length).toBe(1);
+      expect(_sentEnvelopes[0].type).toBe('snapshot');
+      expect(_sentEnvelopes[0].urgency).toBe('urgent');
+      expect(_sentEnvelopes[0].payload.event).toBe('pre_compact');
+    });
+  });
 });

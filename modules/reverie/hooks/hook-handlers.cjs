@@ -18,6 +18,7 @@
  */
 
 const path = require('node:path');
+const { MESSAGE_TYPES, URGENCY_LEVELS } = require('../../../core/services/wire/protocol.cjs');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -70,6 +71,9 @@ const COMPACTION_FRAMING = [
  * @param {Object} options.switchboard - Switchboard for event emission
  * @param {Object} options.lathe - Lathe service for file writes
  * @param {string} options.dataDir - Data directory for session snapshots
+ * @param {Object} [options.sessionManager] - Phase 10: Session Manager for lifecycle ops
+ * @param {Object} [options.wireTopology] - Phase 10: Wire topology for inter-session messaging
+ * @param {Object} [options.modeManager] - Phase 10: Mode Manager for operational mode
  * @returns {Object} Object with 8 handler functions
  */
 function createHookHandlers(options) {
@@ -77,6 +81,9 @@ function createHookHandlers(options) {
   const formationPipeline = (options && options.formationPipeline) || null;
   const recallEngine = (options && options.recallEngine) || null;
   const lithograph = (options && options.lithograph) || null;
+  const sessionManager = (options && options.sessionManager) || null;
+  const wireTopology = (options && options.wireTopology) || null;
+  const modeManager = (options && options.modeManager) || null;
 
   // Resolve ~ to HOME for dataDir
   const resolvedDataDir = dataDir && dataDir.startsWith('~')
@@ -117,6 +124,14 @@ function createHookHandlers(options) {
     if (switchboard) {
       switchboard.emit('reverie:hook:session-start', {
         source: (payload && payload.source) || 'new',
+      });
+    }
+
+    // Phase 10: Start Session Manager (spawns Secondary, enters Passive mode)
+    // Fire-and-forget -- don't block hook return
+    if (sessionManager) {
+      sessionManager.start().catch(function (_e) {
+        // Session Manager start failure is non-fatal for the hook
       });
     }
 
@@ -193,6 +208,27 @@ function createHookHandlers(options) {
         }
       } catch (_e) {
         // Recall failure is non-fatal
+      }
+    }
+
+    // --- Phase 10: Forward conversation snapshot to Secondary via Wire ---
+    if (wireTopology && sessionManager && sessionManager.getState().state !== 'stopped') {
+      try {
+        wireTopology.send({
+          from: 'primary',
+          to: 'secondary',
+          type: MESSAGE_TYPES.SNAPSHOT,
+          urgency: URGENCY_LEVELS.ACTIVE,
+          payload: {
+            userPrompt: (payload && payload.user_prompt) || '',
+            turnNumber: (payload && payload.turn_number) || 0,
+            toolsUsed: (payload && payload.tools_used) || [],
+          },
+        }).catch(function (_e) {
+          // Snapshot send failure is non-fatal
+        });
+      } catch (_e) {
+        // Non-fatal
       }
     }
 
@@ -299,6 +335,23 @@ function createHookHandlers(options) {
   async function handlePreCompact(payload) {
     await contextManager.checkpoint();
 
+    // Phase 10: Notify Secondary of compaction via Wire
+    if (wireTopology) {
+      try {
+        wireTopology.send({
+          from: 'primary',
+          to: 'secondary',
+          type: MESSAGE_TYPES.SNAPSHOT,
+          urgency: URGENCY_LEVELS.URGENT,
+          payload: { event: 'pre_compact' },
+        }).catch(function (_e) {
+          // Compaction notification failure is non-fatal
+        });
+      } catch (_e) {
+        // Non-fatal
+      }
+    }
+
     return {
       hookSpecificOutput: {
         hookEventName: 'PreCompact',
@@ -317,6 +370,15 @@ function createHookHandlers(options) {
    * @returns {Promise<Object>} Empty object (no injection on Stop)
    */
   async function handleStop(payload) {
+    // Phase 10: Ordered shutdown of Tertiary then Secondary
+    if (sessionManager) {
+      try {
+        await sessionManager.stop();
+      } catch (_e) {
+        // Session Manager stop failure is non-fatal for the hook
+      }
+    }
+
     await contextManager.persistWarmStart();
 
     const snapshot = contextManager.getSessionSnapshot();

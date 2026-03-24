@@ -83,7 +83,14 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Formation pipeline processes a stimulus through attention check gate, domain fan-out, and per-domain body composition, producing 1-3 fragments per stimulus with distinct formation group tags
   2. Recall via Assay returns ranked fragments using composite scoring (association pointers, domain overlap, entity co-occurrence, decay weighting, Self Model relevance) and reconstructs them through the current Self Model frame
-**Plans**: TBD
+**Plans:** 4 plans
+
+Plans:
+- [ ] 09-01-PLAN.md — Formation components: attention gate, prompt templates, fragment assembler, nudge manager
+- [ ] 09-02-PLAN.md — Recall components: composite scorer, query builder, reconstruction prompt
+- [ ] 09-03-PLAN.md — Formation pipeline orchestrator + recall engine orchestrator
+- [ ] 09-04-PLAN.md — Hook wiring, agent definition, Context Manager nudge integration, Reverie module wiring
+
 **Research flag**: NEEDS RESEARCH -- formation fan-out signal-to-noise ratio (EXPERIMENTAL 9.10) and recall reconstruction quality (EXPERIMENTAL 9.8) have no validated production references. Empirical measurement required during this phase.
 **Design note**: Single-session mode uses turn-scoped background subagents (fire-and-forget via Agent tool) as an intuitive inner voice — high-perception, low-deliberation formation. Self Model framing shifts to ISFP/INFP cognitive style (impressionistic, not analytical). Phase 9.1 (Lithograph) will later enable richer transcript-based stimulus context for these agents. See `.planning/phases/09.1-claude-code-integration-layer/09.1-RESEARCH-TRANSCRIPT-CONTROL.md`.
 
@@ -159,7 +166,7 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 6. Bootstrap Integration | M1 | 2/2 | Complete | 2026-03-23 |
 | 7. Foundation Infrastructure | M2 | 0/5 | Planned | - |
 | 8. Single-Session Personality | M2 | 1/2 | In Progress | - |
-| 9. Fragment Memory Engine | M2 | 0/TBD | Not started | - |
+| 9. Fragment Memory Engine | M2 | 0/4 | Planned | - |
 | 10. Three-Session Architecture | M2 | 0/TBD | Not started | - |
 | 11. REM Consolidation | M2 | 0/TBD | Not started | - |
 | 12. Integration Surface | M2 | 0/TBD | Not started | - |

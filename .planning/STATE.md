@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
-status: Executing
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-03-24T12:31:10Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 08-02-PLAN.md
+last_updated: "2026-03-24T12:44:21.782Z"
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # Project State
@@ -59,6 +59,7 @@ Plan: 2 (of 2)
 | Phase 07 P04 | 4min | 2 tasks | 5 files |
 | Phase 07 P05 | 4min | 2 tasks | 2 files |
 | Phase 08 P01 | 4min | 2 tasks | 4 files |
+| Phase 08 P02 | 6min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,9 @@ Recent decisions affecting current work:
 - [Phase 07]: Dual-provider write pattern: Journal first, Ledger via Wire, rollback on failure
 - [Phase 08]: Phase 3 reinforced (60-80%) injection LARGER than Phase 1 per PITFALLS research D-05/D-06
 - [Phase 08]: Behavioral directives seeded with static defaults per D-04, replaced by Secondary in Phase 10
+- [Phase 08]: All hook injection uses additionalContext not systemMessage per Pitfall 1 -- corrects CONTEXT.md D-02/D-09
+- [Phase 08]: Context Manager in-memory cache for zero-I/O getInjection() hot path per Pitfall 4
+- [Phase 08]: Hook registration via Armature createHookRegistry not events.on() per INT-01 for discoverability
 
 ### Roadmap Evolution
 
@@ -104,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T12:31:10Z
-Stopped at: Completed 08-01-PLAN.md
-Resume file: .planning/phases/08-single-session-personality-injection/08-01-SUMMARY.md
+Last session: 2026-03-24T12:44:21.779Z
+Stopped at: Completed 08-02-PLAN.md
+Resume file: None

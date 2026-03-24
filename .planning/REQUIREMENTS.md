@@ -49,8 +49,8 @@
 - [x] **CTX-01**: Continuous Self Model reinjection on every UserPromptSubmit (~800-1800 token budget)
 - [ ] **CTX-02**: Referential framing prompt (Primary treats context as reference material, Self Model directives as operating frame)
 - [x] **CTX-03**: Context budget management (4 phases: full -> compressed -> reinforced -> compaction advocacy)
-- [ ] **CTX-04**: Self Model as compaction frame (PreCompact preserves Self Model perspective, not neutral summary)
-- [ ] **CTX-05**: Warm-start face prompt cache — persist final Face prompt from prior session's REM for instant personality on SessionStart before Secondary is ready
+- [x] **CTX-04**: Self Model as compaction frame (PreCompact preserves Self Model perspective, not neutral summary)
+- [x] **CTX-05**: Warm-start face prompt cache — persist final Face prompt from prior session's REM for instant personality on SessionStart before Secondary is ready
 
 ### Operational Modes
 
@@ -61,7 +61,7 @@
 
 ### Module Integration
 
-- [ ] **INT-01**: Hook wiring for 8 Claude Code hooks (SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, Stop, PreCompact, SubagentStart, SubagentStop)
+- [x] **INT-01**: Hook wiring for 8 Claude Code hooks (SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, Stop, PreCompact, SubagentStart, SubagentStop)
 - [ ] **INT-02**: CLI surface via Pulley (`dynamo reverie status/reset/inspect/history`)
 - [ ] **INT-03**: Reverie installed and managed as git submodule via Forge/Relay
 
@@ -150,13 +150,13 @@
 | CTX-01 | Phase 8 | Complete |
 | CTX-02 | Phase 10 | Pending |
 | CTX-03 | Phase 8 | Complete |
-| CTX-04 | Phase 8 | Pending |
-| CTX-05 | Phase 8 | Pending |
+| CTX-04 | Phase 8 | Complete |
+| CTX-05 | Phase 8 | Complete |
 | OPS-01 | Phase 10 | Pending |
 | OPS-02 | Phase 10 | Pending |
 | OPS-03 | Phase 11 | Pending |
 | OPS-04 | Phase 11 | Pending |
-| INT-01 | Phase 8 | Pending |
+| INT-01 | Phase 8 | Complete |
 | INT-02 | Phase 12 | Pending |
 | INT-03 | Phase 12 | Pending |
 | PLT-01 | Phase 7 | Complete |

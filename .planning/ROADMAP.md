@@ -72,7 +72,7 @@ Plans:
 
 Plans:
 - [x] 08-01-PLAN.md — Budget tracker state machine + template composer 5-slot system
-- [ ] 08-02-PLAN.md — Context Manager orchestrator + hook handlers + Armature wiring
+- [x] 08-02-PLAN.md — Context Manager orchestrator + hook handlers + Armature wiring
 
 **Research flag**: STANDARD PATTERNS for hook wiring and state file pattern (validated by Claude-Mem). Personality injection size at high context utilization needs empirical measurement (PITFALLS research contradicts spec's "minimal injection at 75-90%").
 

@@ -67,7 +67,7 @@
 
 ### Platform Prerequisites
 
-- [ ] **PLT-01**: Wire write coordinator retry logic with exponential backoff and write-ahead journaling — current implementation drops failed writes silently, which corrupts association index under burst formation load
+- [x] **PLT-01**: Wire write coordinator retry logic with exponential backoff and write-ahead journaling — current implementation drops failed writes silently, which corrupts association index under burst formation load
 
 ## Deferred to v2
 
@@ -159,7 +159,7 @@
 | INT-01 | Phase 8 | Pending |
 | INT-02 | Phase 12 | Pending |
 | INT-03 | Phase 12 | Pending |
-| PLT-01 | Phase 7 | Pending |
+| PLT-01 | Phase 7 | Complete |
 
 **Coverage:**
 - M2 requirements: 40 total

@@ -2,8 +2,8 @@
 phase: 10
 slug: three-session-architecture
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-03-24
 ---
 
@@ -19,7 +19,7 @@ created: 2026-03-24
 |----------|-------|
 | **Framework** | bun:test (built-in, Jest-compatible) |
 | **Config file** | None needed (bun:test uses default discovery) |
-| **Quick run command** | `bun test modules/reverie/components/session/ modules/reverie/components/modes/` |
+| **Quick run command** | `bun test modules/reverie/components/session/ modules/reverie/components/modes/ modules/reverie/components/context/` |
 | **Full suite command** | `bun test` |
 | **Estimated runtime** | ~15 seconds |
 
@@ -36,31 +36,36 @@ created: 2026-03-24
 
 ## Per-Task Verification Map
 
-| Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
-|---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 10-01-01 | 01 | 1 | SES-01 | integration | `bun test modules/reverie/components/session/__tests__/session-manager.test.js -t "primary receives face prompt"` | ❌ W0 | ⬜ pending |
-| 10-01-02 | 01 | 1 | SES-05 | integration | `bun test modules/reverie/components/session/__tests__/session-lifecycle.test.js -t "startup sequence"` | ❌ W0 | ⬜ pending |
-| 10-02-01 | 02 | 1 | SES-02 | integration | `bun test modules/reverie/components/session/__tests__/mind-cycle.test.js -t "cognitive pipeline"` | ❌ W0 | ⬜ pending |
-| 10-03-01 | 03 | 1 | SES-03 | unit | `bun test modules/reverie/components/session/__tests__/sublimation-loop.test.js -t "cycle frequency"` | ❌ W0 | ⬜ pending |
-| 10-04-01 | 04 | 1 | SES-04 | integration | `bun test modules/reverie/components/session/__tests__/wire-integration.test.js -t "urgency levels"` | ❌ W0 | ⬜ pending |
-| 10-05-01 | 05 | 2 | OPS-01 | integration | `bun test modules/reverie/components/modes/__tests__/mode-manager.test.js -t "active mode"` | ❌ W0 | ⬜ pending |
-| 10-05-02 | 05 | 2 | OPS-02 | integration | `bun test modules/reverie/components/modes/__tests__/mode-manager.test.js -t "passive mode"` | ❌ W0 | ⬜ pending |
-| 10-06-01 | 06 | 2 | CTX-02 | unit | `bun test modules/reverie/components/context/__tests__/referential-framing.test.js -t "framing modes"` | ❌ W0 | ⬜ pending |
+| Task ID | Plan | Wave | Requirement | Test Type | Automated Command | Status |
+|---------|------|------|-------------|-----------|-------------------|--------|
+| 10-01-01 | 01 | 1 | SES-04, SES-05 | unit | `bun test modules/reverie/components/session/__tests__/session-config.test.js core/services/conductor/__tests__/session-spawner.test.js` | ⬜ pending |
+| 10-01-02 | 01 | 1 | SES-04, SES-05 | unit | `bun test core/services/conductor/__tests__/conductor.test.js -t "session lifecycle"` | ⬜ pending |
+| 10-02-01 | 02 | 1 | CTX-02 | unit | `bun test modules/reverie/components/context/__tests__/referential-framing.test.js` | ⬜ pending |
+| 10-02-02 | 02 | 1 | SES-03 | unit | `bun test modules/reverie/components/session/__tests__/sublimation-loop.test.js` | ⬜ pending |
+| 10-03-01 | 03 | 2 | SES-01, SES-05 | unit | `bun test modules/reverie/components/session/__tests__/session-manager.test.js` | ⬜ pending |
+| 10-03-02 | 03 | 2 | OPS-01, OPS-02 | unit | `bun test modules/reverie/components/modes/__tests__/mode-manager.test.js` | ⬜ pending |
+| 10-04-01 | 04 | 2 | SES-02 | unit | `bun test modules/reverie/components/session/__tests__/mind-cycle.test.js` | ⬜ pending |
+| 10-04-02 | 04 | 2 | SES-04 | unit | `bun test modules/reverie/components/session/__tests__/wire-topology.test.js` | ⬜ pending |
+| 10-05-01 | 05 | 3 | SES-01, SES-02, SES-04, CTX-02 | integration | `bun test modules/reverie/components/context/__tests__/context-manager.test.js modules/reverie/hooks/__tests__/hook-handlers.test.js` | ⬜ pending |
+| 10-05-02 | 05 | 3 | SES-05, OPS-01, OPS-02 | integration | `bun test modules/reverie/ --timeout 30000` | ⬜ pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+*Status: ⬜ pending | ✅ green | ❌ red | ⚠️ flaky*
 
 ---
 
 ## Wave 0 Requirements
 
-- [ ] `modules/reverie/components/session/__tests__/session-manager.test.js` — stubs for SES-01, SES-05
-- [ ] `modules/reverie/components/session/__tests__/mind-cycle.test.js` — stubs for SES-02
-- [ ] `modules/reverie/components/session/__tests__/sublimation-loop.test.js` — stubs for SES-03
-- [ ] `modules/reverie/components/session/__tests__/wire-integration.test.js` — stubs for SES-04
-- [ ] `modules/reverie/components/session/__tests__/session-lifecycle.test.js` — stubs for SES-05
-- [ ] `modules/reverie/components/modes/__tests__/mode-manager.test.js` — stubs for OPS-01, OPS-02
-- [ ] `modules/reverie/components/context/__tests__/referential-framing.test.js` — stubs for CTX-02
-- [ ] `core/services/conductor/__tests__/session-spawner.test.js` — stubs for Conductor expansion
+All test files are created by their respective plan tasks (TDD pattern: tests written before implementation). Each plan task listed above with `tdd="true"` creates its own test file as part of the RED phase.
+
+- [ ] `modules/reverie/components/session/__tests__/session-config.test.js` — created by Plan 01 Task 1
+- [ ] `core/services/conductor/__tests__/session-spawner.test.js` — created by Plan 01 Task 1
+- [ ] `core/services/conductor/__tests__/conductor.test.js` — extended by Plan 01 Task 2 (file exists, new describe block added)
+- [ ] `modules/reverie/components/context/__tests__/referential-framing.test.js` — created by Plan 02 Task 1
+- [ ] `modules/reverie/components/session/__tests__/sublimation-loop.test.js` — created by Plan 02 Task 2
+- [ ] `modules/reverie/components/session/__tests__/session-manager.test.js` — created by Plan 03 Task 1
+- [ ] `modules/reverie/components/modes/__tests__/mode-manager.test.js` — created by Plan 03 Task 2
+- [ ] `modules/reverie/components/session/__tests__/mind-cycle.test.js` — created by Plan 04 Task 1
+- [ ] `modules/reverie/components/session/__tests__/wire-topology.test.js` — created by Plan 04 Task 2
 
 *Existing infrastructure covers bun:test framework — no install needed.*
 
@@ -78,11 +83,11 @@ created: 2026-03-24
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
 - [ ] No watch-mode flags
 - [ ] Feedback latency < 15s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] `nyquist_compliant: true` set in frontmatter
 
 **Approval:** pending

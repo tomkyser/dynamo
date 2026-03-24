@@ -28,8 +28,8 @@
 
 ### Three-Session Architecture
 
-- [ ] **SES-01**: Primary session (Face) — user-facing session with Self Model personality expression via hook-injected context
-- [ ] **SES-02**: Secondary session (Mind) — cognitive center managing attention, fragments, recall, taxonomy, Self Model authority
+- [x] **SES-01**: Primary session (Face) — user-facing session with Self Model personality expression via hook-injected context
+- [x] **SES-02**: Secondary session (Mind) — cognitive center managing attention, fragments, recall, taxonomy, Self Model authority
 - [x] **SES-03**: Tertiary session (Subconscious) — continuous sublimation stream with configurable cycle frequency
 - [x] **SES-04**: Wire-based inter-session communication (Primary <-> Secondary <-> Tertiary) with urgency levels (background/active/directive/urgent)
 - [x] **SES-05**: Session lifecycle (startup sequence, active operation, compaction handling, clean shutdown)
@@ -54,8 +54,8 @@
 
 ### Operational Modes
 
-- [ ] **OPS-01**: Active mode — full three-session architecture
-- [ ] **OPS-02**: Passive mode — Primary + lightweight Secondary only, no Tertiary (also serves as fallback if Active mode exceeds Max subscription limits)
+- [x] **OPS-01**: Active mode — full three-session architecture
+- [x] **OPS-02**: Passive mode — Primary + lightweight Secondary only, no Tertiary (also serves as fallback if Active mode exceeds Max subscription limits)
 - [ ] **OPS-03**: REM mode — post-session consolidation, Secondary only
 - [ ] **OPS-04**: Dormant mode — no sessions, scheduled decay maintenance only
 
@@ -137,8 +137,8 @@
 | FRG-08 | Phase 12 | Pending |
 | FRG-09 | Phase 7 | Complete |
 | FRG-10 | Phase 12 | Pending |
-| SES-01 | Phase 10 | Pending |
-| SES-02 | Phase 10 | Pending |
+| SES-01 | Phase 10 | Complete |
+| SES-02 | Phase 10 | Complete |
 | SES-03 | Phase 10 | Complete |
 | SES-04 | Phase 10 | Complete |
 | SES-05 | Phase 10 | Complete |
@@ -154,8 +154,8 @@
 | CTX-03 | Phase 8 | Complete |
 | CTX-04 | Phase 8 | Complete |
 | CTX-05 | Phase 8 | Complete |
-| OPS-01 | Phase 10 | Pending |
-| OPS-02 | Phase 10 | Pending |
+| OPS-01 | Phase 10 | Complete |
+| OPS-02 | Phase 10 | Complete |
 | OPS-03 | Phase 11 | Pending |
 | OPS-04 | Phase 11 | Pending |
 | INT-01 | Phase 8 | Complete |

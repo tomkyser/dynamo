@@ -103,13 +103,13 @@ Plans:
   1. Lithograph provider reads Claude Code transcript JSONL, parses conversation turns and tool use blocks, and supports atomic content manipulation (replace block content, clear inputs) with rollback on failure
   2. Exciter service owns Claude Code integration surface: hook registration/wiring, agent definition management, skill definitions, settings.json management (project + user scope), CLAUDE.md management — other services and modules access Claude Code features through Exciter's contract
   3. Reverie's existing hook registration (Phase 8) can be migrated to use Exciter without breaking existing tests or behavior
-**Plans:** 0/3 plans executed
+**Plans:** 3/3 plans complete
 **Canonical refs**: `.claude/reverie-spec-v2.md`, `core/armature/hooks.cjs`, `core/services/commutator/commutator.cjs`, `.planning/phases/09.1-claude-code-integration-layer/09.1-RESEARCH-TRANSCRIPT-CONTROL.md`
 **Research flag**: RESEARCH COMPLETE — transcript control mechanism verified via claude-mem source code analysis (2026-03-24). Transcript JSONL is read/write via hook `transcript_path`. `additionalContext` for injection, direct JSONL manipulation for removal.
 
 Plans:
-- [ ] 09.1-01-PLAN.md — Lithograph provider: versioned JSONL parser + transcript read/write/query/delete
-- [ ] 09.1-02-PLAN.md — Exciter service: sub-managers (settings, CLAUDE.md, agents) + service factory with registerHooks facade
+- [x] 09.1-01-PLAN.md — Lithograph provider: versioned JSONL parser + transcript read/write/query/delete
+- [x] 09.1-02-PLAN.md — Exciter service: sub-managers (settings, CLAUDE.md, agents) + service factory with registerHooks facade
 - [ ] 09.1-03-PLAN.md — Bootstrap registration + Reverie hook migration to Exciter
 
 ### Phase 10: Three-Session Architecture

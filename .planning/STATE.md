@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
-status: Ready to execute
-stopped_at: Completed 09.1-02-PLAN.md
-last_updated: "2026-03-24T19:00:25.690Z"
+status: Ready to plan
+stopped_at: Completed 09.1-03-PLAN.md
+last_updated: "2026-03-24T19:14:07.836Z"
 progress:
   total_phases: 7
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 14
-  completed_plans: 11
+  completed_plans: 14
 ---
 
 # Project State
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-23)
 
 ## Current Position
 
-Phase: 09.1 (claude-code-integration-layer) — EXECUTING
-Plan: 3 of 3
+Phase: 10
+Plan: Not started
 
 ## Performance Metrics
 
@@ -66,6 +66,7 @@ Plan: 3 of 3
 | Phase 09 P04 | 6min | 2 tasks | 6 files |
 | Phase 09.1 P01 | 4min | 2 tasks | 4 files |
 | Phase 09.1 P02 | 5min | 2 tasks | 8 files |
+| Phase 09.1 P03 | 4min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,8 @@ Recent decisions affecting current work:
 - [Phase 09.1]: Exciter delegates to Armature createHookRegistry for hook mechanics, owning only the registration facade per D-05
 - [Phase 09.1]: wireToSwitchboard called once in start(), not per-registration, per Pitfall 6
 - [Phase 09.1]: Section markers use dynamo:section prefix to prevent false matches in content per D-07
+- [Phase 09.1]: Lithograph registered with lathe-only dependency since transcript events route through Commutator
+- [Phase 09.1]: transcript_path injection before compact check so both new and post-compaction sessions receive the path
 
 ### Roadmap Evolution
 
@@ -131,6 +134,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T19:00:25.687Z
-Stopped at: Completed 09.1-02-PLAN.md
+Last session: 2026-03-24T19:09:01.574Z
+Stopped at: Completed 09.1-03-PLAN.md
 Resume file: None

@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
 status: Ready to execute
-stopped_at: Completed 09-02-PLAN.md
-last_updated: "2026-03-24T17:23:49.460Z"
+stopped_at: Completed 09-01-PLAN.md
+last_updated: "2026-03-24T17:24:06.957Z"
 progress:
   total_phases: 7
   completed_phases: 2
@@ -92,6 +92,9 @@ Recent decisions affecting current work:
 - [Phase 08]: Hook registration via Armature createHookRegistry not events.on() per INT-01 for discoverability
 - [Phase 09]: Self Model relevance uses fixed aspect weights matching DECAY_DEFAULTS.relevance_weights for system-wide consistency
 - [Phase 09]: Passive nudge forbids explicit memory language; explicit reconstruction drives full re-experiencing through Self Model frame
+- [Phase 09]: Temporal schema mapped to actual Zod fields (absolute/session_relative/sequence) not plan approximation
+- [Phase 09]: Associations schema includes emotional_valence per actual Zod schema -- plan interface block omitted this field
+- [Phase 09]: Attention gate returns pure_tool_turn over empty_prompt when tools_used populated and user_prompt falsy
 
 ### Roadmap Evolution
 
@@ -113,6 +116,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T17:23:32.570Z
-Stopped at: Completed 09-02-PLAN.md
+Last session: 2026-03-24T17:24:06.954Z
+Stopped at: Completed 09-01-PLAN.md
 Resume file: None

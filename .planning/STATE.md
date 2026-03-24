@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
 status: Ready to execute
-stopped_at: Completed 10-01-PLAN.md
-last_updated: "2026-03-24T22:08:27.438Z"
+stopped_at: Completed 10-05-PLAN.md
+last_updated: "2026-03-24T22:26:15.000Z"
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 19
-  completed_plans: 15
+  completed_plans: 17
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-23)
 ## Current Position
 
 Phase: 10 (three-session-architecture) — EXECUTING
-Plan: 3 of 5
+Plan: 5 of 5
 
 ## Performance Metrics
 
@@ -69,6 +69,9 @@ Plan: 3 of 5
 | Phase 09.1 P03 | 4min | 2 tasks | 4 files |
 | Phase 10 P02 | 4min | 2 tasks | 4 files |
 | Phase 10 P01 | 4min | 2 tasks | 6 files |
+| Phase 10 P03 | 5min | 2 tasks | 6 files |
+| Phase 10 P04 | 5min | 2 tasks | 4 files |
+| Phase 10 P05 | 5min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -121,6 +124,15 @@ Recent decisions affecting current work:
 - [Phase 10]: Session spawner lives in core/services/conductor/ as platform capability, not module scope
 - [Phase 10]: Conductor delegates to internal _sessionSpawner created during init(), not exposed directly
 - [Phase 10]: Topology rules enforce strict hub-spoke: Primary<->Secondary<->Tertiary, no Primary<->Tertiary bypass
+- [Phase 10]: Added STOPPED to STARTING valid transitions for spawn failure path
+- [Phase 10]: Sublimation system prompt delivered via Wire context-injection from Secondary to Tertiary after registration
+- [Phase 10]: Mode Manager auto-degrades on Tertiary health failure with reason tracking via Switchboard
+- [Phase 10]: Mind cognitive cycle uses formationPipeline.prepareStimulus for attention worthiness -- empty user_prompt indicates below-threshold
+- [Phase 10]: Wire topology subscribe takes separate sessionId and subscriberIdentity params for topology-aware filtering
+- [Phase 10]: ACK protocol uses _pendingAcks Map with timer-based timeout and Promise resolution for async delivery confirmation
+- [Phase 10]: Session Manager start() fire-and-forget in SessionStart hook for non-blocking hook response
+- [Phase 10]: Context Manager compose() short-circuits when _secondaryActive true -- Secondary is face prompt authority per D-04
+- [Phase 10]: All Phase 10 hook handler components use null-guard pattern for backward compatibility
 
 ### Roadmap Evolution
 
@@ -142,6 +154,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T22:08:27.435Z
-Stopped at: Completed 10-01-PLAN.md
+Last session: 2026-03-24T22:26:15.000Z
+Stopped at: Completed 10-05-PLAN.md
 Resume file: None

@@ -155,6 +155,34 @@ function register(facade) {
     config: sessionConfig,
   });
 
+  // -------------------------------------------------------------------------
+  // Phase 10 Gap Closure: Wire Secondary face prompt authority pipeline
+  // -------------------------------------------------------------------------
+
+  // 1. Listen for session state changes to toggle Secondary authority.
+  //    When Session Manager transitions to passive or active, Secondary is running
+  //    and is the face prompt authority (per D-04). When stopped, revert to local.
+  switchboard.on('session:state-changed', function onSessionStateChanged(data) {
+    if (!data) return;
+    if (data.to === 'passive' || data.to === 'active') {
+      // Secondary is running — it is the face prompt authority (per D-04)
+      contextManager.setSecondaryActive(true);
+    } else if (data.to === 'stopped') {
+      // All sessions terminated — revert to local composition
+      contextManager.setSecondaryActive(false);
+    }
+  });
+
+  // 2. Subscribe Primary to Wire topology for face prompt updates from Secondary.
+  //    wireTopology.subscribe filters by topology rules: Primary only receives from Secondary.
+  //    DIRECTIVE envelopes with payload.role === 'face_prompt' are routed to
+  //    contextManager.receiveSecondaryUpdate() to update the cached face prompt.
+  wireTopology.subscribe('primary', 'primary', function onPrimaryMessage(envelope) {
+    if (envelope.type === 'directive' && envelope.payload && envelope.payload.role === 'face_prompt') {
+      contextManager.receiveSecondaryUpdate(envelope.payload.content);
+    }
+  });
+
   // Create hook handlers (lathe + dataDir needed for Stop snapshot writes)
   // Phase 9: formation pipeline and recall engine wired for formation triggers and recall injection
   // Phase 10: session manager, wire topology, and mode manager for three-session lifecycle

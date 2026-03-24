@@ -50,7 +50,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 **Plans:** 5 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Reverie module structure + JSON frontmatter parser
+- [x] 07-01-PLAN.md — Reverie module structure + JSON frontmatter parser
 - [ ] 07-02-PLAN.md — Wire write coordinator retry + WAJ
 - [ ] 07-03-PLAN.md — Zod schemas, association index DDL, decay function
 - [ ] 07-04-PLAN.md — Self Model state manager + cold start + entropy engine

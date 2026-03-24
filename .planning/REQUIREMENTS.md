@@ -15,8 +15,8 @@
 
 ### Fragment Memory Engine
 
-- [ ] **FRG-01**: Fragment schema (structured frontmatter + fuzzy impressionistic body) stored in Journal
-- [ ] **FRG-02**: Five fragment types — experiential, meta-recall, sublimation, consolidation, source-reference
+- [x] **FRG-01**: Fragment schema (structured frontmatter + fuzzy impressionistic body) stored in Journal
+- [x] **FRG-02**: Five fragment types — experiential, meta-recall, sublimation, consolidation, source-reference
 - [ ] **FRG-03**: Multi-angle formation pipeline (attention check, domain fan-out, parallel per-fragment processing, formation group tagging)
 - [ ] **FRG-04**: Real-time recall via Assay (retrieval, composite ranking, reconstruction through current Self Model frame)
 - [ ] **FRG-05**: Association index in Ledger (domains, entities, associations, attention tags, formation groups, source locators, fragment decay)
@@ -125,8 +125,8 @@
 | SM-03 | Phase 7 | Pending |
 | SM-04 | Phase 11 | Pending |
 | SM-05 | Phase 7 | Pending |
-| FRG-01 | Phase 7 | Pending |
-| FRG-02 | Phase 7 | Pending |
+| FRG-01 | Phase 7 | Complete |
+| FRG-02 | Phase 7 | Complete |
 | FRG-03 | Phase 9 | Pending |
 | FRG-04 | Phase 9 | Pending |
 | FRG-05 | Phase 7 | Pending |

@@ -86,9 +86,24 @@ Plans:
 **Plans**: TBD
 **Research flag**: NEEDS RESEARCH -- formation fan-out signal-to-noise ratio (EXPERIMENTAL 9.10) and recall reconstruction quality (EXPERIMENTAL 9.8) have no validated production references. Empirical measurement required during this phase.
 
+### Phase 09.1: Claude Code Integration Layer (INSERTED)
+
+**Goal**: Establish the platform-level interface between Dynamo and Claude Code's native features — Lithograph provider for transcript read/write/query and Exciter service for managing hooks, agents, skills, settings, and CLAUDE.md at project and user scope. Modules and extensions go through Exciter to implement Claude Code features, maintaining architectural integrity.
+**Depends on**: Phase 9
+**Requirements**: PLT-02, PLT-03
+**Success Criteria** (what must be TRUE):
+  1. Lithograph provider reads Claude Code transcript JSONL, parses conversation turns and tool use blocks, and supports atomic content manipulation (replace block content, clear inputs) with rollback on failure
+  2. Exciter service owns Claude Code integration surface: hook registration/wiring, agent definition management, skill definitions, settings.json management (project + user scope), CLAUDE.md management — other services and modules access Claude Code features through Exciter's contract
+  3. Reverie's existing hook registration (Phase 8) can be migrated to use Exciter without breaking existing tests or behavior
+**Plans**: TBD
+**Canonical refs**: `.claude/reverie-spec-v2.md`, `core/armature/hooks.cjs`, `core/services/commutator/commutator.cjs`
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 09.1 to break down)
+
 ### Phase 10: Three-Session Architecture
 **Goal**: Prove that Primary (Face), Secondary (Mind), and Tertiary (Subconscious) sessions can operate concurrently via Wire with acceptable latency and resource consumption on Claude Max -- with Passive mode as the fallback if three sessions exceed subscription limits
-**Depends on**: Phase 9
+**Depends on**: Phase 9.1
 **Requirements**: SES-01, SES-02, SES-03, SES-04, SES-05, OPS-01, OPS-02, CTX-02
 **Success Criteria** (what must be TRUE):
   1. Session Manager spawns Secondary and Tertiary sessions via Bun.spawn, enforces the Primary <-> Secondary <-> Tertiary Wire topology, and completes the full startup sequence (Wire connect -> load Self Model -> compose Face prompt -> inject to Primary) within a measurable time budget

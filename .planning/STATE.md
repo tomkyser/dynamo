@@ -93,6 +93,7 @@ Recent decisions affecting current work:
 
 - M1 phases 1-6 shipped 2026-03-23 (28 plans, 851 tests)
 - M2 phases 7-12 roadmapped from 40 requirements across 7 categories
+- Phase 9.1 inserted after Phase 9: Claude Code Integration Layer (Lithograph provider + Exciter service) — platform-level Claude Code transcript access and integration surface management
 
 ### Pending Todos
 

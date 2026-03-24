@@ -1,6 +1,6 @@
 'use strict';
 
-const { describe, it, expect, beforeEach } = require('bun:test');
+const { describe, it, expect, beforeEach, afterEach } = require('bun:test');
 const { isOk, isErr, unwrap, ok } = require('../../../../lib/index.cjs');
 
 /**
@@ -46,11 +46,20 @@ describe('Conductor', () => {
       const required = [
         'init', 'start', 'stop', 'healthCheck',
         'composeUp', 'composeDown', 'composeStatus',
-        'checkDependencies', 'isDockerAvailable'
+        'checkDependencies', 'isDockerAvailable',
+        'spawnSession', 'stopSession', 'getSessionHealth',
       ];
       for (const method of required) {
         expect(typeof conductor[method]).toBe('function');
       }
+    });
+
+    it('CONDUCTOR_SHAPE includes spawnSession, stopSession, getSessionHealth', () => {
+      // Verify the shape is reflected in the contract by checking methods exist
+      expect(typeof conductor.spawnSession).toBe('function');
+      expect(typeof conductor.stopSession).toBe('function');
+      expect(typeof conductor.getSessionHealth).toBe('function');
+      expect(typeof conductor.listSessions).toBe('function');
     });
   });
 
@@ -309,6 +318,104 @@ describe('Conductor', () => {
         const downEvent = calls.find(c => c.eventName === 'infra:compose-down');
         expect(downEvent).toBeUndefined();
       });
+    });
+  });
+
+  describe('session lifecycle', () => {
+    let originalBunSpawn;
+    let spawnCalls;
+
+    function createMockProc(pid) {
+      return {
+        pid: pid || 12345,
+        killed: false,
+        exitCode: null,
+        kill() { this.killed = true; this.exitCode = 0; },
+        stdin: { write() {}, end() {} },
+        stdout: { text() { return Promise.resolve(''); } },
+        stderr: { text() { return Promise.resolve(''); } },
+      };
+    }
+
+    beforeEach(() => {
+      spawnCalls = [];
+      originalBunSpawn = Bun.spawn;
+      Bun.spawn = function mockSpawn(args, opts) {
+        const proc = createMockProc(20000 + spawnCalls.length);
+        spawnCalls.push({ args, opts, proc });
+        return proc;
+      };
+
+      conductor.init({ switchboard: mockSwitchboard });
+      conductor.start();
+    });
+
+    afterEach(() => {
+      Bun.spawn = originalBunSpawn;
+    });
+
+    it('spawnSession returns ok with sessionId and pid', () => {
+      const result = conductor.spawnSession({ sessionId: 'cond-1', identity: 'primary' });
+      expect(isOk(result)).toBe(true);
+      const value = unwrap(result);
+      expect(value.sessionId).toBe('cond-1');
+      expect(typeof value.pid).toBe('number');
+    });
+
+    it('stopSession returns ok for spawned session', () => {
+      conductor.spawnSession({ sessionId: 'cond-2', identity: 'secondary' });
+      const result = conductor.stopSession('cond-2');
+      expect(isOk(result)).toBe(true);
+      expect(unwrap(result).sessionId).toBe('cond-2');
+    });
+
+    it('getSessionHealth returns alive status for spawned session', () => {
+      conductor.spawnSession({ sessionId: 'cond-3', identity: 'tertiary' });
+      const result = conductor.getSessionHealth('cond-3');
+      expect(isOk(result)).toBe(true);
+      const value = unwrap(result);
+      expect(value.alive).toBe(true);
+      expect(value.sessionId).toBe('cond-3');
+    });
+
+    it('spawnSession returns err when not started', () => {
+      conductor.stop(); // stop first
+      const result = conductor.spawnSession({ sessionId: 'cond-4', identity: 'primary' });
+      expect(isErr(result)).toBe(true);
+      expect(result.error.code).toBe('NOT_STARTED');
+    });
+
+    it('stopSession returns err for unknown sessionId', () => {
+      const result = conductor.stopSession('nonexistent');
+      expect(isErr(result)).toBe(true);
+      expect(result.error.code).toBe('SESSION_NOT_FOUND');
+    });
+
+    it('listSessions returns spawned sessions', () => {
+      conductor.spawnSession({ sessionId: 'cond-5', identity: 'primary' });
+      conductor.spawnSession({ sessionId: 'cond-6', identity: 'secondary' });
+
+      const list = conductor.listSessions();
+      expect(list).toHaveLength(2);
+      expect(list[0].sessionId).toBe('cond-5');
+      expect(list[1].sessionId).toBe('cond-6');
+    });
+
+    it('stop() cleans up spawned sessions', () => {
+      conductor.spawnSession({ sessionId: 'cond-7', identity: 'primary' });
+      conductor.spawnSession({ sessionId: 'cond-8', identity: 'secondary' });
+
+      // Both sessions should be alive
+      expect(unwrap(conductor.getSessionHealth('cond-7')).alive).toBe(true);
+      expect(unwrap(conductor.getSessionHealth('cond-8')).alive).toBe(true);
+
+      // stop() should clean up sessions
+      conductor.stop();
+
+      // Verify mock procs were killed
+      for (const call of spawnCalls) {
+        expect(call.proc.killed).toBe(true);
+      }
     });
   });
 });

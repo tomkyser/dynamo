@@ -2,6 +2,8 @@
 
 const { ok, err, createContract } = require('../../../lib/index.cjs');
 const fs = require('node:fs');
+const path = require('node:path');
+const { createSessionSpawner } = require('./session-spawner.cjs');
 
 /**
  * Contract shape for the Conductor infrastructure service.
@@ -12,9 +14,10 @@ const CONDUCTOR_SHAPE = {
   required: [
     'init', 'start', 'stop', 'healthCheck',
     'composeUp', 'composeDown', 'composeStatus',
-    'checkDependencies', 'isDockerAvailable'
+    'checkDependencies', 'isDockerAvailable',
+    'spawnSession', 'stopSession', 'getSessionHealth',
   ],
-  optional: ['composeRestart', 'composeLogs']
+  optional: ['composeRestart', 'composeLogs', 'listSessions']
 };
 
 /**
@@ -35,6 +38,7 @@ function createConductor() {
   let _started = false;
   let _switchboard = null;
   let _dockerAvailable = false;
+  let _sessionSpawner = null;
 
   /**
    * Runs a Docker CLI command via Bun.spawnSync.
@@ -97,6 +101,13 @@ function createConductor() {
         _dockerAvailable = _checkDockerInstalled();
       }
 
+      // Initialize session spawner for Claude Code session management
+      _sessionSpawner = createSessionSpawner({
+        channelServerPath: (options && options.channelServerPath)
+          || path.resolve(__dirname, '../wire/channel-server.cjs'),
+        switchboard: _switchboard,
+      });
+
       return ok(undefined);
     },
 
@@ -111,9 +122,20 @@ function createConductor() {
 
     /**
      * Stop the Conductor service.
+     * Cleans up all spawned sessions before stopping.
      * @returns {import('../../../lib/result.cjs').Result<undefined>}
      */
     stop() {
+      // Clean up all spawned sessions
+      if (_sessionSpawner) {
+        const sessions = _sessionSpawner.list();
+        for (const session of sessions) {
+          if (session.alive) {
+            _sessionSpawner.stop(session.sessionId);
+          }
+        }
+      }
+
       _started = false;
       return ok(undefined);
     },
@@ -308,6 +330,54 @@ function createConductor() {
       }
 
       return ok({ bun, git, duckdb, disk, docker });
+    },
+
+    /**
+     * Spawn a Claude Code session via the session spawner.
+     *
+     * @param {Object} opts
+     * @param {string} opts.sessionId - Unique session identifier
+     * @param {string} opts.identity - Session identity (primary/secondary/tertiary)
+     * @param {Object} [opts.env] - Additional environment variables
+     * @returns {import('../../../lib/result.cjs').Result<{ sessionId: string, pid: number, proc: Object }>}
+     */
+    spawnSession({ sessionId, identity, env }) {
+      if (!_started) {
+        return err('NOT_STARTED', 'Conductor not started');
+      }
+      return _sessionSpawner.spawn({ sessionId, identity, env });
+    },
+
+    /**
+     * Stop a spawned Claude Code session.
+     *
+     * @param {string} sessionId - Session to stop
+     * @returns {import('../../../lib/result.cjs').Result<{ sessionId: string }>}
+     */
+    stopSession(sessionId) {
+      if (!_started) {
+        return err('NOT_STARTED', 'Conductor not started');
+      }
+      return _sessionSpawner.stop(sessionId);
+    },
+
+    /**
+     * Get health status of a spawned Claude Code session.
+     *
+     * @param {string} sessionId - Session to check
+     * @returns {import('../../../lib/result.cjs').Result<{ sessionId: string, alive: boolean, pid: number, uptime: number }>}
+     */
+    getSessionHealth(sessionId) {
+      return _sessionSpawner.health(sessionId);
+    },
+
+    /**
+     * List all tracked sessions.
+     *
+     * @returns {Array<{ sessionId: string, identity: string, alive: boolean }>}
+     */
+    listSessions() {
+      return _sessionSpawner.list();
     },
   };
 

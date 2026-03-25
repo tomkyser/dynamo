@@ -27,16 +27,20 @@ describe('session-config', () => {
   });
 
   describe('SESSION_STATES', () => {
-    it('has 8 entries matching spec', () => {
+    it('has 9 entries matching spec (including REM_PROCESSING)', () => {
       const expected = [
         'uninitialized', 'starting', 'passive', 'upgrading',
-        'active', 'degrading', 'shutting_down', 'stopped',
+        'active', 'degrading', 'shutting_down', 'rem_processing', 'stopped',
       ];
       const values = Object.values(SESSION_STATES);
-      expect(values).toHaveLength(8);
+      expect(values).toHaveLength(9);
       for (const s of expected) {
         expect(values).toContain(s);
       }
+    });
+
+    it('REM_PROCESSING exists and equals rem_processing', () => {
+      expect(SESSION_STATES.REM_PROCESSING).toBe('rem_processing');
     });
 
     it('is frozen', () => {
@@ -52,8 +56,21 @@ describe('session-config', () => {
       expect(TRANSITIONS[SESSION_STATES.UPGRADING]).toEqual([SESSION_STATES.ACTIVE, SESSION_STATES.PASSIVE]);
       expect(TRANSITIONS[SESSION_STATES.ACTIVE]).toEqual([SESSION_STATES.DEGRADING, SESSION_STATES.SHUTTING_DOWN]);
       expect(TRANSITIONS[SESSION_STATES.DEGRADING]).toEqual([SESSION_STATES.PASSIVE]);
-      expect(TRANSITIONS[SESSION_STATES.SHUTTING_DOWN]).toEqual([SESSION_STATES.STOPPED]);
+      expect(TRANSITIONS[SESSION_STATES.SHUTTING_DOWN]).toEqual([SESSION_STATES.STOPPED, SESSION_STATES.REM_PROCESSING]);
+      expect(TRANSITIONS[SESSION_STATES.REM_PROCESSING]).toEqual([SESSION_STATES.STOPPED]);
       expect(TRANSITIONS[SESSION_STATES.STOPPED]).toEqual([]);
+    });
+
+    it('SHUTTING_DOWN allows transition to both STOPPED and REM_PROCESSING', () => {
+      const shutdownTargets = TRANSITIONS[SESSION_STATES.SHUTTING_DOWN];
+      expect(shutdownTargets).toContain(SESSION_STATES.STOPPED);
+      expect(shutdownTargets).toContain(SESSION_STATES.REM_PROCESSING);
+    });
+
+    it('REM_PROCESSING allows transition only to STOPPED', () => {
+      const remTargets = TRANSITIONS[SESSION_STATES.REM_PROCESSING];
+      expect(remTargets).toEqual([SESSION_STATES.STOPPED]);
+      expect(remTargets).toHaveLength(1);
     });
 
     it('is frozen', () => {

@@ -57,6 +57,7 @@ function createFullRem(dependencies) {
   const _wire = deps.wire || null;
   const _switchboard = deps.switchboard || null;
   const _config = deps.config || {};
+  const _taxonomyGovernor = deps.taxonomyGovernor || null;
 
   // Configuration with defaults
   const _maxConsolidated = typeof _config.max_consolidated_per_session === 'number'
@@ -124,6 +125,8 @@ function createFullRem(dependencies) {
       entities_deduped: 0,
       weights_updated: 0,
       domains_merged: 0,
+      domains_split: 0,      // Phase 12
+      domains_retired: 0,    // Phase 12
       conditioning_updated: false,
       quality_score: 0,
       timed_out: false,
@@ -198,19 +201,52 @@ function createFullRem(dependencies) {
     }
 
     // ---------------------------------------------------------------------
-    // Step 3: Editorial pass
+    // Step 3: Editorial pass (with Phase 12 taxonomy governance)
     // ---------------------------------------------------------------------
     try {
       const domainPairs = (domainData && domainData.domainPairs) || [];
       const entityList = (domainData && domainData.entityList) || [];
       const associationStats = (domainData && domainData.associationStats) || [];
 
-      const editorial = _editorialPass.run(domainPairs, entityList, associationStats);
+      // Phase 12: Compute cap pressure for taxonomy governance (FRG-07)
+      var capPressure = null;
+      if (_taxonomyGovernor) {
+        // Query current counts from domainData (already loaded by rem-consolidator)
+        var _domainCount = (domainData && typeof domainData.domainCount === 'number')
+          ? domainData.domainCount
+          : domainPairs.length;
+        var _maxEntityCount = (domainData && typeof domainData.maxEntityCount === 'number')
+          ? domainData.maxEntityCount
+          : 0;
+        var _edgeCount = (domainData && typeof domainData.edgeCount === 'number')
+          ? domainData.edgeCount
+          : associationStats.length;
+
+        // Compute cap pressure
+        capPressure = _taxonomyGovernor.computeCapPressure(_domainCount, _maxEntityCount, _edgeCount);
+
+        // Add pressure gradient text
+        capPressure.pressureText = _taxonomyGovernor.getPressureGradientText(capPressure);
+
+        // Identify split candidates (domains with fragment_count >= threshold)
+        var _domains = (domainData && domainData.domains) || [];
+        capPressure.splitCandidates = _taxonomyGovernor.identifySplitCandidates(_domains);
+
+        // Identify retire candidates (domains inactive for N+ consecutive REM cycles)
+        var _inactiveCycleMap = (domainData && domainData.inactiveCycleMap) || new Map();
+        capPressure.retireCandidates = _taxonomyGovernor.identifyRetireCandidates(_domains, _inactiveCycleMap);
+      }
+
+      // Pass capPressure to editorial pass (4th argument, optional for backward compat)
+      const editorial = _editorialPass.run(domainPairs, entityList, associationStats, capPressure);
       const editorialResult = await editorial.apply(responses.llmEditorialResponse);
 
       result.entities_deduped = editorialResult.entities_deduped || 0;
       result.weights_updated = editorialResult.weights_updated || 0;
       result.domains_merged = editorialResult.domains_merged || 0;
+      // Phase 12: Track split/retire counts
+      result.domains_split = editorialResult.splits_applied || 0;
+      result.domains_retired = editorialResult.retirements_applied || 0;
     } catch (error) {
       skipped.push('editorial_pass: ' + (error.message || 'unknown error'));
     }

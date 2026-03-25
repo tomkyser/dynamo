@@ -17,7 +17,7 @@
  * @module reverie/components/cli/register-commands
  */
 
-const { ok } = require('../../../../lib/result.cjs');
+const { ok, err } = require('../../../../lib/result.cjs');
 const { createStatusHandler } = require('./status.cjs');
 const { createInspectHandlers } = require('./inspect.cjs');
 const { createHistoryHandlers } = require('./history.cjs');
@@ -126,6 +126,47 @@ function registerReverieCommands(circuitApi, context) {
     description: 'Full factory reset',
   });
   registered++;
+
+  // ---- backfill command (FRG-10, Phase 12) ----
+  if (context.backfillPipeline) {
+    circuitApi.registerCommand('backfill', async function handleBackfill(args, flags) {
+      const filePath = args[0];
+      if (!filePath) {
+        return err('MISSING_PATH', 'Usage: dynamo reverie backfill <path-to-export.json> [--dry-run] [--limit N] [--batch-size N]');
+      }
+
+      // Read the export file
+      const fileContent = context.lathe ? context.lathe.readFileSync(filePath) : null;
+      if (!fileContent) {
+        return err('FILE_NOT_FOUND', 'Could not read file: ' + filePath);
+      }
+
+      const isDryRun = process.argv.includes('--dry-run');
+      const limitIdx = process.argv.indexOf('--limit');
+      const limit = limitIdx >= 0 ? parseInt(process.argv[limitIdx + 1], 10) : null;
+      const batchIdx = process.argv.indexOf('--batch-size');
+      const batchSize = batchIdx >= 0 ? parseInt(process.argv[batchIdx + 1], 10) : undefined;
+
+      if (isDryRun) {
+        var dryResult = context.backfillPipeline.dryRun(fileContent);
+        if (!dryResult.ok) return dryResult;
+        return ok({
+          human: 'Dry run: ' + dryResult.value.conversations + ' conversations, ' + dryResult.value.user_turns + ' user turns, ~' + dryResult.value.estimated_fragments + ' estimated fragments',
+          json: dryResult.value,
+          raw: JSON.stringify(dryResult.value),
+        });
+      }
+
+      var result = await context.backfillPipeline.runBatch(fileContent, { limit: limit, batchSize: batchSize });
+      if (!result.ok) return result;
+      return ok({
+        human: 'Backfill complete: ' + result.value.conversations_processed + ' conversations, ' + result.value.fragments_formed + ' fragments formed',
+        json: result.value,
+        raw: JSON.stringify(result.value),
+      });
+    }, { description: 'Import historical conversation data' });
+    registered++;
+  }
 
   return ok({ registered: registered });
 }

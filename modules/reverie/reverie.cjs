@@ -45,6 +45,11 @@ const { createFullRem } = require('./components/rem/full-rem.cjs');
 const { createProvisionalRem } = require('./components/rem/provisional-rem.cjs');
 const { createRemConsolidator } = require('./components/rem/rem-consolidator.cjs');
 
+// Phase 12: Integration Surface & Backfill
+const { createTaxonomyGovernor } = require('./components/taxonomy/taxonomy-governor.cjs');
+const { createBackfillPipeline } = require('./components/formation/backfill-pipeline.cjs');
+const { registerReverieCommands } = require('./components/cli/register-commands.cjs');
+
 /**
  * Registers the Reverie module with the Circuit API.
  *
@@ -200,12 +205,18 @@ function register(facade) {
     config: sessionConfig,
   });
 
+  // Phase 12: Taxonomy governance (FRG-07)
+  const taxonomyGovernor = createTaxonomyGovernor({
+    wire, switchboard, fragmentWriter, config: sessionConfig,
+  });
+
   // Editorial pass (D-08: LLM-driven association index editorial operations)
   const editorialPass = createEditorialPass({
     wire,
     switchboard,
     fragmentWriter,
     config: sessionConfig,
+    taxonomyGovernor,  // Phase 12: governance split/retire via editorial pass
   });
 
   // Full REM pipeline (Tier 3: complete editorial orchestrator)
@@ -219,6 +230,7 @@ function register(facade) {
     wire,
     switchboard,
     config: sessionConfig,
+    taxonomyGovernor,  // Phase 12: cap pressure computation for editorial pass
   });
 
   // Provisional REM (Tier 2: tentative promotion with abort-and-revert)
@@ -242,6 +254,14 @@ function register(facade) {
     wire,
     switchboard,
     config: sessionConfig,
+  });
+
+  // -------------------------------------------------------------------------
+  // Phase 12: Historical data backfill pipeline (FRG-10)
+  // -------------------------------------------------------------------------
+
+  const backfillPipeline = createBackfillPipeline({
+    formationPipeline, selfModel, switchboard, lathe, config: sessionConfig,
   });
 
   // -------------------------------------------------------------------------
@@ -300,6 +320,19 @@ function register(facade) {
     }
   });
 
+  // -------------------------------------------------------------------------
+  // Phase 12: CLI command registration (INT-02)
+  // -------------------------------------------------------------------------
+
+  if (typeof facade.registerCommand === 'function') {
+    const cliContext = {
+      modeManager, selfModel, formationPipeline, journal, wire,
+      switchboard, fragmentWriter, lathe, dataDir: DATA_DIR_DEFAULT,
+      backfillPipeline,
+    };
+    registerReverieCommands(facade, cliContext);
+  }
+
   // Create hook handlers (lathe + dataDir needed for Stop snapshot writes)
   // Phase 9: formation pipeline and recall engine wired for formation triggers and recall injection
   // Phase 10: session manager, wire topology, and mode manager for three-session lifecycle
@@ -348,6 +381,9 @@ function register(facade) {
       consolidator: remConsolidator,
       heartbeatMonitor,
     },
+    taxonomy: taxonomyGovernor,    // Phase 12: taxonomy governance
+    backfill: backfillPipeline,    // Phase 12: historical data backfill
+    cli: true,                     // Phase 12: CLI commands registered
   };
 }
 

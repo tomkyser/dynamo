@@ -315,7 +315,7 @@ describe('Wire Service', () => {
       const result = wire.healthCheck();
       expect(isOk(result)).toBe(true);
       const health = unwrap(result);
-      expect(typeof health.started).toBe('boolean');
+      expect(typeof health.healthy).toBe('boolean');
       expect(typeof health.sessions).toBe('number');
       expect(typeof health.writeQueueDepth).toBe('number');
     });
@@ -347,7 +347,7 @@ describe('Wire Service', () => {
       expect(isOk(result)).toBe(true);
 
       const health = unwrap(wire.healthCheck());
-      expect(health.started).toBe(true);
+      expect(health.healthy).toBe(true);
 
       const startEvents = deps.emitted.filter(e => e.event === 'wire:started');
       expect(startEvents.length).toBe(1);

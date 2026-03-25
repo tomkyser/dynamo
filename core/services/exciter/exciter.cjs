@@ -141,7 +141,8 @@ function createExciter() {
    */
   function healthCheck() {
     return ok({
-      status: _started ? 'healthy' : 'unhealthy',
+      name: 'exciter',
+      healthy: _started,
       registeredHooks: _hookRegistry ? _hookRegistry.listHookTypes().length : 0,
     });
   }

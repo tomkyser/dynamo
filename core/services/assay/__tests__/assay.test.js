@@ -107,7 +107,7 @@ describe('Assay Service', () => {
       expect(isOk(result)).toBe(true);
 
       const health = unwrap(assay.healthCheck());
-      expect(health.started).toBe(true);
+      expect(health.healthy).toBe(true);
     });
 
     it('stop() clears started state', () => {
@@ -117,7 +117,7 @@ describe('Assay Service', () => {
       expect(isOk(result)).toBe(true);
 
       const health = unwrap(assay.healthCheck());
-      expect(health.started).toBe(false);
+      expect(health.healthy).toBe(false);
     });
 
     it('healthCheck() returns status object with started flag and provider count', () => {
@@ -127,7 +127,7 @@ describe('Assay Service', () => {
       expect(isOk(result)).toBe(true);
 
       const health = unwrap(result);
-      expect(health.started).toBe(true);
+      expect(health.healthy).toBe(true);
       expect(health.providers).toBe(2);
     });
 
@@ -137,7 +137,7 @@ describe('Assay Service', () => {
       assay.stop();
 
       const health = unwrap(assay.healthCheck());
-      expect(health.started).toBe(false);
+      expect(health.healthy).toBe(false);
     });
   });
 

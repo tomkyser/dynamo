@@ -162,14 +162,14 @@ describe('exciter', () => {
     it('healthCheck returns healthy after start, unhealthy before', () => {
       const beforeInit = exciter.healthCheck();
       expect(beforeInit.ok).toBe(true);
-      expect(beforeInit.value.status).toBe('unhealthy');
+      expect(beforeInit.value.healthy).toBe(false);
 
       exciter.init({ switchboard, lathe, config: { projectRoot: tmpDir } });
       exciter.start();
 
       const afterStart = exciter.healthCheck();
       expect(afterStart.ok).toBe(true);
-      expect(afterStart.value.status).toBe('healthy');
+      expect(afterStart.value.healthy).toBe(true);
     });
   });
 

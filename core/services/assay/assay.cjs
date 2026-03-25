@@ -112,7 +112,7 @@ function createAssay() {
      * @returns {import('../../../lib/result.cjs').Result<{ started: boolean, providers: number }>}
      */
     healthCheck() {
-      return ok({ started: _started, providers: _providers.size });
+      return ok({ name: 'assay', healthy: _started, providers: _providers.size });
     },
 
     /**

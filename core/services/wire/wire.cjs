@@ -208,10 +208,10 @@ function createWire() {
      */
     healthCheck() {
       return ok({
-        started: _started,
+        name: 'wire',
+        healthy: _started,
         sessions: _registry ? _registry.getSessions().length : 0,
         writeQueueDepth: _writeCoordinator ? _writeCoordinator.getQueueDepth() : 0,
-        transports: _transportRouter ? _transportRouter.healthCheck() : [],
       });
     },
 

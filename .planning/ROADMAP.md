@@ -166,14 +166,14 @@ Plans:
   3. Self-organizing taxonomy creates, merges, splits, and retires domains during REM based on fragment accumulation patterns, with hard caps (100 domains, 200 entities per domain, 10K association edges) preventing unbounded growth
   4. Source-reference model stores association chain termini and source locator pointers, establishing experiential relationships to source material without direct file indexing
   5. Historical data backfill imports conversation exports through a backfill-specific formation pathway with retrospective framing, provenance marking, and decay/trust parameters appropriate for reconstructed (non-experiential) memories
-**Plans:** 2/6 plans executed
+**Plans:** 5/6 plans executed
 
 Plans:
 - [x] 12-01-PLAN.md — Taxonomy/backfill constants, schema origin field, FragmentWriter source_locators write (FRG-08)
-- [ ] 12-02-PLAN.md — CLI status + inspect subcommands (INT-02)
-- [ ] 12-03-PLAN.md — CLI history + reset subcommands (INT-02)
+- [x] 12-02-PLAN.md — CLI status + inspect subcommands (INT-02)
+- [x] 12-03-PLAN.md — CLI history + reset subcommands (INT-02)
 - [x] 12-04-PLAN.md — Taxonomy governor + editorial pass governance extensions (FRG-07)
-- [ ] 12-05-PLAN.md — Backfill parser, formation template, pipeline orchestrator (FRG-10)
+- [x] 12-05-PLAN.md — Backfill parser, formation template, pipeline orchestrator (FRG-10)
 - [ ] 12-06-PLAN.md — Module manifest, wiring: CLI + taxonomy + backfill into Reverie (INT-03)
 
 **Research flag**: RESEARCH COMPLETE -- backfill formation pathway designed with hybrid framing, provenance model, and versioned parser approach. CLI and submodule integration follow established Pulley/Circuit patterns.
@@ -181,7 +181,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 7 -> 8 -> 9 -> 9.1 -> 10 -> 11 -> 12
+Phases execute in numeric order: 7 -> 8 -> 9 -> 9.1 -> 10 -> 11 -> 12 -> 12.1
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -199,4 +199,26 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 9.1 -> 10 -> 11 -> 12
 | 9.1 Claude Code Integration | M2 | 0/3 | Planned    |  |
 | 10. Three-Session Architecture | M2 | 6/6 | Complete    | 2026-03-24 |
 | 11. REM Consolidation | M2 | 5/6 | Complete    | 2026-03-25 |
-| 12. Integration Surface | M2 | 2/6 | In Progress|  |
+| 12. Integration Surface | M2 | 6/6 | Complete    | 2026-03-25 |
+| 12.1 Platform Launch Readiness | M2 | 0/5 | Planned |  |
+
+### Phase 12.1: Platform Launch Readiness (INSERTED)
+
+**Goal:** Close every gap between "tests pass" and "the platform runs" — module discovery and loading, Claude Code hook wiring, session triplet spawning and management via Claude skills, multi-triplet concurrency, visual session distinction, and full end-to-end system validation. Claude skills serve as the user-facing entry points for initializing and managing Dynamo and Reverie.
+**Requirements**: INT-01, INT-02, INT-03, SES-01, SES-02, SES-03
+**Depends on:** Phase 12
+**Success Criteria** (what must be TRUE):
+  1. Bootstrap discovers modules from `modules/` directory and loads them via Circuit automatically — Reverie registers on platform boot without manual wiring
+  2. Claude Code hooks (SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, Stop, PreCompact, SubagentStart, SubagentStop) fire through Dynamo's Exciter/Armature registry into Reverie's handlers during a live session
+  3. Claude skills (`/dynamo`, `/reverie`) provide user-facing init, status, and session management — users can start, inspect, and stop Reverie through natural skill invocations
+  4. Secondary and Tertiary sessions spawn as separate Claude Code windows via Conductor/SessionManager, with Wire topology connecting the triplet and visual markers distinguishing session roles
+  5. Multiple simultaneous Reverie-enabled session triplets can run without interference — Wire registry isolates each triplet's message routing, Switchboard scopes events per-triplet
+  6. Full end-to-end validation: a user starts Claude Code, Dynamo boots, Reverie loads, personality injects on first turn, formation fires on SubagentStop, recall returns fragments, REM runs on session end
+**Plans:** 5 plans
+
+Plans:
+- [ ] 12.1-01-PLAN.md — Module discovery + bootstrap wiring + config keys (INT-01, INT-03)
+- [ ] 12.1-02-PLAN.md — Exciter registerSkill() + skill-manager sub-module (INT-02)
+- [ ] 12.1-03-PLAN.md — Skill content modules + Reverie skill registration (INT-02, SES-01, SES-02)
+- [ ] 12.1-04-PLAN.md — Triplet ID namespace + visual markers + Session Manager updates (SES-01, SES-02, SES-03)
+- [ ] 12.1-05-PLAN.md — Integration test harness (SC-1 through SC-6) + checkpoint log (all requirements)

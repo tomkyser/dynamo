@@ -28,11 +28,13 @@ const SESSION_IDENTITIES = Object.freeze({
 /**
  * Session lifecycle states.
  * Sessions progress through these states during their lifetime.
+ * REM_PROCESSING is an intermediate state between SHUTTING_DOWN and STOPPED
+ * where Secondary stays alive for REM consolidation.
  *
  * @type {Readonly<{
  *   UNINITIALIZED: string, STARTING: string, PASSIVE: string,
  *   UPGRADING: string, ACTIVE: string, DEGRADING: string,
- *   SHUTTING_DOWN: string, STOPPED: string
+ *   SHUTTING_DOWN: string, REM_PROCESSING: string, STOPPED: string
  * }>}
  */
 const SESSION_STATES = Object.freeze({
@@ -43,6 +45,7 @@ const SESSION_STATES = Object.freeze({
   ACTIVE: 'active',
   DEGRADING: 'degrading',
   SHUTTING_DOWN: 'shutting_down',
+  REM_PROCESSING: 'rem_processing',
   STOPPED: 'stopped',
 });
 
@@ -59,7 +62,8 @@ const TRANSITIONS = Object.freeze({
   [SESSION_STATES.UPGRADING]: Object.freeze([SESSION_STATES.ACTIVE, SESSION_STATES.PASSIVE]),
   [SESSION_STATES.ACTIVE]: Object.freeze([SESSION_STATES.DEGRADING, SESSION_STATES.SHUTTING_DOWN]),
   [SESSION_STATES.DEGRADING]: Object.freeze([SESSION_STATES.PASSIVE]),
-  [SESSION_STATES.SHUTTING_DOWN]: Object.freeze([SESSION_STATES.STOPPED]),
+  [SESSION_STATES.SHUTTING_DOWN]: Object.freeze([SESSION_STATES.STOPPED, SESSION_STATES.REM_PROCESSING]),
+  [SESSION_STATES.REM_PROCESSING]: Object.freeze([SESSION_STATES.STOPPED]),
   [SESSION_STATES.STOPPED]: Object.freeze([]),
 });
 

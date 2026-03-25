@@ -180,6 +180,59 @@ const DATA_DIR_DEFAULT = '~/.dynamo/reverie';
  */
 const FRAGMENT_ID_PATTERN = /^frag-\d{4}-\d{2}-\d{2}-[a-f0-9]{8}$/;
 
+/**
+ * REM consolidation default parameters per Phase 11.
+ *
+ * - heartbeat_timeout_ms: Time before Secondary detects dead Primary (Tier 2 trigger)
+ * - tier2_check_interval_ms: Polling interval for Tier 2 heartbeat checks
+ * - rem_time_budget_ms: Maximum time budget for a full REM cycle
+ * - max_consolidated_per_session: Cap on fragments promoted per session
+ * - meta_recall_min_significance: Minimum significance for recall meta-fragment creation
+ * - sublimation_triage_cap: Maximum sublimation fragments promoted per session
+ *
+ * @type {Readonly<{
+ *   heartbeat_timeout_ms: number,
+ *   tier2_check_interval_ms: number,
+ *   rem_time_budget_ms: number,
+ *   max_consolidated_per_session: number,
+ *   meta_recall_min_significance: number,
+ *   sublimation_triage_cap: number
+ * }>}
+ */
+const REM_DEFAULTS = Object.freeze({
+  heartbeat_timeout_ms: 90000,
+  tier2_check_interval_ms: 5000,
+  rem_time_budget_ms: 120000,
+  max_consolidated_per_session: 20,
+  meta_recall_min_significance: 0.6,
+  sublimation_triage_cap: 5,
+});
+
+/**
+ * Conditioning update default parameters per Phase 11 (SM-04).
+ *
+ * - ema_alpha: Exponential moving average alpha for conditioning field updates (D-10)
+ * - identity_floor: Minimum value for identity core trait dimensions (D-11)
+ * - identity_min_sessions: Sessions required before identity core can shift
+ * - diversity_threshold: Minimum diversity score for entropy distribution adjustment
+ * - max_error_history: Maximum error history entries retained in conditioning
+ *
+ * @type {Readonly<{
+ *   ema_alpha: number,
+ *   identity_floor: number,
+ *   identity_min_sessions: number,
+ *   diversity_threshold: number,
+ *   max_error_history: number
+ * }>}
+ */
+const CONDITIONING_DEFAULTS = Object.freeze({
+  ema_alpha: 0.15,
+  identity_floor: 0.1,
+  identity_min_sessions: 5,
+  diversity_threshold: 0.05,
+  max_error_history: 50,
+});
+
 module.exports = {
   FRAGMENT_TYPES,
   LIFECYCLE_DIRS,
@@ -190,4 +243,6 @@ module.exports = {
   NUDGE_DEFAULTS,
   DATA_DIR_DEFAULT,
   FRAGMENT_ID_PATTERN,
+  REM_DEFAULTS,
+  CONDITIONING_DEFAULTS,
 };

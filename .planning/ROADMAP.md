@@ -32,7 +32,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 - [ ] **Phase 8: Single-Session Personality Injection** - Validate that personality persistence actually works before adding multi-session complexity
 - [ ] **Phase 9: Fragment Memory Engine** - Fragment formation and recall validated in single-session context before inter-session orchestration
 - [x] **Phase 10: Three-Session Architecture** - Highest-risk phase: Wire-based session orchestration with go/no-go gate on Claude Max resource limits (completed 2026-03-24)
-- [ ] **Phase 11: REM Consolidation** - Memory consolidation, Self Model evolution, and the working-to-long-term memory gate
+- [x] **Phase 11: REM Consolidation** - Memory consolidation, Self Model evolution, and the working-to-long-term memory gate (completed 2026-03-25)
 - [ ] **Phase 12: Integration Surface & Backfill** - CLI exposure, submodule management, taxonomy self-organization, and historical data import
 
 ## Phase Details
@@ -144,7 +144,7 @@ Plans:
   3. Tier 3 full REM on session end performs retroactive evaluation, meta-fragment creation, association index editorial pass (entity dedup, weight updates, domain boundary review), and promotes fragments from working/ to active/ -- nothing enters consolidated storage without passing through REM (REM-07)
   4. Self Model conditioning updates (attention biases, recall strategies, error history) accumulate across sessions with trait floor constraints preventing identity collapse
   5. REM mode and Dormant mode operate correctly: REM mode runs Secondary-only consolidation, Dormant mode runs only scheduled decay maintenance with no active sessions
-**Plans:** 5/6 plans executed
+**Plans:** 6/6 plans complete
 
 Plans:
 - [x] 11-01-PLAN.md — REM constants + Mode Manager/Session Manager REM state extensions
@@ -189,5 +189,5 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 9.1 -> 10 -> 11 -> 12
 | 9. Fragment Memory Engine | M2 | 0/4 | Planned | - |
 | 9.1 Claude Code Integration | M2 | 0/3 | Planned    |  |
 | 10. Three-Session Architecture | M2 | 6/6 | Complete    | 2026-03-24 |
-| 11. REM Consolidation | M2 | 5/6 | In Progress|  |
+| 11. REM Consolidation | M2 | 5/6 | Complete    | 2026-03-25 |
 | 12. Integration Surface | M2 | 0/TBD | Not started | - |

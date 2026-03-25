@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
-status: Ready to execute
-stopped_at: Completed 11-05-PLAN.md
-last_updated: "2026-03-25T03:32:23.098Z"
+status: Ready to plan
+stopped_at: Completed 11-06-PLAN.md
+last_updated: "2026-03-25T03:46:47.314Z"
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 26
-  completed_plans: 25
+  completed_plans: 26
 ---
 
 # Project State
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-23)
 
 ## Current Position
 
-Phase: 11 (rem-consolidation) — EXECUTING
-Plan: 6 of 6
+Phase: 12
+Plan: Not started
 
 ## Performance Metrics
 
@@ -78,6 +78,7 @@ Plan: 6 of 6
 | Phase 11 P03 | 5min | 2 tasks | 4 files |
 | Phase 11 P04 | 5min | 2 tasks | 4 files |
 | Phase 11 P05 | 6min | 3 tasks | 6 files |
+| Phase 11 P06 | 5min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -152,6 +153,7 @@ Recent decisions affecting current work:
 - [Phase 11]: Full REM accepts llmResponses parameter for prompt/apply separation -- orchestrator never calls LLM directly
 - [Phase 11]: Provisional REM uses _running/_aborted/_tentativeFragmentIds state machine for clean lifecycle
 - [Phase 11]: REM consolidator is single entry point for all consolidation -- enforces REM-07 gate
+- [Phase 11]: handleStop REM transition is fire-and-forget: hook returns immediately, Tier 3 runs async on Secondary
 
 ### Roadmap Evolution
 
@@ -173,6 +175,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T03:32:23.095Z
-Stopped at: Completed 11-05-PLAN.md
+Last session: 2026-03-25T03:41:01.681Z
+Stopped at: Completed 11-06-PLAN.md
 Resume file: None

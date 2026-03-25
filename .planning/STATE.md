@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
 status: Ready to execute
-stopped_at: Completed 12.1-03-PLAN.md
-last_updated: "2026-03-25T17:05:30.210Z"
+stopped_at: Completed 12.1-04-PLAN.md
+last_updated: "2026-03-25T17:06:58.598Z"
 progress:
   total_phases: 8
   completed_phases: 7
   total_plans: 37
-  completed_plans: 35
+  completed_plans: 36
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-23)
 ## Current Position
 
 Phase: 12.1 (platform-launch-readiness) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 
 ## Performance Metrics
 
@@ -88,6 +88,7 @@ Plan: 4 of 5
 | Phase 12.1 P01 | 3min | 2 tasks | 4 files |
 | Phase 12.1 P02 | 4min | 2 tasks | 3 files |
 | Phase 12.1 P03 | 4min | 2 tasks | 5 files |
+| Phase 12.1 P04 | 5min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -179,6 +180,8 @@ Recent decisions affecting current work:
 - [Phase 12.1]: Named export resolution pattern for module manifest.cjs (direct > default > first named property with name+main)
 - [Phase 12.1]: YAML frontmatter built via string concatenation per plan (no YAML library) for skill SKILL.md files
 - [Phase 12.1]: Skills are conversational wrappers that instruct Claude to run Pulley CLI commands per D-03
+- [Phase 12.1]: ANSI 256-color codes (Face=39 blue, Mind=214 amber, Subconscious=141 purple) for cross-theme readability per D-11
+- [Phase 12.1]: Triplet ID reset in both stop() and completeRem() to prevent stale IDs across session lifecycles
 
 ### Roadmap Evolution
 
@@ -201,6 +204,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T17:05:30.207Z
-Stopped at: Completed 12.1-03-PLAN.md
+Last session: 2026-03-25T17:06:58.595Z
+Stopped at: Completed 12.1-04-PLAN.md
 Resume file: None

@@ -382,34 +382,18 @@ describe('Session Manager', () => {
       const mgr = createSessionManager({ conductor, wire, selfModel, switchboard, sublimationLoop, config });
       await mgr.start();
       await mgr.upgrade();
-      // Move to SHUTTING_DOWN by calling stop() indirectly -- we need to trigger SHUTTING_DOWN without completing stop()
-      // Actually we transition manually: go to shutting_down then call transitionToRem
-      // The real usage: stop hook triggers shutting_down, then instead of stop() completing, transitionToRem is called
-      // We need to put it in shutting_down state. Let's start from passive and stop:
-      // start() -> passive, upgrade() -> active, then we need shutting_down
-      // We'll start fresh for clarity:
-      const mgr2 = createSessionManager({ conductor, wire, selfModel, switchboard, sublimationLoop, config });
-      await mgr2.start();
-      await mgr2.upgrade();
-      // Instead of stop(), we manually transition to shutting_down then call transitionToRem
-      // But we can't manually transition... The plan says transitionToRem validates current state is SHUTTING_DOWN
-      // So we need to be in SHUTTING_DOWN. Let's use a simpler path:
-      // From passive mode, going to shutting_down
-      const mgr3 = createSessionManager({ conductor, wire, selfModel, switchboard, sublimationLoop, config });
-      await mgr3.start();
-      // Now in passive. Go to shutting_down via internal transition
-      // We can't call _transition directly. We need transitionToRem to handle the full flow.
-      // Actually, looking at plan: transitionToRem validates current state is SHUTTING_DOWN via _transition to REM_PROCESSING
-      // This means the caller must first get into SHUTTING_DOWN state and then call transitionToRem
-      // But stop() goes SHUTTING_DOWN -> STOPPED atomically.
-      // The real flow is: hook handler calls stop() which transitions to SHUTTING_DOWN,
-      // but before calling stop(), the hook calls transitionToRem which handles the REM path
-      // Actually, re-reading the plan: transitionToRem validates state is SHUTTING_DOWN via _transition.
-      // That means we need an external way to get into SHUTTING_DOWN.
-      // The practical path: we need a separate initShutdown() or we integrate with stop flow.
-      // But plan says "transitionToRem() from SHUTTING_DOWN" - so there must be a way to reach SHUTTING_DOWN
-      // Let me just test that from passive, calling stop() goes to stopped,
-      // and transitionToRem from non-SHUTTING_DOWN returns error.
+      // Use initShutdown to reach SHUTTING_DOWN without completing to STOPPED
+      await mgr.initShutdown();
+      expect(mgr.getState().state).toBe('shutting_down');
+
+      const result = await mgr.transitionToRem();
+      expect(result.ok).toBe(true);
+      expect(mgr.getState().state).toBe('rem_processing');
+      // Tertiary should be stopped
+      expect(mgr.getState().tertiary).toBe(null);
+      // Secondary should still be alive
+      expect(mgr.getState().secondary).not.toBe(null);
+      expect(result.value.secondary).not.toBe(null);
     });
 
     it('from non-SHUTTING_DOWN state returns error', async () => {
@@ -426,13 +410,22 @@ describe('Session Manager', () => {
       const { createSessionManager } = require('../session-manager.cjs');
       const mgr = createSessionManager({ conductor, wire, selfModel, switchboard, sublimationLoop, config });
       await mgr.start();
-      await mgr.upgrade();
-      // We need to reach SHUTTING_DOWN first, then transitionToRem
-      // We'll need an initShutdown method or we rely on the implementation
-      // For now, test that the method exists and fails from wrong state
-      // The actual SHUTTING_DOWN->REM_PROCESSING path needs initShutdown
-      const result = await mgr.transitionToRem();
-      expect(result.ok).toBe(false); // wrong state (active, not shutting_down)
+      await mgr.initShutdown();
+      await mgr.transitionToRem();
+      expect(mgr.getState().state).toBe('rem_processing');
+    });
+
+    it('does NOT call conductor.stopSession for Secondary', async () => {
+      const { createSessionManager } = require('../session-manager.cjs');
+      const mgr = createSessionManager({ conductor, wire, selfModel, switchboard, sublimationLoop, config });
+      await mgr.start();
+      await mgr.initShutdown();
+      const stoppedBefore = [...conductor.stopped];
+      await mgr.transitionToRem();
+      // No new stops should have happened (no Tertiary in passive path)
+      const newStops = conductor.stopped.slice(stoppedBefore.length);
+      const secondaryStops = newStops.filter(id => id.includes('secondary'));
+      expect(secondaryStops.length).toBe(0);
     });
   });
 

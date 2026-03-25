@@ -239,6 +239,74 @@ function createSessionManager({ conductor, wire, selfModel, switchboard, sublima
   }
 
   /**
+   * Initiates shutdown without completing to STOPPED.
+   * Transitions to SHUTTING_DOWN state, allowing transitionToRem() to be called.
+   * This is the entry point for the REM lifecycle path.
+   *
+   * Transition: (passive|active) -> shutting_down
+   *
+   * @returns {Promise<import('../../../../lib/result.cjs').Result>}
+   */
+  async function initShutdown() {
+    const shutdownResult = _transition(SESSION_STATES.SHUTTING_DOWN);
+    if (!shutdownResult.ok) {
+      return shutdownResult;
+    }
+
+    return ok({ state: _state });
+  }
+
+  /**
+   * Transitions from SHUTTING_DOWN to REM_PROCESSING.
+   * Stops Tertiary if present but keeps Secondary alive for REM consolidation.
+   * Per D-13: Secondary stays alive and runs REM in-process.
+   *
+   * Transition: shutting_down -> rem_processing
+   *
+   * @returns {Promise<import('../../../../lib/result.cjs').Result>}
+   */
+  async function transitionToRem() {
+    const remResult = _transition(SESSION_STATES.REM_PROCESSING);
+    if (!remResult.ok) {
+      return remResult;
+    }
+
+    // Stop Tertiary if present — REM doesn't need it
+    if (_tertiarySessionId) {
+      conductor.stopSession(_tertiarySessionId);
+      wire.unregister(_tertiarySessionId);
+      _tertiarySessionId = null;
+    }
+
+    // Secondary stays alive — this is the key difference from stop()
+    return ok({ state: _state, secondary: _secondarySessionId });
+  }
+
+  /**
+   * Completes REM processing by stopping Secondary and transitioning to STOPPED.
+   * Called after REM consolidation pipeline finishes.
+   *
+   * Transition: rem_processing -> stopped
+   *
+   * @returns {Promise<import('../../../../lib/result.cjs').Result>}
+   */
+  async function completeRem() {
+    const completeResult = _transition(SESSION_STATES.STOPPED);
+    if (!completeResult.ok) {
+      return completeResult;
+    }
+
+    // Stop Secondary — REM is complete
+    if (_secondarySessionId) {
+      conductor.stopSession(_secondarySessionId);
+      wire.unregister(_secondarySessionId);
+      _secondarySessionId = null;
+    }
+
+    return ok({ state: _state });
+  }
+
+  /**
    * Stops all sessions with ordered shutdown: Tertiary first, then Secondary.
    *
    * Transition: (passive|active) -> shutting_down -> stopped
@@ -295,6 +363,9 @@ function createSessionManager({ conductor, wire, selfModel, switchboard, sublima
     stop,
     upgrade,
     degrade,
+    initShutdown,
+    transitionToRem,
+    completeRem,
     getState,
   });
 }

@@ -1,13 +1,13 @@
 'use strict';
 
 /**
- * Mode Manager — Active/Passive operational mode state machine with automatic fallback.
+ * Mode Manager — 4-mode operational state machine with automatic fallback.
  *
  * Controls which operational mode Reverie runs in:
  *   - Passive: Primary + lightweight Secondary (no formation, no recall, no sublimation)
  *   - Active: All three sessions with full Mind capabilities
- *   - REM: Placeholder for Phase 11 (consolidation mode)
- *   - Dormant: Placeholder for Phase 11 (idle/sleep mode)
+ *   - REM: Post-session consolidation mode (Secondary only, no latency pressure)
+ *   - Dormant: No active sessions, scheduled decay maintenance
  *
  * Automatic fallback: If Tertiary session health fails in Active mode,
  * Mode Manager automatically degrades to Passive.
@@ -26,7 +26,7 @@ const { ok, err } = require('../../../../lib/index.cjs');
 
 /**
  * Operational modes for the Reverie module.
- * REM and DORMANT are placeholders for Phase 11.
+ * Per OPS-01/02/03/04: Active, Passive, REM, Dormant.
  *
  * @type {Readonly<{ ACTIVE: string, PASSIVE: string, REM: string, DORMANT: string }>}
  */
@@ -134,6 +134,52 @@ function createModeManager({ sessionManager, conductor, switchboard, config } = 
   }
 
   /**
+   * Requests transition to REM mode.
+   * If ACTIVE, degrades first (stops Tertiary) then transitions.
+   * If PASSIVE, transitions directly.
+   * Per D-15: Dormant cannot go to REM — sequential transitions only.
+   *
+   * @param {string} [reason='session_end'] - Reason for REM transition
+   * @returns {Promise<import('../../../../lib/result.cjs').Result>}
+   */
+  async function requestRem(reason) {
+    if (_mode === OPERATIONAL_MODES.REM) {
+      return ok({ mode: _mode, changed: false });
+    }
+
+    if (_mode === OPERATIONAL_MODES.DORMANT) {
+      return err('INVALID_MODE_TRANSITION', 'Cannot transition from Dormant to REM');
+    }
+
+    if (_mode === OPERATIONAL_MODES.ACTIVE) {
+      await sessionManager.degrade();
+    }
+
+    _setMode(OPERATIONAL_MODES.REM, reason || 'session_end');
+    return ok({ mode: _mode, changed: true });
+  }
+
+  /**
+   * Requests transition to Dormant mode.
+   * Per D-15: Must be in REM mode — no skipping REM.
+   * Active/Passive -> Dormant is invalid (must go through REM first).
+   *
+   * @returns {Promise<import('../../../../lib/result.cjs').Result>}
+   */
+  async function requestDormant() {
+    if (_mode === OPERATIONAL_MODES.DORMANT) {
+      return ok({ mode: _mode, changed: false });
+    }
+
+    if (_mode !== OPERATIONAL_MODES.REM) {
+      return err('INVALID_MODE_TRANSITION', 'Must be in REM mode to enter Dormant (per D-15: no skipping REM)');
+    }
+
+    _setMode(OPERATIONAL_MODES.DORMANT, 'rem_complete');
+    return ok({ mode: _mode, changed: true });
+  }
+
+  /**
    * Checks health of active sessions.
    * In Active mode: checks both Secondary and Tertiary. If Tertiary is down,
    * automatically falls back to Passive.
@@ -200,10 +246,10 @@ function createModeManager({ sessionManager, conductor, switchboard, config } = 
     let activeSessionsCount = 0;
     if (_mode === OPERATIONAL_MODES.ACTIVE) {
       activeSessionsCount = 2; // Secondary + Tertiary
-    } else if (_mode === OPERATIONAL_MODES.PASSIVE) {
+    } else if (_mode === OPERATIONAL_MODES.PASSIVE || _mode === OPERATIONAL_MODES.REM) {
       activeSessionsCount = 1; // Secondary only
     }
-    // REM and DORMANT: 0
+    // DORMANT: 0
 
     return {
       mode: _mode,
@@ -222,6 +268,8 @@ function createModeManager({ sessionManager, conductor, switchboard, config } = 
     getMode,
     requestActive,
     requestPassive,
+    requestRem,
+    requestDormant,
     checkHealth,
     getMetrics,
   });

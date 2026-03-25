@@ -6,6 +6,7 @@ const { createHookRegistry } = require('../../armature/hooks.cjs');
 const { createSettingsManager } = require('./settings-manager.cjs');
 const { createClaudeMdManager } = require('./claudemd-manager.cjs');
 const { createAgentManager } = require('./agent-manager.cjs');
+const { createSkillManager } = require('./skill-manager.cjs');
 
 /**
  * Contract shape defining all required and optional methods for the Exciter service.
@@ -58,6 +59,9 @@ function createExciter() {
   /** @type {Object|null} Agent manager sub-module */
   let _agentManager = null;
 
+  /** @type {Object|null} Skill manager sub-module */
+  let _skillManager = null;
+
   /** @type {boolean} Whether start() has been called */
   let _started = false;
 
@@ -92,6 +96,7 @@ function createExciter() {
     _settingsManager = createSettingsManager({ lathe: _lathe });
     _claudeMdManager = createClaudeMdManager({ lathe: _lathe });
     _agentManager = createAgentManager({ lathe: _lathe });
+    _skillManager = createSkillManager({ lathe: _lathe });
 
     return ok(undefined);
   }
@@ -124,6 +129,7 @@ function createExciter() {
     _settingsManager = null;
     _claudeMdManager = null;
     _agentManager = null;
+    _skillManager = null;
     _projectRoot = null;
     return ok(undefined);
   }
@@ -310,6 +316,31 @@ function createExciter() {
     return _agentManager.getAgent(agentName, targetDir);
   }
 
+  // --- Skill delegation ---
+
+  /**
+   * Registers a Claude Code skill by writing a SKILL.md file.
+   * Skills are conversational wrappers over existing CLI commands (per D-03).
+   * Delegates to skill-manager sub-module.
+   *
+   * @param {string} skillName - Skill identifier (becomes /slash-command name)
+   * @param {Object} [options={}] - Skill registration options
+   * @param {string} [options.description] - Skill description for Claude auto-invocation
+   * @param {string} [options.content] - Markdown body with skill instructions
+   * @param {boolean} [options.disableModelInvocation] - Prevent Claude auto-loading
+   * @param {string} [options.allowedTools] - Tools Claude can use without permission
+   * @param {string} [options.argumentHint] - Autocomplete hint
+   * @param {string} [skillsDir] - Skills directory (defaults to projectRoot/.claude/skills)
+   * @returns {import('../../../lib/result.cjs').Result<{name: string, path: string}>}
+   */
+  function registerSkill(skillName, options, skillsDir) {
+    if (!_skillManager) {
+      return err('NOT_INITIALIZED', 'Exciter must be initialized before registering skills');
+    }
+    const targetDir = skillsDir || path.join(_projectRoot, '.claude', 'skills');
+    return _skillManager.registerSkill(skillName, options || {}, targetDir);
+  }
+
   const impl = {
     init, start, stop, healthCheck,
     registerHooks, getRegisteredHooks,
@@ -317,6 +348,7 @@ function createExciter() {
     updateSettings, readSettings,
     claimSection, updateSection, releaseSection,
     getAgent, // optional
+    registerSkill, // optional
   };
 
   return createContract('exciter', EXCITER_SHAPE, impl);

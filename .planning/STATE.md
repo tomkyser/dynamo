@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
-status: Phase complete — ready for verification
-stopped_at: Phase 12.1 context gathered
-last_updated: "2026-03-25T16:24:41.279Z"
+status: Ready to execute
+stopped_at: Completed 12.1-01-PLAN.md
+last_updated: "2026-03-25T16:58:08.166Z"
 progress:
   total_phases: 8
   completed_phases: 7
-  total_plans: 32
-  completed_plans: 32
+  total_plans: 37
+  completed_plans: 34
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** Everything routes through Dynamo -- the holistic wrapper via its APIs and interfaces. No component bypasses the patterns and paths Dynamo defines.
-**Current focus:** Phase 12 — integration-surface-backfill
+**Current focus:** Phase 12.1 — platform-launch-readiness
 
 ## Current Position
 
-Phase: 12 (integration-surface-backfill) — EXECUTING
-Plan: 6 of 6
+Phase: 12.1 (platform-launch-readiness) — EXECUTING
+Plan: 2 of 5
 
 ## Performance Metrics
 
@@ -85,6 +85,7 @@ Plan: 6 of 6
 | Phase 12 P04 | 5min | 2 tasks | 4 files |
 | Phase 12 P05 | 5min | 2 tasks | 5 files |
 | Phase 12 P06 | 5min | 2 tasks | 7 files |
+| Phase 12.1 P01 | 3min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -173,6 +174,7 @@ Recent decisions affecting current work:
 - [Phase 12]: Conditional CLI registration: facade.registerCommand availability check gates CLI wiring for backward compat
 - [Phase 12]: Cap pressure computed in full-rem.cjs Step 3 (orchestrator has domainData) not in editorial pass
 - [Phase 12]: Backfill command in register-commands.cjs for single-orchestrator CLI pattern consistency
+- [Phase 12.1]: Named export resolution pattern for module manifest.cjs (direct > default > first named property with name+main)
 
 ### Roadmap Evolution
 
@@ -195,6 +197,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T16:24:41.276Z
-Stopped at: Phase 12.1 context gathered
-Resume file: .planning/phases/12.1-platform-launch-readiness/12.1-CONTEXT.md
+Last session: 2026-03-25T16:58:08.162Z
+Stopped at: Completed 12.1-01-PLAN.md
+Resume file: None

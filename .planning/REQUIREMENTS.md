@@ -63,7 +63,7 @@
 
 - [x] **INT-01**: Hook wiring for 8 Claude Code hooks (SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, Stop, PreCompact, SubagentStart, SubagentStop)
 - [x] **INT-02**: CLI surface via Pulley (`dynamo reverie status/reset/inspect/history`)
-- [ ] **INT-03**: Reverie installed and managed as git submodule via Forge/Relay
+- [x] **INT-03**: Reverie installed and managed as git submodule via Forge/Relay
 
 ### Platform Prerequisites
 
@@ -160,7 +160,7 @@
 | OPS-04 | Phase 11 | Complete |
 | INT-01 | Phase 8 | Complete |
 | INT-02 | Phase 12 | Complete |
-| INT-03 | Phase 12 | Pending |
+| INT-03 | Phase 12 | Complete |
 | PLT-01 | Phase 7 | Complete |
 | PLT-02 | Phase 9.1 | Complete |
 | PLT-03 | Phase 9.1 | Complete |

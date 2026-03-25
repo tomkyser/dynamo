@@ -95,6 +95,24 @@ Everything routes through Dynamo. It is the holistic wrapper via its APIs and in
 - [x] Secondary face prompt authority pipeline (Wire subscription routes directives to Context Manager)
 - [x] Hook handlers trigger Session Manager lifecycle, forward snapshots to Secondary via Wire
 
+#### REM Consolidation — Validated in Phase 11
+- [x] Tiered consolidation pipeline (compaction triage, idle provisional, full session-end, editorial pass)
+- [x] Fragment lifecycle management with decay, promotion, and consolidation triggers
+
+#### Integration Surface Backfill — Validated in Phase 12
+- [x] Lithograph transcript provider with chunk management and frontmatter parsing
+- [x] Exciter integration surface service with hook dispatch and event routing
+- [x] Wire.query read path for cross-session data access
+- [x] Reverie submodule conversion with independent test isolation
+
+#### Platform Launch Readiness — Validated in Phase 12.1
+- [x] Automatic module discovery (`discoverModules()` in bootstrap step 7.5d)
+- [x] Exciter skill-manager (`registerSkill` / `removeSkill` / `listSkills`) writing Claude Code SKILL.md files
+- [x] Three Claude Code skills (`/dynamo`, `/reverie`, `/dynamo-validate`) registered via module entry point
+- [x] Triplet ID namespacing with 4-char hex suffix, visual session markers, concurrent triplet cap enforcement
+- [x] Integration test harness covering all 6 roadmap success criteria (33 tests, 69 assertions)
+- [x] Checkpoint log writer for persisting validation results
+
 ### Out of Scope
 
 - **LLM API integrations below SDK scope** — Dynamo is built on Claude Code within what Max subscription offers natively
@@ -107,12 +125,12 @@ Everything routes through Dynamo. It is the holistic wrapper via its APIs and in
 
 Dynamo is a ground-up rebuild. Prior experimental work (v0, archived at `archive/v0-pre-rewrite`) produced a working 6-subsystem monolith through 6 milestones (~7,081 LOC, 525 tests). That system validated core concepts — hook-based memory, cognitive pipelines, dual-path routing, adversarial framing — but grew organically without proper platform architecture. This rebuild applies the lessons learned to a properly layered system.
 
-**Current state (Phase 10 complete):**
+**Current state (Phase 12.1 complete):**
 - 9 services, 2 providers, 1 framework, 1 SDK — all wired through IoC container
-- Reverie module: Self Model, Context Manager, Fragment Memory Engine, Formation Pipeline, Recall Engine, Lithograph, Exciter, Session Manager, Mode Manager, Mind Cycle, Wire Topology, Referential Framing, Sublimation Loop
-- 1,445 tests passing, 0 failures across 79 files
-- Phase 10 delivers three-session architecture — Primary/Secondary/Tertiary via Wire, lifecycle state machine, cognitive orchestration, referential framing authority, Active/Passive modes with automatic fallback
-- Next: Phase 11 (REM Consolidation)
+- Reverie module: Self Model, Context Manager, Fragment Memory Engine, Formation Pipeline, Recall Engine, Lithograph, Exciter, Session Manager, Mode Manager, Mind Cycle, Wire Topology, Referential Framing, Sublimation Loop, REM Consolidation, Module Discovery, Skill Registration, Multi-Triplet Sessions
+- 1,913 tests passing, 0 failures across 111 files
+- Phase 12.1 delivers platform launch readiness — automatic module discovery, Claude Code skill registration, multi-triplet session isolation, E2E integration harness
+- M2 milestone phases complete through 12.1
 
 **Canonical architecture documents:**
 - `.claude/new-plan.md` — The architecture plan. Absolute canon.
@@ -171,4 +189,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-24 — Phase 10 (Three-Session Architecture) complete — session topology, lifecycle management, cognitive orchestration, inter-session communication (1,445 tests)*
+*Last updated: 2026-03-25 — Phase 12.1 (Platform Launch Readiness) complete — module discovery, skill registration, multi-triplet sessions, E2E harness (1,913 tests)*

@@ -77,9 +77,42 @@ For the full architecture document, see `.claude/new-plan.md`.
 | Journal    | Flat File | Markdown file system              |
 | Lithograph | Transcript| Claude Code transcript access     |
 
-## Modules
+## Reverie
 
-**Reverie** is the first module built on Dynamo. It delivers a memory and personality system for Claude Code sessions. See `.claude/reverie-spec-v2.md` for the full specification.
+Reverie is the first module built on Dynamo. It delivers persistent, evolving AI memory and personality for Claude Code sessions.
+
+### What It Does
+
+- **Self Model** -- a three-aspect personality system (Face/Mind/Subconscious) with an Identity Core, Relational Model, and Conditioning layer. Claude develops and maintains a coherent sense of self across conversations.
+- **Fragment Memory** -- five fragment types (episodic, semantic, procedural, emotional, relational) formed from conversations, stored across Journal and Ledger providers, recalled by multi-angle scoring with natural decay.
+- **Three-Session Architecture** -- Primary (user-facing), Secondary (cognitive orchestrator), and Tertiary (subconscious processing) sessions communicating over Wire. Secondary controls personality injection; Tertiary runs sublimation loops.
+- **REM Consolidation** -- tiered memory processing: compaction triage on context pressure, idle provisional consolidation, full session-end consolidation with editorial pass, and domain taxonomy governance.
+- **Context Management** -- budget-tracked personality injection across four context phases (30/60/80/100%), with referential framing from Secondary controlling how the Self Model surfaces in Primary.
+
+### Claude Code Skills
+
+Reverie registers three skills that become available as slash commands in Claude Code:
+
+| Skill | What It Does |
+|-------|-------------|
+| `/dynamo` | Platform dashboard -- shows health, loaded modules, active services, hook status |
+| `/reverie` | Session management hub -- shows current mode (Active/Passive/REM/Dormant), session topology, triplet ID, offers start/stop/inspect actions |
+| `/dynamo-validate` | Runs E2E validation against all 6 success criteria -- the go-live gate |
+
+### Operational Modes
+
+| Mode | Sessions Active | When |
+|------|----------------|------|
+| **Active** | Primary + Secondary + Tertiary | Full three-session architecture running |
+| **Passive** | Primary + Secondary | Tertiary unavailable or degraded -- automatic fallback |
+| **REM** | Secondary only | Session ended, consolidation running |
+| **Dormant** | None | No active sessions |
+
+### Session Topology
+
+Each session triplet gets a unique 4-character hex ID (e.g., `a1b2`). Sessions within a triplet are namespaced (`triplet-a1b2:primary`, `triplet-a1b2:secondary`, `triplet-a1b2:tertiary`) with color-coded terminal prefixes for visual distinction. Max 3 concurrent triplets by default (configurable via `max_triplets` in `config.json`).
+
+For the full specification, see `.claude/reverie-spec-v2.md`.
 
 ## Development
 

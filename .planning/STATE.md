@@ -192,6 +192,7 @@ Recent decisions affecting current work:
 - M2 phases 7-12 roadmapped from 40 requirements across 7 categories
 - Phase 9.1 inserted after Phase 9: Claude Code Integration Layer (Lithograph provider + Exciter service) — platform-level Claude Code transcript access and integration surface management
 - Phase 12.1 inserted after Phase 12: Platform Launch Readiness (URGENT) — module discovery/loading, Claude Code hook wiring, session triplet spawning/management via Claude skills, multi-triplet concurrency, visual session distinction, end-to-end system validation
+- Phase 13 added: Spec Compliance Audit & E2E Integration Verification — adversarial audit of every component against canonical specs, live bootstrap verification, zero tolerance for spec violations
 
 ### Pending Todos
 

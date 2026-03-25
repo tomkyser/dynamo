@@ -222,3 +222,13 @@ Plans:
 - [x] 12.1-03-PLAN.md — Skill content modules + Reverie skill registration (INT-02, SES-01, SES-02)
 - [x] 12.1-04-PLAN.md — Triplet ID namespace + visual markers + Session Manager updates (SES-01, SES-02, SES-03)
 - [x] 12.1-05-PLAN.md — Integration test harness (SC-1 through SC-6) + checkpoint log (all requirements)
+
+### Phase 13: Spec Compliance Audit & E2E Integration Verification
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 12
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 13 to break down)

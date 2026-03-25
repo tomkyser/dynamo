@@ -83,12 +83,14 @@ describe('Mode Manager', () => {
   });
 
   describe('createModeManager', () => {
-    it('returns instance with getMode, requestActive, requestPassive, checkHealth, getMetrics', () => {
+    it('returns instance with getMode, requestActive, requestPassive, requestRem, requestDormant, checkHealth, getMetrics', () => {
       const { createModeManager } = require('../mode-manager.cjs');
       const mgr = createModeManager({ sessionManager, conductor, switchboard, config });
       expect(typeof mgr.getMode).toBe('function');
       expect(typeof mgr.requestActive).toBe('function');
       expect(typeof mgr.requestPassive).toBe('function');
+      expect(typeof mgr.requestRem).toBe('function');
+      expect(typeof mgr.requestDormant).toBe('function');
       expect(typeof mgr.checkHealth).toBe('function');
       expect(typeof mgr.getMetrics).toBe('function');
     });
@@ -238,6 +240,124 @@ describe('Mode Manager', () => {
       const mgr = createModeManager({ sessionManager, conductor, switchboard, config });
       await mgr.requestActive();
       expect(mgr.getMetrics().active_sessions_count).toBe(2);
+    });
+  });
+
+  describe('requestRem()', () => {
+    it('from ACTIVE mode: degrades first then transitions to REM', async () => {
+      const { createModeManager } = require('../mode-manager.cjs');
+      const mgr = createModeManager({ sessionManager, conductor, switchboard, config });
+      await mgr.requestActive();
+      expect(mgr.getMode()).toBe('active');
+      const result = await mgr.requestRem('session_end');
+      expect(result.ok).toBe(true);
+      expect(result.value.changed).toBe(true);
+      expect(mgr.getMode()).toBe('rem');
+    });
+
+    it('from PASSIVE mode: transitions directly to REM', async () => {
+      const { createModeManager } = require('../mode-manager.cjs');
+      const mgr = createModeManager({ sessionManager, conductor, switchboard, config });
+      expect(mgr.getMode()).toBe('passive');
+      const result = await mgr.requestRem('session_end');
+      expect(result.ok).toBe(true);
+      expect(result.value.changed).toBe(true);
+      expect(mgr.getMode()).toBe('rem');
+    });
+
+    it('from REM mode: returns ok with changed=false (no-op)', async () => {
+      const { createModeManager } = require('../mode-manager.cjs');
+      const mgr = createModeManager({ sessionManager, conductor, switchboard, config });
+      await mgr.requestRem('session_end');
+      const result = await mgr.requestRem('session_end');
+      expect(result.ok).toBe(true);
+      expect(result.value.changed).toBe(false);
+    });
+
+    it('from DORMANT mode: returns err (invalid transition)', async () => {
+      const { createModeManager } = require('../mode-manager.cjs');
+      const mgr = createModeManager({ sessionManager, conductor, switchboard, config });
+      await mgr.requestRem('session_end');
+      await mgr.requestDormant();
+      expect(mgr.getMode()).toBe('dormant');
+      const result = await mgr.requestRem('retry');
+      expect(result.ok).toBe(false);
+    });
+
+    it('emits mode:changed event with reason', async () => {
+      const { createModeManager } = require('../mode-manager.cjs');
+      const mgr = createModeManager({ sessionManager, conductor, switchboard, config });
+      await mgr.requestRem('session_end');
+      const remEvent = switchboard.events.find(e => e.name === 'mode:changed' && e.data.to === 'rem');
+      expect(remEvent).toBeDefined();
+      expect(remEvent.data.from).toBe('passive');
+      expect(remEvent.data.reason).toBe('session_end');
+    });
+
+    it('uses default reason session_end when no reason provided', async () => {
+      const { createModeManager } = require('../mode-manager.cjs');
+      const mgr = createModeManager({ sessionManager, conductor, switchboard, config });
+      await mgr.requestRem();
+      const remEvent = switchboard.events.find(e => e.name === 'mode:changed' && e.data.to === 'rem');
+      expect(remEvent).toBeDefined();
+      expect(remEvent.data.reason).toBe('session_end');
+    });
+  });
+
+  describe('requestDormant()', () => {
+    it('from REM mode: transitions to DORMANT', async () => {
+      const { createModeManager } = require('../mode-manager.cjs');
+      const mgr = createModeManager({ sessionManager, conductor, switchboard, config });
+      await mgr.requestRem('session_end');
+      expect(mgr.getMode()).toBe('rem');
+      const result = await mgr.requestDormant();
+      expect(result.ok).toBe(true);
+      expect(result.value.changed).toBe(true);
+      expect(mgr.getMode()).toBe('dormant');
+    });
+
+    it('from ACTIVE mode: returns err (must go through REM first per D-15)', async () => {
+      const { createModeManager } = require('../mode-manager.cjs');
+      const mgr = createModeManager({ sessionManager, conductor, switchboard, config });
+      await mgr.requestActive();
+      const result = await mgr.requestDormant();
+      expect(result.ok).toBe(false);
+      expect(result.error.code).toBe('INVALID_MODE_TRANSITION');
+    });
+
+    it('from PASSIVE mode: returns err (must go through REM first per D-15)', async () => {
+      const { createModeManager } = require('../mode-manager.cjs');
+      const mgr = createModeManager({ sessionManager, conductor, switchboard, config });
+      const result = await mgr.requestDormant();
+      expect(result.ok).toBe(false);
+      expect(result.error.code).toBe('INVALID_MODE_TRANSITION');
+    });
+
+    it('from DORMANT mode: returns ok with changed=false (no-op)', async () => {
+      const { createModeManager } = require('../mode-manager.cjs');
+      const mgr = createModeManager({ sessionManager, conductor, switchboard, config });
+      await mgr.requestRem('session_end');
+      await mgr.requestDormant();
+      const result = await mgr.requestDormant();
+      expect(result.ok).toBe(true);
+      expect(result.value.changed).toBe(false);
+    });
+  });
+
+  describe('getMetrics() with REM/Dormant modes', () => {
+    it('active_sessions_count is 1 in REM mode (Secondary only)', async () => {
+      const { createModeManager } = require('../mode-manager.cjs');
+      const mgr = createModeManager({ sessionManager, conductor, switchboard, config });
+      await mgr.requestRem('session_end');
+      expect(mgr.getMetrics().active_sessions_count).toBe(1);
+    });
+
+    it('active_sessions_count is 0 in DORMANT mode', async () => {
+      const { createModeManager } = require('../mode-manager.cjs');
+      const mgr = createModeManager({ sessionManager, conductor, switchboard, config });
+      await mgr.requestRem('session_end');
+      await mgr.requestDormant();
+      expect(mgr.getMetrics().active_sessions_count).toBe(0);
     });
   });
 

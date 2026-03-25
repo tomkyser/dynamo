@@ -891,11 +891,13 @@ describe('Hook Handlers', () => {
       await handlers.handleUserPromptSubmit({ user_prompt: 'Hello world', session_id: 'test' });
       // Give fire-and-forget a tick to complete
       await new Promise(function (r) { setTimeout(r, 10); });
-      expect(_sentEnvelopes.length).toBe(1);
-      expect(_sentEnvelopes[0].from).toBe('primary');
-      expect(_sentEnvelopes[0].to).toBe('secondary');
-      expect(_sentEnvelopes[0].type).toBe('snapshot');
-      expect(_sentEnvelopes[0].payload.userPrompt).toBe('Hello world');
+      // Phase 11 adds HEARTBEAT after SNAPSHOT, so expect >= 1 sends
+      expect(_sentEnvelopes.length).toBeGreaterThanOrEqual(1);
+      const snapshotEnvelope = _sentEnvelopes.find(function (e) { return e.type === 'snapshot'; });
+      expect(snapshotEnvelope).toBeTruthy();
+      expect(snapshotEnvelope.from).toBe('primary');
+      expect(snapshotEnvelope.to).toBe('secondary');
+      expect(snapshotEnvelope.payload.userPrompt).toBe('Hello world');
     });
 
     it('does not send when session state is stopped', async () => {

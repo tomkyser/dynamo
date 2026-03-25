@@ -34,6 +34,17 @@ const { createWireTopology } = require('./components/session/wire-topology.cjs')
 const { createModeManager } = require('./components/modes/mode-manager.cjs');
 const { createReferentialFraming } = require('./components/context/referential-framing.cjs');
 
+// Phase 11: REM consolidation components
+const { createTriage } = require('./components/rem/triage.cjs');
+const { createHeartbeatMonitor } = require('./components/rem/heartbeat-monitor.cjs');
+const { createConditioningUpdater } = require('./components/rem/conditioning-updater.cjs');
+const { createQualityEvaluator } = require('./components/rem/quality-evaluator.cjs');
+const { createRetroactiveEvaluator } = require('./components/rem/retroactive-evaluator.cjs');
+const { createEditorialPass } = require('./components/rem/editorial-pass.cjs');
+const { createFullRem } = require('./components/rem/full-rem.cjs');
+const { createProvisionalRem } = require('./components/rem/provisional-rem.cjs');
+const { createRemConsolidator } = require('./components/rem/rem-consolidator.cjs');
+
 /**
  * Registers the Reverie module with the Circuit API.
  *
@@ -156,6 +167,112 @@ function register(facade) {
   });
 
   // -------------------------------------------------------------------------
+  // Phase 11: REM consolidation components (order matters -- dependencies flow downward)
+  // -------------------------------------------------------------------------
+
+  // Tier 1: Triage (fast state snapshot on PreCompact)
+  const triage = createTriage({ lathe, switchboard, dataDir: DATA_DIR_DEFAULT, sessionId: 'reverie' });
+
+  // Heartbeat monitor (Wire heartbeat timeout detection for Tier 2)
+  const heartbeatMonitor = createHeartbeatMonitor({
+    switchboard,
+    config: sessionConfig,
+  });
+
+  // Conditioning updater (SM-04: EMA-based conditioning field updates)
+  const conditioningUpdater = createConditioningUpdater({
+    selfModel,
+    config: sessionConfig,
+  });
+
+  // Quality evaluator (D-12: dual-signal behavioral + LLM quality score)
+  const qualityEvaluator = createQualityEvaluator({
+    entropyEngine: entropy,
+    config: sessionConfig,
+  });
+
+  // Retroactive evaluator (D-06: LLM re-evaluation of fragments against session arc)
+  const retroactiveEvaluator = createRetroactiveEvaluator({
+    fragmentWriter,
+    journal,
+    wire,
+    switchboard,
+    config: sessionConfig,
+  });
+
+  // Editorial pass (D-08: LLM-driven association index editorial operations)
+  const editorialPass = createEditorialPass({
+    wire,
+    switchboard,
+    fragmentWriter,
+    config: sessionConfig,
+  });
+
+  // Full REM pipeline (Tier 3: complete editorial orchestrator)
+  const fullRem = createFullRem({
+    retroactiveEvaluator,
+    editorialPass,
+    conditioningUpdater,
+    qualityEvaluator,
+    selfModel,
+    journal,
+    wire,
+    switchboard,
+    config: sessionConfig,
+  });
+
+  // Provisional REM (Tier 2: tentative promotion with abort-and-revert)
+  const provisionalRem = createProvisionalRem({
+    fullRem,
+    journal,
+    wire,
+    switchboard,
+    config: sessionConfig,
+  });
+
+  // REM Consolidator (single entry point for all consolidation -- enforces REM-07 gate)
+  const remConsolidator = createRemConsolidator({
+    triage,
+    provisionalRem,
+    fullRem,
+    heartbeatMonitor,
+    journal,
+    decay: require('./components/fragments/decay.cjs'),
+    lathe,
+    wire,
+    switchboard,
+    config: sessionConfig,
+  });
+
+  // -------------------------------------------------------------------------
+  // Phase 11: Wire heartbeat monitor to Switchboard for Tier 2 trigger
+  // -------------------------------------------------------------------------
+
+  // Heartbeat timeout triggers Tier 2 provisional REM
+  switchboard.on('reverie:heartbeat:timeout', function () {
+    // Trigger Tier 2 provisional REM
+    const sessionContext = {
+      summary: {},
+      fragments: [],
+      recallEvents: [],
+      metrics: {},
+      domainData: { domainPairs: [], entityList: [], associationStats: [] },
+    };
+    remConsolidator.handleTier2(sessionContext).catch(function (_e) {
+      // Tier 2 failure is non-fatal
+    });
+  });
+
+  // Heartbeat resumption aborts in-progress Tier 2 (D-03: abort-and-revert)
+  switchboard.on('reverie:heartbeat:received', function () {
+    if (provisionalRem.isRunning()) {
+      remConsolidator.abortTier2().catch(function (_e) {
+        // Abort failure is non-fatal
+      });
+    }
+  });
+
+  // -------------------------------------------------------------------------
   // Phase 10 Gap Closure: Wire Secondary face prompt authority pipeline
   // -------------------------------------------------------------------------
 
@@ -186,6 +303,7 @@ function register(facade) {
   // Create hook handlers (lathe + dataDir needed for Stop snapshot writes)
   // Phase 9: formation pipeline and recall engine wired for formation triggers and recall injection
   // Phase 10: session manager, wire topology, and mode manager for three-session lifecycle
+  // Phase 11: REM consolidator and heartbeat monitor for REM lifecycle
   const handlers = createHookHandlers({
     contextManager,
     switchboard,
@@ -197,6 +315,8 @@ function register(facade) {
     sessionManager,    // Phase 10
     wireTopology,      // Phase 10
     modeManager,       // Phase 10
+    remConsolidator,   // Phase 11
+    heartbeatMonitor,  // Phase 11
   });
 
   // Register all 8 hooks via Exciter integration surface (per D-09)
@@ -224,6 +344,10 @@ function register(facade) {
     recall: true,
     sessions: true,     // Phase 10: three-session architecture
     modes: true,        // Phase 10: operational mode management
+    rem: {              // Phase 11: REM consolidation
+      consolidator: remConsolidator,
+      heartbeatMonitor,
+    },
   };
 }
 

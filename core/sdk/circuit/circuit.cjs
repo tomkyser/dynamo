@@ -152,9 +152,19 @@ function createCircuit(options = {}) {
     const eventProxy = createEventProxy(validatedManifest.name, switchboardFacade);
 
     // 5. Build scoped Circuit API for the module
+    //    getService/getProvider unwrap Results so modules get facades directly.
+    //    Undeclared dependencies throw — they are programming errors, not runtime conditions.
     const circuitApi = {
-      getService: (name) => _scopedGetService(validatedManifest.name, name),
-      getProvider: (name) => _scopedGetProvider(validatedManifest.name, name),
+      getService: (name) => {
+        const result = _scopedGetService(validatedManifest.name, name);
+        if (!result.ok) throw new Error(result.error.message);
+        return result.value;
+      },
+      getProvider: (name) => {
+        const result = _scopedGetProvider(validatedManifest.name, name);
+        if (!result.ok) throw new Error(result.error.message);
+        return result.value;
+      },
       events: eventProxy,
       registerCommand: pulley
         ? (name, handler, meta) => pulley.registerCommand(`${validatedManifest.name} ${name}`, handler, meta)
@@ -170,14 +180,16 @@ function createCircuit(options = {}) {
       createContract,
     };
 
-    // 6. Call registerFn
+    // 6. Store module BEFORE calling registerFn so getService/getProvider
+    //    can resolve the module's declared dependencies during registration.
+    _modules.set(validatedManifest.name, { manifest: validatedManifest, eventProxy });
+
+    // 7. Call registerFn
     const registerResult = registerFn(circuitApi);
     if (registerResult && registerResult.ok === false) {
+      _modules.delete(validatedManifest.name); // rollback on failure
       return registerResult;
     }
-
-    // 7. Store module
-    _modules.set(validatedManifest.name, { manifest: validatedManifest, eventProxy });
 
     // 8. Return success
     return ok({ name: validatedManifest.name });

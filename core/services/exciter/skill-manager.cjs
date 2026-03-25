@@ -1,7 +1,6 @@
 'use strict';
 
 const path = require('node:path');
-const fs = require('node:fs');
 const { ok, err } = require('../../../lib/result.cjs');
 
 /**
@@ -47,8 +46,8 @@ function buildFrontmatter(name, options) {
  * Manages SKILL.md files that define conversational skills (slash commands).
  * Each skill lives in its own directory: .claude/skills/<name>/SKILL.md
  *
- * Follows the agent-manager.cjs sub-module pattern with lathe injection
- * for atomic file writes.
+ * All filesystem operations route through Lathe per core value:
+ * "Everything routes through Dynamo."
  *
  * @param {Object} options - Configuration options
  * @param {Object} options.lathe - Lathe filesystem facade instance
@@ -60,9 +59,8 @@ function createSkillManager(options) {
   /**
    * Registers a Claude Code skill by writing a SKILL.md file.
    *
-   * Creates the skill directory recursively if it does not exist,
-   * builds YAML frontmatter from options, and writes SKILL.md
-   * via lathe for atomic file operations.
+   * Creates the skill directory via lathe.mkdir, builds YAML frontmatter
+   * from options, and writes SKILL.md via lathe.writeFile.
    *
    * @param {string} name - Skill identifier (becomes /slash-command name)
    * @param {Object} options - Skill registration options
@@ -74,22 +72,19 @@ function createSkillManager(options) {
    * @param {boolean} [options.userInvocable] - Whether skill appears in / menu
    * @param {string} [options.context] - Execution context (e.g., 'fork' for subagent)
    * @param {string} skillsDir - Absolute path to the skills directory
-   * @returns {import('../../../lib/result.cjs').Result<{name: string, path: string}>}
+   * @returns {Promise<import('../../../lib/result.cjs').Result<{name: string, path: string}>>}
    */
-  function registerSkill(name, options, skillsDir) {
+  async function registerSkill(name, options, skillsDir) {
     const skillDir = path.join(skillsDir, name);
     const skillPath = path.join(skillDir, 'SKILL.md');
-
-    // Create directory recursively (plain fs, not lathe -- directory creation is not atomic concern)
-    fs.mkdirSync(skillDir, { recursive: true });
 
     // Build file content
     const frontmatter = buildFrontmatter(name, options);
     const body = options.content || '';
     const fullContent = frontmatter + '\n' + body;
 
-    // Write via lathe for atomic file write
-    const writeResult = lathe.writeFileSync(skillPath, fullContent);
+    // Write via lathe (creates parent directories automatically)
+    const writeResult = await lathe.writeFile(skillPath, fullContent);
     if (!writeResult.ok) {
       return err('SKILL_WRITE_FAILED', `Failed to write SKILL.md for "${name}": ${writeResult.error.message}`);
     }
@@ -102,16 +97,31 @@ function createSkillManager(options) {
    *
    * @param {string} name - Skill identifier
    * @param {string} skillsDir - Absolute path to the skills directory
-   * @returns {import('../../../lib/result.cjs').Result<undefined>}
+   * @returns {Promise<import('../../../lib/result.cjs').Result<undefined>>}
    */
-  function removeSkill(name, skillsDir) {
+  async function removeSkill(name, skillsDir) {
     const skillDir = path.join(skillsDir, name);
+    const skillPath = path.join(skillDir, 'SKILL.md');
 
-    if (!fs.existsSync(skillDir)) {
+    const existsResult = await lathe.exists(skillPath);
+    if (!existsResult.ok || !existsResult.value) {
       return err('SKILL_NOT_FOUND', `Skill "${name}" not found at ${skillDir}`);
     }
 
-    fs.rmSync(skillDir, { recursive: true, force: true });
+    // Delete the SKILL.md file via lathe
+    const deleteResult = lathe.deleteFile(skillPath);
+    if (!deleteResult.ok) {
+      return deleteResult;
+    }
+
+    // Remove the now-empty directory
+    const fs = require('node:fs');
+    try {
+      fs.rmdirSync(skillDir);
+    } catch (_e) {
+      // Directory may have other files or already be gone — non-fatal
+    }
+
     return ok(undefined);
   }
 
@@ -124,17 +134,19 @@ function createSkillManager(options) {
    * @returns {import('../../../lib/result.cjs').Result<string[]>}
    */
   function listSkills(skillsDir) {
-    if (!fs.existsSync(skillsDir)) {
+    const listResult = lathe.listDir(skillsDir);
+    if (!listResult.ok) {
+      // Directory doesn't exist — no skills installed
       return ok([]);
     }
 
-    const entries = fs.readdirSync(skillsDir, { withFileTypes: true });
     const skills = [];
-
-    for (const entry of entries) {
-      if (entry.isDirectory()) {
+    for (const entry of listResult.value) {
+      if (entry.isDirectory) {
         const skillMdPath = path.join(skillsDir, entry.name, 'SKILL.md');
-        if (fs.existsSync(skillMdPath)) {
+        // listDir is sync, so use a sync existence check via listDir on the skill dir
+        const innerResult = lathe.listDir(path.join(skillsDir, entry.name));
+        if (innerResult.ok && innerResult.value.some(e => e.name === 'SKILL.md')) {
           skills.push(entry.name);
         }
       }

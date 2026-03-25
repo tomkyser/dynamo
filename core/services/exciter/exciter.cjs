@@ -334,7 +334,7 @@ function createExciter() {
    * @param {string} [skillsDir] - Skills directory (defaults to projectRoot/.claude/skills)
    * @returns {import('../../../lib/result.cjs').Result<{name: string, path: string}>}
    */
-  function registerSkill(skillName, options, skillsDir) {
+  async function registerSkill(skillName, options, skillsDir) {
     if (!_skillManager) {
       return err('NOT_INITIALIZED', 'Exciter must be initialized before registering skills');
     }

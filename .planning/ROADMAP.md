@@ -166,8 +166,17 @@ Plans:
   3. Self-organizing taxonomy creates, merges, splits, and retires domains during REM based on fragment accumulation patterns, with hard caps (100 domains, 200 entities per domain, 10K association edges) preventing unbounded growth
   4. Source-reference model stores association chain termini and source locator pointers, establishing experiential relationships to source material without direct file indexing
   5. Historical data backfill imports conversation exports through a backfill-specific formation pathway with retrospective framing, provenance marking, and decay/trust parameters appropriate for reconstructed (non-experiential) memories
-**Plans**: TBD
-**Research flag**: STANDARD PATTERNS for CLI and submodule integration. NEEDS RESEARCH on backfill formation pathway design -- retrospective vs. experiential framing, provenance model (EXPERIMENTAL).
+**Plans:** 6 plans
+
+Plans:
+- [ ] 12-01-PLAN.md — Taxonomy/backfill constants, schema origin field, FragmentWriter source_locators write (FRG-08)
+- [ ] 12-02-PLAN.md — CLI status + inspect subcommands (INT-02)
+- [ ] 12-03-PLAN.md — CLI history + reset subcommands (INT-02)
+- [ ] 12-04-PLAN.md — Taxonomy governor + editorial pass governance extensions (FRG-07)
+- [ ] 12-05-PLAN.md — Backfill parser, formation template, pipeline orchestrator (FRG-10)
+- [ ] 12-06-PLAN.md — Module manifest, wiring: CLI + taxonomy + backfill into Reverie (INT-03)
+
+**Research flag**: RESEARCH COMPLETE -- backfill formation pathway designed with hybrid framing, provenance model, and versioned parser approach. CLI and submodule integration follow established Pulley/Circuit patterns.
 
 ## Progress
 
@@ -190,4 +199,4 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 9.1 -> 10 -> 11 -> 12
 | 9.1 Claude Code Integration | M2 | 0/3 | Planned    |  |
 | 10. Three-Session Architecture | M2 | 6/6 | Complete    | 2026-03-24 |
 | 11. REM Consolidation | M2 | 5/6 | Complete    | 2026-03-25 |
-| 12. Integration Surface | M2 | 0/TBD | Not started | - |
+| 12. Integration Surface | M2 | 0/6 | Planned | - |

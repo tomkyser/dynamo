@@ -24,6 +24,9 @@ dist/
 # Logs
 *.log
 
+# Runtime data
+data/
+
 # Temp
 tmp/
 .tmp/

@@ -3,11 +3,16 @@
 /**
  * Reverie CLI command registration orchestrator.
  *
- * Registers all Reverie CLI commands with the Circuit API. Commands are
- * auto-prefixed by Circuit to 'reverie {name}' in Pulley.
+ * Registers all Reverie CLI subcommands via Circuit's registerCommand(),
+ * which auto-prefixes with the module name ('reverie') for Pulley routing.
  *
- * Per INT-02: CLI surface via Pulley.
- * Per Pitfall 1: Each subcommand registered separately (no catch-all).
+ * Registered command groups:
+ * - status: Operational dashboard per D-01
+ * - inspect: Deep drill-down (fragment, domains, associations, self-model, identity, relational, conditioning) per D-02
+ * - history: Timeline lenses (sessions, fragments, consolidations) per D-03
+ * - reset: Scoped resets with --confirm gate per D-04
+ *
+ * Per Pitfall 1: Each subcommand registered individually (no catch-all).
  *
  * @module reverie/components/cli/register-commands
  */
@@ -15,6 +20,8 @@
 const { ok } = require('../../../../lib/result.cjs');
 const { createStatusHandler } = require('./status.cjs');
 const { createInspectHandlers } = require('./inspect.cjs');
+const { createHistoryHandlers } = require('./history.cjs');
+const { createResetHandlers } = require('./reset.cjs');
 
 // ---------------------------------------------------------------------------
 // Registration
@@ -22,18 +29,6 @@ const { createInspectHandlers } = require('./inspect.cjs');
 
 /**
  * Registers all Reverie CLI commands with the Circuit API.
- *
- * Currently registers:
- *   - status: Operational dashboard (mode, fragments, Self Model version, etc.)
- *   - inspect fragment: Inspect a specific fragment by ID
- *   - inspect domains: List all domains with fragment counts
- *   - inspect associations: Show association graph around an entity
- *   - inspect self-model: Show complete Self Model state
- *   - inspect identity: Show Identity Core aspect
- *   - inspect relational: Show Relational Model aspect
- *   - inspect conditioning: Show Conditioning aspect
- *
- * Per Pitfall 1: Each subcommand registered individually (no catch-all 'inspect').
  *
  * @param {Object} circuitApi - Scoped Circuit API with registerCommand()
  * @param {Object} context - Reverie component context
@@ -43,12 +38,15 @@ const { createInspectHandlers } = require('./inspect.cjs');
  * @param {Object|null} context.switchboard - Switchboard service
  * @param {Object|null} context.wire - Wire service
  * @param {Object|null} context.formationPipeline - Formation pipeline
+ * @param {Object|null} context.fragmentWriter - FragmentWriter instance
+ * @param {Object|null} context.lathe - Lathe filesystem service
+ * @param {string} context.dataDir - Reverie data directory path
  * @returns {import('../../../../lib/result.cjs').Result<{registered: number}>}
  */
 function registerReverieCommands(circuitApi, context) {
   let registered = 0;
 
-  // ---- status ----
+  // ---- status (D-01) ----
   const statusHandler = createStatusHandler(context);
   circuitApi.registerCommand('status', statusHandler.handle, {
     description: 'Show Reverie operational dashboard',
@@ -90,6 +88,42 @@ function registerReverieCommands(circuitApi, context) {
 
   circuitApi.registerCommand('inspect conditioning', inspectHandlers.handleInspectConditioning, {
     description: 'Show Conditioning aspect',
+  });
+  registered++;
+
+  // ---- history subcommands (D-03) ----
+  const historyHandlers = createHistoryHandlers(context);
+
+  circuitApi.registerCommand('history sessions', historyHandlers.handleHistorySessions, {
+    description: 'Chronological session list',
+  });
+  registered++;
+
+  circuitApi.registerCommand('history fragments', historyHandlers.handleHistoryFragments, {
+    description: 'Fragment formation timeline',
+  });
+  registered++;
+
+  circuitApi.registerCommand('history consolidations', historyHandlers.handleHistoryConsolidations, {
+    description: 'REM consolidation events',
+  });
+  registered++;
+
+  // ---- reset subcommands (D-04) ----
+  const resetHandlers = createResetHandlers(context);
+
+  circuitApi.registerCommand('reset fragments', resetHandlers.handleResetFragments, {
+    description: 'Wipe all fragments, keep Self Model',
+  });
+  registered++;
+
+  circuitApi.registerCommand('reset self-model', resetHandlers.handleResetSelfModel, {
+    description: 'Reinitialize Self Model from cold start',
+  });
+  registered++;
+
+  circuitApi.registerCommand('reset all', resetHandlers.handleResetAll, {
+    description: 'Full factory reset',
   });
   registered++;
 

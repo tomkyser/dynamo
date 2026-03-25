@@ -128,6 +128,7 @@ const baseFragmentSchema = z.object({
   associations: associationsSchema,
   pointers: pointersSchema,
   formation: formationSchema,
+  origin: z.string().optional(),
   source_locator: sourceLocatorSchema.optional(),
 });
 

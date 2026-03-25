@@ -233,6 +233,55 @@ const CONDITIONING_DEFAULTS = Object.freeze({
   max_error_history: 50,
 });
 
+/**
+ * Taxonomy governance default parameters per Phase 12 (FRG-07).
+ *
+ * Controls self-organizing taxonomy caps, pressure thresholds, and lifecycle rules:
+ * - max_domains: Hard cap on total domain count (D-06)
+ * - max_entities_per_domain: Hard cap on entities within a single domain (D-06)
+ * - max_association_edges: Hard cap on total association graph edges (D-06)
+ * - pressure_threshold: Fraction (0-1) at which REM prioritizes merge/retire (D-06)
+ * - split_fragment_threshold: Fragment count triggering domain split evaluation (D-07)
+ * - retire_inactive_cycles: Consecutive REM cycles with no active fragments before domain retirement (D-08)
+ *
+ * @type {Readonly<{
+ *   max_domains: number,
+ *   max_entities_per_domain: number,
+ *   max_association_edges: number,
+ *   pressure_threshold: number,
+ *   split_fragment_threshold: number,
+ *   retire_inactive_cycles: number
+ * }>}
+ */
+const TAXONOMY_DEFAULTS = Object.freeze({
+  max_domains: 100,
+  max_entities_per_domain: 200,
+  max_association_edges: 10000,
+  pressure_threshold: 0.8,
+  split_fragment_threshold: 50,
+  retire_inactive_cycles: 3,
+});
+
+/**
+ * Historical data backfill default parameters per Phase 12 (FRG-10).
+ *
+ * Controls batch processing and safety caps for conversation import:
+ * - default_batch_size: Conversations processed per batch
+ * - max_fragments_per_conversation: Safety cap per Pitfall 5
+ * - origin_marker: String used in fragment origin field for provenance tracking (D-14)
+ *
+ * @type {Readonly<{
+ *   default_batch_size: number,
+ *   max_fragments_per_conversation: number,
+ *   origin_marker: string
+ * }>}
+ */
+const BACKFILL_DEFAULTS = Object.freeze({
+  default_batch_size: 10,
+  max_fragments_per_conversation: 50,
+  origin_marker: 'backfill',
+});
+
 module.exports = {
   FRAGMENT_TYPES,
   LIFECYCLE_DIRS,
@@ -245,4 +294,6 @@ module.exports = {
   FRAGMENT_ID_PATTERN,
   REM_DEFAULTS,
   CONDITIONING_DEFAULTS,
+  TAXONOMY_DEFAULTS,
+  BACKFILL_DEFAULTS,
 };

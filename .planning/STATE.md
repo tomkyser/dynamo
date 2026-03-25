@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
-status: Ready to execute
-stopped_at: Completed 12-05-PLAN.md
-last_updated: "2026-03-25T05:21:59.166Z"
+status: Phase complete — ready for verification
+stopped_at: Phase 12.1 context gathered
+last_updated: "2026-03-25T16:24:41.279Z"
 progress:
-  total_phases: 7
-  completed_phases: 6
+  total_phases: 8
+  completed_phases: 7
   total_plans: 32
-  completed_plans: 28
+  completed_plans: 32
 ---
 
 # Project State
@@ -84,6 +84,7 @@ Plan: 6 of 6
 | Phase 12 P03 | 4min | 2 tasks | 5 files |
 | Phase 12 P04 | 5min | 2 tasks | 4 files |
 | Phase 12 P05 | 5min | 2 tasks | 5 files |
+| Phase 12 P06 | 5min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -169,12 +170,16 @@ Recent decisions affecting current work:
 - [Phase 12]: Backfill parser uses PARSERS registry pattern from Lithograph for versioned format detection
 - [Phase 12]: BACKFILL_TEMPLATES composed in backfill-pipeline and passed as stimulus.backfill_prompt for formation override
 - [Phase 12]: Per-conversation fragment cap enforced in processConversation loop for backfill safety
+- [Phase 12]: Conditional CLI registration: facade.registerCommand availability check gates CLI wiring for backward compat
+- [Phase 12]: Cap pressure computed in full-rem.cjs Step 3 (orchestrator has domainData) not in editorial pass
+- [Phase 12]: Backfill command in register-commands.cjs for single-orchestrator CLI pattern consistency
 
 ### Roadmap Evolution
 
 - M1 phases 1-6 shipped 2026-03-23 (28 plans, 851 tests)
 - M2 phases 7-12 roadmapped from 40 requirements across 7 categories
 - Phase 9.1 inserted after Phase 9: Claude Code Integration Layer (Lithograph provider + Exciter service) — platform-level Claude Code transcript access and integration surface management
+- Phase 12.1 inserted after Phase 12: Platform Launch Readiness (URGENT) — module discovery/loading, Claude Code hook wiring, session triplet spawning/management via Claude skills, multi-triplet concurrency, visual session distinction, end-to-end system validation
 
 ### Pending Todos
 
@@ -190,6 +195,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T05:21:59.164Z
-Stopped at: Completed 12-05-PLAN.md
-Resume file: None
+Last session: 2026-03-25T16:24:41.276Z
+Stopped at: Phase 12.1 context gathered
+Resume file: .planning/phases/12.1-platform-launch-readiness/12.1-CONTEXT.md

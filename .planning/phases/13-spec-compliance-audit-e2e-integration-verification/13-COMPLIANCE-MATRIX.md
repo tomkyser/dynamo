@@ -105,7 +105,16 @@ Spec sections 1.1-1.5. These are philosophical/theoretical constraints informing
 
 ## Section 5: REM Consolidation
 
-*To be completed by Plan 13-05.*
+| ID | Spec Section | Status | Implementing File(s) | Evidence | Notes |
+|----|-------------|--------|---------------------|----------|-------|
+| S5.1 | 5.1 The Biological Analog | NA | N/A | Informational/motivational section describing sleep REM analog | Design philosophy, no code implementation required |
+| S5.2 | 5.2 Three Consolidation Tiers | C | `modules/reverie/components/rem/rem-consolidator.cjs`, `modules/reverie/components/rem/triage.cjs`, `modules/reverie/components/rem/provisional-rem.cjs`, `modules/reverie/components/rem/full-rem.cjs` | Tier 1 triage on PreCompact (snapshot to Journal via Lathe, 6 fields, no LLM); Tier 2 provisional on idle timeout (heartbeat-monitor.cjs fires timeout, provisional-rem.cjs runs full pipeline flagged tentative with abort-revert); Tier 3 full on session end (5-step editorial pipeline). Verified in spec-rem.test.cjs: 43 tests, 115 assertions | D: [Phase 11] Provisional REM uses _running/_aborted/_tentativeFragmentIds state machine |
+| S5.3a | 5.3 Retroactive evaluation | C | `modules/reverie/components/rem/retroactive-evaluator.cjs`, `modules/reverie/components/rem/quality-evaluator.cjs` | evaluate() composes prompt for LLM re-evaluation of fragments against completed session arc; apply() processes PROMOTE/DISCARD decisions; promoteFragment() updates relevance, tags, lifecycle; discardFragment() removes from Journal+Ledger | D: [Phase 11] Prompt/apply separation -- evaluator composes prompts but never calls LLM directly; [Phase 11] Dual-signal quality evaluation: behavioral (0.4) + LLM reflection (0.6) with behavioral-only fallback |
+| S5.3b | 5.3 Meta-fragment creation | C | `modules/reverie/components/rem/retroactive-evaluator.cjs:127-158, 433-495` | composeMetaRecallPrompt() builds prompt for significant recall events; meta-recall fragments created with type='meta-recall', _lifecycle='active', source_fragments populated from recall event | Meta-recall fragments written via fragmentWriter with full schema compliance |
+| S5.3c | 5.3 Association index editorial pass | C | `modules/reverie/components/rem/editorial-pass.cjs` | composeEditorialPrompt() covers 4 core tasks: entity dedup, domain boundary review, association weight updates, taxonomy narrative updates; applyEntityDedup() merges via Wire write-intent; applyDomainMerge() includes merge_narrative consolidation fragments; Phase 12 adds split/retire governance | D: [Phase 11] Prompt/apply separation; [Phase 12] Domain merge narratives written as consolidation-type fragments; [Phase 12] Cap pressure computed in full-rem.cjs Step 3 |
+| S5.3d | 5.3 Self Model conditioning update | C | `modules/reverie/components/rem/conditioning-updater.cjs` | updateConditioning() applies EMA to attention_biases, sublimation_sensitivity, association_priors, recall_strategies; enforceIdentityFloors() prevents personality collapse (D-11); checkDiversityThreshold() + boostUnderrepresented() prevent trait convergence | D: [Phase 11] EMA record-level updates default new keys to 0.5 midpoint; Identity core review gated by identity_min_sessions (default 5) |
+| S5.3e | 5.3 Fragment promotion | C | `modules/reverie/components/rem/retroactive-evaluator.cjs:233-303` | promoteFragment() sets _lifecycle='active', updates relevance/tags, increments consolidation_count, writes via fragmentWriter, updates Ledger lifecycle via Wire write-intent, deletes working/ copy | Only promotion path is through REM evaluate->apply chain |
+| S5.4 | 5.4 Working Memory Gate | C | `modules/reverie/components/rem/rem-consolidator.cjs` | REM consolidator is single entry point per REM-07: handleTier1/2/3 dispatch to triage/provisional/full; no alternative path promotes fragments; crash recovery (handleCrashRecovery) detects orphaned working/ fragments; dormant maintenance (handleDormantMaintenance) processes decay catch-up | rem-consolidator.cjs line 15: "Per REM-07: Nothing enters long-term storage without passing through the REM pipeline" |
 
 ---
 
@@ -174,4 +183,4 @@ All Section 9 items are open questions requiring empirical validation. They are 
 
 ---
 
-*Matrix last updated: 2026-03-25 by Plan 13-06 (Context Management + Platform Integration audit)*
+*Matrix last updated: 2026-03-25 by Plans 13-05/13-06 (REM Consolidation + Context Management + Platform Integration audit)*

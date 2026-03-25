@@ -205,8 +205,13 @@ None yet.
 - Phase 11: Decay constant tuning needs simulation harness (EXPERIMENTAL 9.3)
 - Phase 12: Backfill formation pathway design needs research -- retrospective vs. experiential framing
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260325-hcr | Wire Exciter into bootstrap container, create CLI executable entry point, and add a README with install/run steps | 2026-03-25 | 2ec74fb | [260325-hcr-wire-exciter-into-bootstrap-container-cr](./quick/260325-hcr-wire-exciter-into-bootstrap-container-cr/) |
+
 ## Session Continuity
 
-Last session: 2026-03-25T17:38:00Z
-Stopped at: Completed quick task 260325-hcr (CLI entry point + README)
+Last activity: 2026-03-25 - Completed quick task 260325-hcr: Wire Exciter into bootstrap, create CLI entry point, add README
 Resume file: None

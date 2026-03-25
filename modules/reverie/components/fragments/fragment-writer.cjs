@@ -165,6 +165,22 @@ function createFragmentWriter(options = {}) {
     const fgResult = _wire.queueWrite(fgEnvelope.value);
     if (!fgResult.ok) return fgResult;
 
+    // 6. source_locators (only for source-reference fragments with source_locator)
+    if (fragment.source_locator) {
+      const slEnvelope = _createWriteEnvelope('source_locators', [{
+        id: 'sl-' + fragment.id,
+        fragment_id: fragment.id,
+        locator_type: fragment.source_locator.type,
+        path: fragment.source_locator.path || null,
+        url: fragment.source_locator.url || null,
+        content_hash: fragment.source_locator.content_hash || null,
+        last_verified: fragment.source_locator.last_verified || null,
+      }]);
+      if (!slEnvelope.ok) return slEnvelope;
+      const slResult = _wire.queueWrite(slEnvelope.value);
+      if (!slResult.ok) return slResult;
+    }
+
     return ok(undefined);
   }
 

@@ -207,6 +207,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T17:13:17.525Z
-Stopped at: Completed 12.1-05-PLAN.md
+Last session: 2026-03-25T17:38:00Z
+Stopped at: Completed quick task 260325-hcr (CLI entry point + README)
 Resume file: None

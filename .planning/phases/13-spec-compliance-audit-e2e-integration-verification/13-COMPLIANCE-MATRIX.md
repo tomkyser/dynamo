@@ -1,6 +1,11 @@
-# Compliance Matrix: Reverie Spec v2
+# Compliance Matrix: Reverie Spec v2 + Dynamo Architecture Plan
+
+**Audit Date:** 2026-03-25
+**Auditor:** Phase 13 automated audit
+**Spec Sources:** `.claude/reverie-spec-v2.md`, `.claude/new-plan.md`
 
 ## Status Legend
+
 - **C** = Compliant
 - **D** = Intentional Deviation (documented in STATE.md)
 - **V** = Violation (fixed in this phase)
@@ -8,57 +13,153 @@
 - **NA** = Not applicable (informational section)
 - **EXP** = Experimental (deferred to runtime validation)
 
+---
+
+## Deviation Log
+
+Known intentional deviations from canonical specs, documented in STATE.md decisions.
+
+| # | Spec Section | Spec Says | Implementation Does | Justification (STATE.md Reference) |
+|---|-------------|-----------|--------------------|------------------------------------|
+| 1 | 3.3 | YAML frontmatter headers | JSON frontmatter | [Phase 07] JSON frontmatter is a clean break from YAML -- no dual-format support, no backward compatibility |
+| 2 | 3.3 | Zod 3 syntax | Zod 4 `z.record(z.string(), valueSchema)` | [Phase 07] Zod 4 requires adapted record syntax |
+| 3 | 8.3, 4.2 | `systemMessage` injection | `additionalContext` injection | [Phase 08] All hook injection uses additionalContext not systemMessage per Pitfall 1 |
+| 4 | 8.5 | Phase 3 smaller than Phase 1 | Phase 3 LARGER than Phase 1 | [Phase 08] Phase 3 reinforced (60-80%) injection LARGER per PITFALLS research D-05/D-06 |
+| 5 | 3.3 | associations without emotional_valence | associations includes emotional_valence | [Phase 09] Associations schema includes emotional_valence per actual Zod schema |
+| 6 | 3.6 | Formation agents location unspecified | Formation agents at .claude/agents/ | [Phase 09] Formation agent definition placed at .claude/agents/ (Claude Code discovery path) |
+| 7 | 4.6 | Session spawner in module scope | Session spawner in conductor/ | [Phase 10] Session spawner lives in core/services/conductor/ as platform capability |
+| 8 | 4.x | Enum-based state matching | String literals for state matching | [Phase 10] String literals in switchboard listener -- avoids circular require risk |
+| 9 | 5.3 | Evaluator calls LLM directly | Prompt/apply separation | [Phase 11] Evaluator and editorial pass compose prompts but never call LLM directly |
+| 10 | 7.x | Mode Manager returns enum/object | Mode Manager uses getMode() returning string | [Phase 12] Adapted from actual code vs plan interface block |
+| 11 | 2.2 | `boundary_definitions` field name | `boundaries` field name | [Phase 07] Naming simplification, consistent across all code (schemas, cold-start, template-composer) |
+| 12 | 2.2 | `user_communication_patterns`, `user_domain_map`, `user_preference_history` | `communication_patterns`, `domain_map`, `preference_history` | [Phase 07] Dropped `user_` prefix for conciseness, consistent across all relational model code |
+| 13 | 2.2 | `relational_dynamics` field in Relational Model | Field not implemented | Deferred -- relational dynamics tracking not yet implemented in initial phases |
+
+---
+
+## Platform Architecture
+
+Audit of core platform components against `.claude/new-plan.md`.
+
+| ID | Spec Domain | Status | Implementing File(s) | Evidence | Notes |
+|----|------------|--------|---------------------|----------|-------|
+| PA-01 | Switchboard (Events) | C | `core/services/switchboard/switchboard.cjs` | SWITCHBOARD_SHAPE + createContract(), registered as services.switchboard in core.cjs:77 | |
+| PA-02 | Commutator (I/O) | C | `core/services/commutator/commutator.cjs` | COMMUTATOR_SHAPE + createContract(), deps: [switchboard] | |
+| PA-03 | Magnet (State) | C | `core/services/magnet/magnet.cjs` | MAGNET_SHAPE + createContract(), deps: [switchboard, lathe] | |
+| PA-04 | Conductor (Infrastructure) | C | `core/services/conductor/conductor.cjs` | CONDUCTOR_SHAPE + createContract(), deps: [switchboard], includes session spawning | |
+| PA-05 | Forge (Git) | C | `core/services/forge/forge.cjs` | FORGE_SHAPE + createContract(), deps: [lathe, switchboard] | |
+| PA-06 | Lathe (Filesystem) | C | `core/services/lathe/lathe.cjs` | LATHE_SHAPE + createContract(), no deps | |
+| PA-07 | Relay (Operations) | C | `core/services/relay/relay.cjs` | RELAY_SHAPE + createContract(), deps: [forge, lathe, switchboard] | |
+| PA-08 | Wire (Communication) | C | `core/services/wire/wire.cjs` | WIRE_SHAPE + createContract(), deps: [switchboard, conductor, ledger] | |
+| PA-09 | Assay (Search) | C | `core/services/assay/assay.cjs` | ASSAY_SHAPE + createContract(), deps: [switchboard, ledger, journal] | |
+| PA-10 | Exciter (Integration) | C | `core/services/exciter/exciter.cjs` | EXCITER_SHAPE + createContract(), Phase 9.1 addition, deps: [switchboard, lathe] | Not in original new-plan.md; added as 10th service |
+| PA-11 | Ledger Provider (SQL) | C | `core/providers/ledger/ledger.cjs` | DATA_PROVIDER_SHAPE contract, registered as providers.ledger in core.cjs:139 | |
+| PA-12 | Journal Provider (Flat File) | C | `core/providers/journal/journal.cjs` | DATA_PROVIDER_SHAPE contract, registered as providers.journal in core.cjs:147 | |
+| PA-13 | Lithograph Provider (Transcript) | C | `core/providers/lithograph/lithograph.cjs` | DATA_PROVIDER_SHAPE contract, Phase 9.1 addition, registered as providers.lithograph in core.cjs:155 | Not in original new-plan.md; added as 3rd provider |
+| PA-14 | Layer Hierarchy | C | `lib/` -> `core/` -> `modules/` | spec-platform.test.cjs verifies no reverse deps: lib/ has no core/ imports, core/ has no modules/ imports | |
+| PA-15 | CJS Format | C | All .cjs files | All core and lib source files start with 'use strict' and use module.exports | |
+| PA-16 | No YAML Imports | C | All .cjs files | No require('yaml') or require('js-yaml') found in core or lib | |
+| PA-17 | No LLM API Deps | C | All .cjs files | No openai/anthropic/openrouter imports below SDK scope | |
+| PA-18 | No ESM Syntax | C | All .cjs files | No export default/const/function/class in core source files | |
+
+---
+
 ## Section 1: Mechanistic Constraints
+
+Spec sections 1.1-1.5. These are philosophical/theoretical constraints informing design decisions. No code implementation required.
 
 | ID | Spec Section | Status | Implementing File(s) | Evidence | Notes |
 |----|-------------|--------|---------------------|----------|-------|
-| S1.1-S1.5 | 1.1-1.5 Mechanistic Constraints | NA | N/A | Philosophical grounding -- no implementation required | Informational only |
+| MC-01 | 1.1 No cognition, only interpolation | NA | N/A | Informational constraint | Design philosophy, not implementable |
+| MC-02 | 1.2 No extrapolation, only manifold traversal | NA | N/A | Informational constraint | Design philosophy, not implementable |
+| MC-03 | 1.3 No grounding, only distributional representation | NA | N/A | Informational constraint | Design philosophy, not implementable |
+| MC-04 | 1.4 Literature-as-compass principle | NA | N/A | Informational constraint | Guides prompt engineering choices |
+| MC-05 | 1.5 Scalar compute as differentiator | NA | N/A | Informational constraint | Justifies multi-session architecture |
+
+---
 
 ## Section 2: Self Model
 
-*(Rows to be added by Plan 13-01)*
+| ID | Spec Section | Status | Implementing File(s) | Evidence | Notes |
+|----|-------------|--------|---------------------|----------|-------|
+| SM-01 | 2.1 What the Self Model Is | C | `modules/reverie/components/self-model/self-model.cjs`, `modules/reverie/lib/constants.cjs:59` | SM_ASPECTS = ['identity-core', 'relational-model', 'conditioning'] maps to Face/Mind/Subconscious | Three aspects verified in spec-self-model.test.cjs |
+| SM-02 | 2.2 Identity Core (5 fields) | C | `modules/reverie/lib/schemas.cjs:242-251` | personality_traits, communication_style, value_orientations, expertise_map, boundaries | D-11: boundaries not boundary_definitions |
+| SM-03 | 2.2 Relational Model (6 fields) | D | `modules/reverie/lib/schemas.cjs:257-266` | 5 of 6 fields present: communication_patterns, domain_map, preference_history, trust_calibration, interaction_rhythm | D-12: user_ prefix dropped; D-13: relational_dynamics not implemented |
+| SM-04 | 2.2 Conditioning (5 fields) | C | `modules/reverie/lib/schemas.cjs:272-281` | attention_biases, association_priors, sublimation_sensitivity, recall_strategies, error_history | All 5 fields match spec |
+| SM-05 | 2.3 Cold Start | C | `modules/reverie/components/self-model/cold-start.cjs` | Neutral traits (0.5), empty relational, uniform conditioning; passes schema validation | Entropy engine integration verified |
+| SM-06 | 2.4 Prompting Across Sessions | C | `modules/reverie/components/context/template-composer.cjs` | 5-slot face prompt (Identity Frame, Relational Context, Attention Directives, Behavioral Directives, Referential Framing); 4 budget phases | Phase 3 > Phase 1 per D-04 deviation |
+
+---
 
 ## Section 3: Fragment Memory Engine
 
-| ID | Spec Section | Status | Implementing File(s) | Evidence | Notes |
-|----|-------------|--------|---------------------|----------|-------|
-| S3.1 | 3.1 Core Principle | NA | N/A | Design rationale: "no complete memories, only fragments" -- philosophical grounding, no implementation required | Informational only |
-| S3.2 | 3.2 Why Fragments | NA | N/A | Design rationale: context engineering match, staleness prevention, recursive enrichment -- philosophical grounding, no implementation required | Informational only |
-| S3.3 | 3.3 Fragment Schema | C/D | modules/reverie/lib/schemas.cjs (lines 117-133), modules/reverie/lib/constants.cjs (lines 27-33, 79-89, 179-181) | All 8 field groups verified field-by-field: required fields (id, type, created, source_session, self_model_version), fan-out (formation_group, formation_frame, sibling_fragments), temporal (absolute, session_relative 0.0-1.0, sequence monotonic), decay (initial_weight, current_weight, last_accessed, access_count, consolidation_count, pinned), associations (domains, entities, self_model_relevance with identity/relational/conditioning, emotional_valence -1.0 to 1.0, attention_tags), source_locator (type file/url/inline, path, url, content_hash, last_verified), pointers (6 arrays: causal_antecedents, causal_consequents, thematic_siblings, contradictions, meta_recalls, source_fragments), formation (trigger, attention_pointer, active_domains_at_formation, sublimation_that_prompted). 88 tests in spec-fragments.test.cjs. | D: Spec says "YAML frontmatter" but implementation uses JSON frontmatter. Intentional per [Phase 07] STATE.md: "JSON frontmatter is a clean break from YAML." D: Zod 4 uses z.record(z.string(), schema) syntax per [Phase 07] STATE.md. origin field added between formation and source_locator per [Phase 12] STATE.md. |
-| S3.4 | 3.4 Fragment Body: Intentional Fuzziness | C | modules/reverie/components/fragments/fragment-writer.cjs (line 218) | Body parameter passed as separate argument to writeFragment(), written to Journal as markdown body below frontmatter. Body is free-form text (not schema-validated), consistent with spec's "impressionistic" intent. | Body constraints (2-6 sentences, perspectival, impressionistic) are LLM prompt-level enforcement, not schema-level. |
-| S3.5 | 3.5 Fragment Types | C | modules/reverie/lib/constants.cjs (lines 27-33), modules/reverie/lib/schemas.cjs (lines 140-172, 182-188) | All 5 types defined in FRAGMENT_TYPES constant (Object.freeze): experiential, meta-recall, sublimation, consolidation, source-reference. Type-specific schemas enforce constraints: meta-recall requires source_fragments in pointers, source-reference requires source_locator. SCHEMA_MAP dispatches validation per type. | |
-| S3.8 | 3.8 The Association Index | C | modules/reverie/components/fragments/association-index.cjs (lines 19-169) | All 4 spec-required tables present in DDL: (1) domains table with id, name, description, weight, parent_domain_id, archived, (2) entities table with id, name, entity_type, occurrence_count, (3) associations table with weighted edges (source_id, target_id, source_type, target_type, weight, co_occurrence_count), (4) attention_tags table with tag, occurrence_count, co_occurrence_data. Total 12 tables include 8 join/support tables beyond spec's 4 core tables. Real-time updates verified via fragment-writer.cjs Wire envelope queuing. | 12 tables total exceeds spec's 4 -- additional tables are join tables and support structures (formation_groups, fragment_decay, source_locators, fragment_domains, fragment_entities, fragment_attention_tags, entity_domains, domain_relationships). |
-| S3.9 | 3.9 Decay Function | C | modules/reverie/components/fragments/decay.cjs (lines 39-72), modules/reverie/lib/constants.cjs (lines 79-89) | Formula verified against spec with hand-computed values: current_weight = initial_weight * relevance_factor * time_decay * access_bonus. Components verified: (1) lambda = base_decay_rate / (1 + consolidation_count * consolidation_protection), (2) time_decay = exp(-lambda * days_since_creation), (3) access_bonus = 1 + (log(1 + access_count) * access_weight), (4) relevance_factor = weighted_sum(identity*0.3, relational*0.5, conditioning*0.2). Tested at t=0, t=7, with consolidation_count=2, with access_count=5. Pinned fragments exempt via shouldArchive(). Archive threshold = 0.1. | Deterministic computation, no LLM involvement per spec. |
-| S3.11 | 3.11 Source References as Association Chain Termini | C | modules/reverie/lib/schemas.cjs (lines 74-80), modules/reverie/components/fragments/fragment-writer.cjs (lines 168-182) | source_locator schema matches spec: type (file/url/inline), path (nullable), url (nullable), content_hash (nullable), last_verified timestamp. Source-reference fragments require source_locator (enforced by refine). No content storage fields in schema (only pointers). source_locators Ledger table stores locator data separately for SQL queries. Fragment body carries experiential relationship per spec 3.4, not source content. | |
-| S3.6 | 3.6 Fragment Formation Pipeline: Multi-Angle Fan-Out | C/D | formation-pipeline.cjs, attention-gate.cjs, prompt-templates.cjs, fragment-assembler.cjs | 5-step sequence verified: (1) attention gate evaluate(), (2) domain_identification template for fan-out, (3) body_composition template for per-fragment processing (SMR scoring, association gen, body composition, decay seeding), (4) formation_group ID + sibling_fragments pointers, (5) fragmentWriter.writeFragment + Wire master table upserts | D: Formation agents at .claude/agents/ not modules/reverie/agents/ (STATE.md Phase 09). D: Attention gate returns pure_tool_turn over empty_prompt when tools_used populated (STATE.md Phase 09). D: Master association tables populated via Wire upserts BEFORE fragment writes (STATE.md Phase 09, Pitfall 5). D: Formation behavior is prompt-driven per D-16 -- domain fan-out and per-fragment processing happen in LLM via templates, not as code-level logic. |
-| S3.7 | 3.7 Fragment Recall: Real-Time Reconstruction | C/D | recall-engine.cjs, composite-scorer.cjs, query-builder.cjs, reconstruction-prompt.cjs | 4-step recall sequence verified: (1) trigger via recallPassive/recallExplicit, (2) Assay search with 6-factor composite scoring covering spec's 7 ranking dimensions, (3) top-N fragment selection (5 passive, 15 explicit -- configurable), (4) reconstruction via buildExplicitReconstruction through current Self Model frame. Meta-fragment metadata produced (fragment IDs + reconstruction prompt). | D: Spec lists 7 ranking dimensions; implementation has 6 factors -- "attention pointer similarity" subsumed into attention_tag_match (attention pointer represented as tags in data model). D: Same composite scorer instance for both passive and explicit paths (STATE.md Phase 09, D-12). |
-| S3.10 | 3.10 The Taxonomy: Self-Organizing Structure | C | taxonomy-governor.cjs, formation-pipeline.cjs (domain creation) | All 5 lifecycle operations verified: (1) domain creation via formation pipeline Wire upserts, (2) domain merge via writeTaxonomyNarrative, (3) domain split via applyDomainSplit with parent-child hierarchy, (4) domain retirement via applyDomainRetire with archived flag, (5) split storage: Ledger for structural data (Wire envelopes), Journal for narrative definitions (fragmentWriter). Hard caps: 100 domains, 200 entities/domain, 10K edges. Cap pressure computation with 0.8 threshold. | |
-| S3.12 | 3.12 Formation Example: Multi-Angle in Practice | C | formation-pipeline.cjs, fragment-assembler.cjs | Structural consistency verified: pipeline produces multi-fragment formation groups with different domain tags, shared formation_group ID, sibling_fragments pointers, emergent type classification (source-reference when source_locator present). The 5-fragment example (relational, source-reference x3, meta-cognitive) is structurally consistent with pipeline capabilities. | Illustrative example -- verified structural consistency, not literal output matching. |
+*To be completed by Plan 13-02.*
+
+---
 
 ## Section 4: Three-Session Architecture
 
-*(Rows to be added by Plan 13-04)*
+*To be completed by Plan 13-04.*
+
+---
 
 ## Section 5: REM Consolidation
 
-*(Rows to be added by Plan 13-05)*
+*To be completed by Plan 13-05.*
+
+---
 
 ## Section 6: Platform Integration
 
-*(Rows to be added by Plan 13-06)*
+*To be completed by Plan 13-06.*
+
+---
 
 ## Section 7: Operational Modes
 
-*(Rows to be added by Plan 13-06)*
+| ID | Spec Section | Status | Implementing File(s) | Evidence | Notes |
+|----|-------------|--------|---------------------|----------|-------|
+| OM-01 | 7.1 Active Mode | C | `modules/reverie/components/modes/mode-manager.cjs:33` | OPERATIONAL_MODES.ACTIVE = 'active'; requestActive() spawns Tertiary via sessionManager.upgrade(); getMetrics reports 2 active sessions | |
+| OM-02 | 7.2 Passive Mode | C | `modules/reverie/components/modes/mode-manager.cjs:34` | OPERATIONAL_MODES.PASSIVE = 'passive'; default mode on creation; 1 active session (Secondary only); requestPassive() calls sessionManager.degrade() | |
+| OM-03 | 7.3 REM Mode | C | `modules/reverie/components/modes/mode-manager.cjs:35` | OPERATIONAL_MODES.REM = 'rem'; post-session, Secondary only (1 active session); transition from Active degrades first | |
+| OM-04 | 7.4 Dormant Mode | C | `modules/reverie/components/modes/mode-manager.cjs:36` | OPERATIONAL_MODES.DORMANT = 'dormant'; 0 active sessions; only reachable from REM (cannot skip REM) | |
+| OM-05 | Mode Transitions | C | `modules/reverie/components/modes/mode-manager.cjs:103-180` | Active->Passive (requestPassive), Active->REM (requestRem, degrades first), REM->Dormant (requestDormant); Passive->Dormant blocked; Dormant->REM blocked | D-10: getMode() returns string |
+| OM-06 | Auto-fallback | C | `modules/reverie/components/modes/mode-manager.cjs:190-237` | checkHealth() detects Tertiary failure, auto-degrades Active->Passive via sessionManager.degrade() | |
 
-## Section 8: Context Management
+---
 
-*(Rows to be added by Plan 13-07)*
+## Section 8: Primary Context Management
+
+*To be completed by Plan 13-06.*
+
+---
 
 ## Section 9: Experimental Flags
 
-*(Rows to be added as EXP entries by relevant plans)*
+All Section 9 items are open questions requiring empirical validation. They are not implementation requirements but configurable parameters that need runtime tuning.
+
+| ID | Spec Section | Status | Parameter Location | Notes |
+|----|-------------|--------|-------------------|-------|
+| EXP-01 | 9.1 Sublimation cycle frequency | EXP | `modules/reverie/components/session/sublimation-loop.cjs` | 5-10 second default; needs empirical tuning per index density |
+| EXP-02 | 9.2 Fragment formation rate | EXP | `modules/reverie/lib/constants.cjs:135-140` (FORMATION_DEFAULTS) | max_fragments_per_stimulus=3, target_fragments_per_session=15 |
+| EXP-03 | 9.3 Decay function parameters | EXP | `modules/reverie/lib/constants.cjs:79-89` (DECAY_DEFAULTS) | base_decay_rate=0.05, consolidation_protection=0.3, access_weight=0.1 |
+| EXP-04 | 9.4 Three-session resource consumption | EXP | `modules/reverie/components/session/session-config.cjs` | Max subscription concurrent session limits unknown |
+| EXP-05 | 9.5 Subagent spawn latency | EXP | `core/services/conductor/conductor.cjs` (spawnSession) | Wire PoC validated; production latency needs measurement |
+| EXP-06 | 9.6 Taxonomy convergence | EXP | `modules/reverie/lib/constants.cjs:256-263` (TAXONOMY_DEFAULTS) | max_domains=100, pressure_threshold=0.8 |
+| EXP-07 | 9.7 Secondary-to-Primary directive compliance | EXP | `modules/reverie/components/context/referential-framing.cjs` | Referential framing modes (full/dual/soft) for enforcement |
+| EXP-08 | 9.8 Recall reconstruction quality | EXP | `modules/reverie/components/recall/reconstruction-prompt.cjs` | Reconstruction through Self Model frame; quality unmeasured |
+| EXP-09 | 9.9 Referential framing effectiveness | EXP | `modules/reverie/components/context/template-composer.cjs:46-50` (PHASE_BUDGETS) | 4-phase budget strategy; effectiveness unmeasured |
+| EXP-10 | 9.10 Multi-angle formation noise ratio | EXP | `modules/reverie/lib/constants.cjs:135-140` (FORMATION_DEFAULTS) | formation_group_prefix tracks siblings; survival rate untested |
+| EXP-11 | 9.11 Source-reference chain traversal quality | EXP | `modules/reverie/components/recall/query-builder.cjs` | Chain traversal via association index; accuracy untested |
+| EXP-12 | 9.12 Emotional/affective modeling | EXP | `modules/reverie/lib/schemas.cjs:66` (emotional_valence in associations) | Architecturally present but mechanism unspecified |
+| EXP-13 | 9.13 Cross-domain interpolation | EXP | `modules/reverie/components/recall/recall-engine.cjs` | Nehalem problem; parked for empirical exploration |
+
+---
 
 ## Section 10: Success Criteria
 
-*(Rows to be added by final verification plan)*
+*To be completed by Plan 13-07 (final verification plan).*
+
+---
+
+*Matrix last updated: 2026-03-25 by Plan 13-01 (Platform Architecture, Self Model, Operational Modes audit)*

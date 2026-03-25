@@ -111,7 +111,11 @@ Spec sections 1.1-1.5. These are philosophical/theoretical constraints informing
 
 ## Section 6: Platform Integration
 
-*To be completed by Plan 13-06.*
+| ID | Spec Section | Status | Implementing File(s) | Evidence | Notes |
+|----|-------------|--------|---------------------|----------|-------|
+| PI-01 | 6.1 Dynamo Service and Provider Usage | C | `modules/reverie/reverie.cjs:67-93` | register(facade) destructures { events, getService, getProvider }; resolves switchboard, lathe, magnet, wire, assay, conductor, exciter via getService(); journal, lithograph via getProvider() | All access through Circuit facade, no direct core/ imports |
+| PI-02 | 6.2 Hook Wiring | D | `modules/reverie/reverie.cjs:379-388`, `modules/reverie/hooks/hook-handlers.cjs` | exciter.registerHooks('reverie', { SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, Stop, PreCompact, SubagentStart, SubagentStop }) — all 8 hooks | D: [Phase 08] Hook registration via Armature createHookRegistry not events.on(); [Phase 09.1] Exciter delegates to Armature createHookRegistry for hook mechanics |
+| PI-03 | 6.3 Data Architecture | C | `modules/reverie/components/fragments/fragment-writer.cjs`, `modules/reverie/components/self-model/self-model.cjs`, `modules/reverie/lib/schemas.cjs` | FragmentWriter: journal (narrative markdown) + wire (Ledger association index upserts); Self Model: magnet (in-memory) + journal (narrative .md) + wire (Ledger structured state); schemas define associations, entities, domains for Ledger tables | Dual-storage convention enforced: all fragment writes go through FragmentWriter gateway |
 
 ---
 
@@ -130,7 +134,15 @@ Spec sections 1.1-1.5. These are philosophical/theoretical constraints informing
 
 ## Section 8: Primary Context Management
 
-*To be completed by Plan 13-06.*
+| ID | Spec Section | Status | Implementing File(s) | Evidence | Notes |
+|----|-------------|--------|---------------------|----------|-------|
+| CM-01 | 8.1 The Problem | NA | N/A | Informational section describing context window dilution threat | Design motivation, not implementable |
+| CM-02 | 8.2 The Design Decision | NA | N/A | Informational section explaining continuous reinjection choice | Implementation verified in S8.3; decision is enacted through reinjection + referential framing |
+| CM-03 | 8.3 Continuous Self Model Reinjection | D | `modules/reverie/components/context/context-manager.cjs`, `modules/reverie/components/context/template-composer.cjs`, `modules/reverie/hooks/hook-handlers.cjs` | handleUserPromptSubmit: calls getInjection() synchronously (< 1ms), returns as additionalContext in hookSpecificOutput; template-composer has 5-slot system (identity_frame, relational_context, attention_directives, behavioral_directives, referential_framing); PHASE_BUDGETS: Phase 1=1300, Phase 2=800, Phase 3=1900, Phase 4=1800 tokens — within spec ~800-1800 range (Phase 3 deviation) | D: [Phase 08] Uses additionalContext not systemMessage per Pitfall 1; includes communication style, relational context, attention priorities, behavioral constraints per spec |
+| CM-04 | 8.4 Referential Framing Prompt | D | `modules/reverie/components/context/referential-framing.cjs`, `modules/reverie/components/context/template-composer.cjs:524` | FRAMING_TEMPLATES with 3 modes (full/dual/soft); full mode: "reference material" + "defer to Self Model directives"; dual mode: relational deference + technical autonomy; all wrapped in XML tags; slot 5 of 5-slot template | D: [Phase 10] Templates wrapped in `<referential_frame>` XML tags for structured injection |
+| CM-05 | 8.5 Context Budget Management | D | `modules/reverie/components/context/budget-tracker.cjs` | BUDGET_PHASES = { FULL:1, COMPRESSED:2, REINFORCED:3, COMPACTION:4 }; PHASE_THRESHOLDS = { 0.30, 0.60, 0.80 }; calculateBudgetPhase pure function; createBudgetTracker state machine with trackBytes/getPhase/reset; Phase 4 appends compaction advocacy directive | D: [Phase 08] Phase 3 reinforced is LARGER than Phase 1 (1900 vs 1300 tokens) per PITFALLS research D-05/D-06; thresholds differ from spec (30/60/80 vs spec 50/75/90) |
+| CM-06 | 8.6 Self Model as Compaction Frame | C | `modules/reverie/hooks/hook-handlers.cjs:53-60` | COMPACTION_FRAMING: preserves Self Model identity frame, user intent, attention priorities; instructs to discard re-retrievable raw content; handlePreCompact calls checkpoint() then injects COMPACTION_FRAMING as additionalContext; resetAfterCompaction resets budget to Phase 1 and recomposes | Not neutral summary — preserves personality directives as compaction frame |
+| CM-07 | 8.7 RESEARCH: Context Management Strategies | NA | N/A | Research section listing future investigation areas: adaptive sizing, selective context poisoning, partitioning, Mind-as-reader | No implementation required; strategies for future exploration |
 
 ---
 
@@ -162,4 +174,4 @@ All Section 9 items are open questions requiring empirical validation. They are 
 
 ---
 
-*Matrix last updated: 2026-03-25 by Plan 13-01 (Platform Architecture, Self Model, Operational Modes audit)*
+*Matrix last updated: 2026-03-25 by Plan 13-06 (Context Management + Platform Integration audit)*

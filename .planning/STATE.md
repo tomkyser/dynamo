@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
-status: Ready to execute
-stopped_at: Completed 12.1-04-PLAN.md
-last_updated: "2026-03-25T17:06:58.598Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 12.1-05-PLAN.md
+last_updated: "2026-03-25T17:13:17.529Z"
 progress:
   total_phases: 8
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 37
-  completed_plans: 36
+  completed_plans: 37
 ---
 
 # Project State
@@ -89,6 +89,7 @@ Plan: 5 of 5
 | Phase 12.1 P02 | 4min | 2 tasks | 3 files |
 | Phase 12.1 P03 | 4min | 2 tasks | 5 files |
 | Phase 12.1 P04 | 5min | 2 tasks | 6 files |
+| Phase 12.1 P05 | 3min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -182,6 +183,8 @@ Recent decisions affecting current work:
 - [Phase 12.1]: Skills are conversational wrappers that instruct Claude to run Pulley CLI commands per D-03
 - [Phase 12.1]: ANSI 256-color codes (Face=39 blue, Mind=214 amber, Subconscious=141 purple) for cross-theme readability per D-11
 - [Phase 12.1]: Triplet ID reset in both stop() and completeRem() to prevent stale IDs across session lifecycles
+- [Phase 12.1]: Integration tests use real module code with mock dependencies for fast CI verification
+- [Phase 12.1]: Checkpoint log uses JSON format with three overall states (pass/fail/partial) per D-15
 
 ### Roadmap Evolution
 
@@ -204,6 +207,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T17:06:58.595Z
-Stopped at: Completed 12.1-04-PLAN.md
+Last session: 2026-03-25T17:13:17.525Z
+Stopped at: Completed 12.1-05-PLAN.md
 Resume file: None

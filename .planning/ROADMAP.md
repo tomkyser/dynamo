@@ -200,7 +200,7 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 9.1 -> 10 -> 11 -> 12 -> 12.1
 | 10. Three-Session Architecture | M2 | 6/6 | Complete    | 2026-03-24 |
 | 11. REM Consolidation | M2 | 5/6 | Complete    | 2026-03-25 |
 | 12. Integration Surface | M2 | 6/6 | Complete    | 2026-03-25 |
-| 12.1 Platform Launch Readiness | M2 | 4/5 | In Progress|  |
+| 12.1 Platform Launch Readiness | M2 | 5/5 | Complete   | 2026-03-25 |
 
 ### Phase 12.1: Platform Launch Readiness (INSERTED)
 
@@ -214,11 +214,11 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 9.1 -> 10 -> 11 -> 12 -> 12.1
   4. Secondary and Tertiary sessions spawn as separate Claude Code windows via Conductor/SessionManager, with Wire topology connecting the triplet and visual markers distinguishing session roles
   5. Multiple simultaneous Reverie-enabled session triplets can run without interference — Wire registry isolates each triplet's message routing, Switchboard scopes events per-triplet
   6. Full end-to-end validation: a user starts Claude Code, Dynamo boots, Reverie loads, personality injects on first turn, formation fires on SubagentStop, recall returns fragments, REM runs on session end
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 - [x] 12.1-01-PLAN.md — Module discovery + bootstrap wiring + config keys (INT-01, INT-03)
 - [x] 12.1-02-PLAN.md — Exciter registerSkill() + skill-manager sub-module (INT-02)
 - [x] 12.1-03-PLAN.md — Skill content modules + Reverie skill registration (INT-02, SES-01, SES-02)
 - [x] 12.1-04-PLAN.md — Triplet ID namespace + visual markers + Session Manager updates (SES-01, SES-02, SES-03)
-- [ ] 12.1-05-PLAN.md — Integration test harness (SC-1 through SC-6) + checkpoint log (all requirements)
+- [x] 12.1-05-PLAN.md — Integration test harness (SC-1 through SC-6) + checkpoint log (all requirements)

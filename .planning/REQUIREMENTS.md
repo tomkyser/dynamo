@@ -36,8 +36,8 @@
 
 ### REM Consolidation
 
-- [ ] **REM-01**: Tier 1 triage on compaction events (fast working state preservation to Journal)
-- [ ] **REM-02**: Tier 2 provisional REM on idle timeout (full consolidation flagged tentative)
+- [x] **REM-01**: Tier 1 triage on compaction events (fast working state preservation to Journal)
+- [x] **REM-02**: Tier 2 provisional REM on idle timeout (full consolidation flagged tentative)
 - [ ] **REM-03**: Tier 3 full REM on explicit session end (deep editorial pass)
 - [ ] **REM-04**: Retroactive evaluation of session fragments against completed session arc
 - [ ] **REM-05**: Association index editorial pass (entity dedup, weight updates, domain boundary review, taxonomy narrative updates)
@@ -56,8 +56,8 @@
 
 - [x] **OPS-01**: Active mode — full three-session architecture
 - [x] **OPS-02**: Passive mode — Primary + lightweight Secondary only, no Tertiary (also serves as fallback if Active mode exceeds Max subscription limits)
-- [ ] **OPS-03**: REM mode — post-session consolidation, Secondary only
-- [ ] **OPS-04**: Dormant mode — no sessions, scheduled decay maintenance only
+- [x] **OPS-03**: REM mode — post-session consolidation, Secondary only
+- [x] **OPS-04**: Dormant mode — no sessions, scheduled decay maintenance only
 
 ### Module Integration
 
@@ -142,8 +142,8 @@
 | SES-03 | Phase 10 | Complete |
 | SES-04 | Phase 10 | Complete |
 | SES-05 | Phase 10 | Complete |
-| REM-01 | Phase 11 | Pending |
-| REM-02 | Phase 11 | Pending |
+| REM-01 | Phase 11 | Complete |
+| REM-02 | Phase 11 | Complete |
 | REM-03 | Phase 11 | Pending |
 | REM-04 | Phase 11 | Pending |
 | REM-05 | Phase 11 | Pending |
@@ -156,8 +156,8 @@
 | CTX-05 | Phase 8 | Complete |
 | OPS-01 | Phase 10 | Complete |
 | OPS-02 | Phase 10 | Complete |
-| OPS-03 | Phase 11 | Pending |
-| OPS-04 | Phase 11 | Pending |
+| OPS-03 | Phase 11 | Complete |
+| OPS-04 | Phase 11 | Complete |
 | INT-01 | Phase 8 | Complete |
 | INT-02 | Phase 12 | Pending |
 | INT-03 | Phase 12 | Pending |

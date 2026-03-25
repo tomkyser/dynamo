@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
-status: Ready to plan
-stopped_at: Completed 10-06-PLAN.md
-last_updated: "2026-03-24T23:12:11.091Z"
+status: Ready to execute
+stopped_at: Completed 11-01-PLAN.md
+last_updated: "2026-03-25T03:13:18.568Z"
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 20
-  completed_plans: 20
+  total_plans: 26
+  completed_plans: 21
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** Everything routes through Dynamo -- the holistic wrapper via its APIs and interfaces. No component bypasses the patterns and paths Dynamo defines.
-**Current focus:** Phase 10 — three-session-architecture
+**Current focus:** Phase 11 — rem-consolidation
 
 ## Current Position
 
-Phase: 11
-Plan: Not started
+Phase: 11 (rem-consolidation) — EXECUTING
+Plan: 3 of 6
 
 ## Performance Metrics
 
@@ -73,6 +73,8 @@ Plan: Not started
 | Phase 10 P04 | 5min | 2 tasks | 4 files |
 | Phase 10 P05 | 5min | 2 tasks | 5 files |
 | Phase 10 P06 | 5min | 2 tasks | 3 files |
+| Phase 11 P02 | 4min | 2 tasks | 4 files |
+| Phase 11 P01 | 5min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -136,6 +138,10 @@ Recent decisions affecting current work:
 - [Phase 10]: All Phase 10 hook handler components use null-guard pattern for backward compatibility
 - [Phase 10]: String literals for state matching in switchboard listener — avoids circular require risk
 - [Phase 10]: DIRECTIVE payload.role filtering for typed Wire message sub-routing without new message types
+- [Phase 11]: Triage snapshot async-wraps synchronous filesystem writes via Lathe for future-proofing
+- [Phase 11]: Heartbeat monitor emits timeout once per period with flag reset on resume for D-03 abort signaling
+- [Phase 11]: initShutdown() added to Session Manager to separate SHUTTING_DOWN entry from atomic stop() for REM lifecycle
+- [Phase 11]: REM mode getMetrics active_sessions_count=1 (Secondary stays alive per D-13)
 
 ### Roadmap Evolution
 
@@ -157,6 +163,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T23:05:07.356Z
-Stopped at: Completed 10-06-PLAN.md
+Last session: 2026-03-25T03:13:18.564Z
+Stopped at: Completed 11-01-PLAN.md
 Resume file: None

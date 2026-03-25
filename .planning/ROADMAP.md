@@ -144,10 +144,10 @@ Plans:
   3. Tier 3 full REM on session end performs retroactive evaluation, meta-fragment creation, association index editorial pass (entity dedup, weight updates, domain boundary review), and promotes fragments from working/ to active/ -- nothing enters consolidated storage without passing through REM (REM-07)
   4. Self Model conditioning updates (attention biases, recall strategies, error history) accumulate across sessions with trait floor constraints preventing identity collapse
   5. REM mode and Dormant mode operate correctly: REM mode runs Secondary-only consolidation, Dormant mode runs only scheduled decay maintenance with no active sessions
-**Plans:** 6 plans
+**Plans:** 1/6 plans executed
 
 Plans:
-- [ ] 11-01-PLAN.md — REM constants + Mode Manager/Session Manager REM state extensions
+- [x] 11-01-PLAN.md — REM constants + Mode Manager/Session Manager REM state extensions
 - [ ] 11-02-PLAN.md — Tier 1 triage (PreCompact state snapshot) + heartbeat monitor (Tier 2 trigger)
 - [ ] 11-03-PLAN.md — Conditioning updater (EMA + identity floors) + quality evaluator (entropy)
 - [ ] 11-04-PLAN.md — Retroactive evaluator (fragment re-evaluation) + editorial pass (index editorial)
@@ -189,5 +189,5 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 9.1 -> 10 -> 11 -> 12
 | 9. Fragment Memory Engine | M2 | 0/4 | Planned | - |
 | 9.1 Claude Code Integration | M2 | 0/3 | Planned    |  |
 | 10. Three-Session Architecture | M2 | 6/6 | Complete    | 2026-03-24 |
-| 11. REM Consolidation | M2 | 0/6 | Planned | - |
+| 11. REM Consolidation | M2 | 1/6 | In Progress|  |
 | 12. Integration Surface | M2 | 0/TBD | Not started | - |

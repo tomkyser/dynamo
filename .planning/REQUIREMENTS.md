@@ -10,7 +10,7 @@
 - [x] **SM-01**: Self Model with three aspects (Face/Mind/Subconscious) persisting across sessions via Magnet + Journal + Ledger
 - [x] **SM-02**: Identity Core — stable personality traits, communication style, value orientations, expertise map, boundaries
 - [x] **SM-03**: Relational Model — user communication patterns, domain map, preference history, trust calibration, interaction rhythm
-- [ ] **SM-04**: Conditioning — attention biases, association priors, sublimation sensitivity, recall strategies, error history
+- [x] **SM-04**: Conditioning — attention biases, association priors, sublimation sensitivity, recall strategies, error history
 - [x] **SM-05**: Cold start initialization from seed prompt with sparse defaults
 
 ### Fragment Memory Engine
@@ -38,11 +38,11 @@
 
 - [x] **REM-01**: Tier 1 triage on compaction events (fast working state preservation to Journal)
 - [x] **REM-02**: Tier 2 provisional REM on idle timeout (full consolidation flagged tentative)
-- [ ] **REM-03**: Tier 3 full REM on explicit session end (deep editorial pass)
-- [ ] **REM-04**: Retroactive evaluation of session fragments against completed session arc
-- [ ] **REM-05**: Association index editorial pass (entity dedup, weight updates, domain boundary review, taxonomy narrative updates)
-- [ ] **REM-06**: Self Model conditioning update (attention biases, recall strategies, error history, identity core review)
-- [ ] **REM-07**: Working memory -> long-term memory gate (nothing enters consolidated storage without REM)
+- [x] **REM-03**: Tier 3 full REM on explicit session end (deep editorial pass)
+- [x] **REM-04**: Retroactive evaluation of session fragments against completed session arc
+- [x] **REM-05**: Association index editorial pass (entity dedup, weight updates, domain boundary review, taxonomy narrative updates)
+- [x] **REM-06**: Self Model conditioning update (attention biases, recall strategies, error history, identity core review)
+- [x] **REM-07**: Working memory -> long-term memory gate (nothing enters consolidated storage without REM)
 
 ### Primary Context Management
 
@@ -125,7 +125,7 @@
 | SM-01 | Phase 7 | Complete |
 | SM-02 | Phase 7 | Complete |
 | SM-03 | Phase 7 | Complete |
-| SM-04 | Phase 11 | Pending |
+| SM-04 | Phase 11 | Complete |
 | SM-05 | Phase 7 | Complete |
 | FRG-01 | Phase 7 | Complete |
 | FRG-02 | Phase 7 | Complete |
@@ -144,11 +144,11 @@
 | SES-05 | Phase 10 | Complete |
 | REM-01 | Phase 11 | Complete |
 | REM-02 | Phase 11 | Complete |
-| REM-03 | Phase 11 | Pending |
-| REM-04 | Phase 11 | Pending |
-| REM-05 | Phase 11 | Pending |
-| REM-06 | Phase 11 | Pending |
-| REM-07 | Phase 11 | Pending |
+| REM-03 | Phase 11 | Complete |
+| REM-04 | Phase 11 | Complete |
+| REM-05 | Phase 11 | Complete |
+| REM-06 | Phase 11 | Complete |
+| REM-07 | Phase 11 | Complete |
 | CTX-01 | Phase 8 | Complete |
 | CTX-02 | Phase 10 | Complete |
 | CTX-03 | Phase 8 | Complete |

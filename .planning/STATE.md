@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
 status: Ready to execute
-stopped_at: Completed 11-01-PLAN.md
-last_updated: "2026-03-25T03:13:18.568Z"
+stopped_at: Completed 11-05-PLAN.md
+last_updated: "2026-03-25T03:32:23.098Z"
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 26
-  completed_plans: 21
+  completed_plans: 25
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-23)
 ## Current Position
 
 Phase: 11 (rem-consolidation) — EXECUTING
-Plan: 3 of 6
+Plan: 6 of 6
 
 ## Performance Metrics
 
@@ -75,6 +75,9 @@ Plan: 3 of 6
 | Phase 10 P06 | 5min | 2 tasks | 3 files |
 | Phase 11 P02 | 4min | 2 tasks | 4 files |
 | Phase 11 P01 | 5min | 2 tasks | 7 files |
+| Phase 11 P03 | 5min | 2 tasks | 4 files |
+| Phase 11 P04 | 5min | 2 tasks | 4 files |
+| Phase 11 P05 | 6min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -142,6 +145,13 @@ Recent decisions affecting current work:
 - [Phase 11]: Heartbeat monitor emits timeout once per period with flag reset on resume for D-03 abort signaling
 - [Phase 11]: initShutdown() added to Session Manager to separate SHUTTING_DOWN entry from atomic stop() for REM lifecycle
 - [Phase 11]: REM mode getMetrics active_sessions_count=1 (Secondary stays alive per D-13)
+- [Phase 11]: EMA record-level updates default new keys to 0.5 midpoint for smooth first-seen evidence integration
+- [Phase 11]: Dual-signal quality evaluation: behavioral (0.4) + LLM reflection (0.6) with behavioral-only fallback per D-12
+- [Phase 11]: Prompt/apply separation: evaluator and editorial pass compose LLM prompts but never call LLM directly -- orchestrator feeds and passes responses back for testability
+- [Phase 11]: Domain merge narratives written as consolidation-type fragments to Journal via fragmentWriter, covering D-08 taxonomy narrative requirement
+- [Phase 11]: Full REM accepts llmResponses parameter for prompt/apply separation -- orchestrator never calls LLM directly
+- [Phase 11]: Provisional REM uses _running/_aborted/_tentativeFragmentIds state machine for clean lifecycle
+- [Phase 11]: REM consolidator is single entry point for all consolidation -- enforces REM-07 gate
 
 ### Roadmap Evolution
 
@@ -163,6 +173,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T03:13:18.564Z
-Stopped at: Completed 11-01-PLAN.md
+Last session: 2026-03-25T03:32:23.095Z
+Stopped at: Completed 11-05-PLAN.md
 Resume file: None

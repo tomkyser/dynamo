@@ -37,7 +37,32 @@ describe('Reverie CLI Status', function () {
       switchboard: {
         lastEvent: function (name) { return null; },
       },
-      wire: {},
+      wire: {
+        query: function (tableName) {
+          if (tableName === 'domains') {
+            return {
+              ok: true,
+              value: [
+                { id: 'd-1', name: 'technical', fragment_count: 5, archived: false },
+                { id: 'd-2', name: 'personal', fragment_count: 3, archived: false },
+                { id: 'd-3', name: 'deprecated', fragment_count: 1, archived: true },
+              ],
+            };
+          }
+          if (tableName === 'associations') {
+            return {
+              ok: true,
+              value: [
+                { source_id: 'e1', target_id: 'e2', weight: 0.8 },
+                { source_id: 'e2', target_id: 'e3', weight: 0.5 },
+                { source_id: 'e1', target_id: 'e3', weight: 0.3 },
+                { source_id: 'e3', target_id: 'e4', weight: 0.7 },
+              ],
+            };
+          }
+          return { ok: true, value: [] };
+        },
+      },
       formationPipeline: {},
     };
   });
@@ -88,11 +113,24 @@ describe('Reverie CLI Status', function () {
       expect(result.value.json).toHaveProperty('last_rem');
     });
 
-    it('json contains domain_count and association_index_size', function () {
+    it('json contains domain_count from Wire query (excludes archived)', function () {
       const handler = createStatusHandler(mockContext);
       const result = handler.handle([], {});
-      expect(result.value.json).toHaveProperty('domain_count');
-      expect(result.value.json).toHaveProperty('association_index_size');
+      expect(result.value.json.domain_count).toBe(2); // 3 domains, 1 archived
+    });
+
+    it('json contains association_index_size from Wire query', function () {
+      const handler = createStatusHandler(mockContext);
+      const result = handler.handle([], {});
+      expect(result.value.json.association_index_size).toBe(4); // 4 association edges
+    });
+
+    it('domain_count falls back to 0 when Wire has no query method', function () {
+      const ctx = Object.assign({}, mockContext, { wire: {} });
+      const handler = createStatusHandler(ctx);
+      const result = handler.handle([], {});
+      expect(result.value.json.domain_count).toBe(0);
+      expect(result.value.json.association_index_size).toBe(0);
     });
 
     it('human output is a multi-line string with labeled values', function () {

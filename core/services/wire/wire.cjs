@@ -20,7 +20,7 @@ const WIRE_SHAPE = {
     'send', 'subscribe', 'register', 'unregister',
     'getRegistry', 'queueWrite',
   ],
-  optional: ['broadcast', 'getQueueDepth', 'flush', 'createEnvelope'],
+  optional: ['broadcast', 'getQueueDepth', 'flush', 'createEnvelope', 'query'],
 };
 
 /**
@@ -379,6 +379,46 @@ function createWire() {
      */
     createEnvelope(params) {
       return createEnvelope(params);
+    },
+
+    /**
+     * Reads association index data from Ledger by table name.
+     *
+     * Wire owns both the write path (WriteCoordinator) and this read path
+     * for association index tables. WriteCoordinator stores table data in
+     * Ledger under the table name as the record ID. This method reads it
+     * back as an array of row objects.
+     *
+     * Valid table names: domains, entities, associations, attention_tags,
+     * formation_groups, fragment_decay, source_locators, fragment_domains,
+     * fragment_entities, fragment_attention_tags, entity_domains,
+     * domain_relationships.
+     *
+     * @param {string} tableName - Association index table name
+     * @returns {import('../../../lib/result.cjs').Result<Array<Object>>}
+     */
+    query(tableName) {
+      if (!_ledger) {
+        return err('NO_LEDGER', 'Ledger provider not available for query');
+      }
+
+      const result = _ledger.read(tableName);
+      if (!result || !result.ok) {
+        // Table has no data yet — return empty array (not an error)
+        return ok([]);
+      }
+
+      // Ledger stores data as { id, data, ... } — the data field contains
+      // the row objects. If data is an array, return it directly.
+      // If data is a single object, wrap in array for consistency.
+      const stored = result.value.data;
+      if (Array.isArray(stored)) {
+        return ok(stored);
+      }
+      if (stored && typeof stored === 'object') {
+        return ok([stored]);
+      }
+      return ok([]);
     },
   };
 

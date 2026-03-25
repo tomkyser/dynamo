@@ -27,12 +27,12 @@ const { ok } = require('../../../../lib/result.cjs');
  * @param {Object|null} context.selfModel - Self Model for version info
  * @param {Object|null} context.journal - Journal provider for fragment counts
  * @param {Object|null} context.switchboard - Switchboard for last event queries
- * @param {Object|null} context.wire - Wire service (reserved for domain queries)
+ * @param {Object|null} context.wire - Wire service for domain and association queries
  * @param {Object|null} context.formationPipeline - Formation pipeline (reserved)
  * @returns {{ handle: Function }} Handler object
  */
 function createStatusHandler(context) {
-  const { modeManager, selfModel, journal, switchboard } = context || {};
+  const { modeManager, selfModel, journal, switchboard, wire } = context || {};
 
   /**
    * Handles the `dynamo reverie status` command.
@@ -86,10 +86,23 @@ function createStatusHandler(context) {
       }
     }
 
-    // Domain count and association index size: stub as 0
-    // These require Ledger queries via Wire that will be populated with live data
-    const domainCount = 0;
-    const indexSize = 0;
+    // Domain count: query active (non-archived) domains via Wire
+    let domainCount = 0;
+    if (wire && typeof wire.query === 'function') {
+      const domainsResult = wire.query('domains');
+      if (domainsResult && domainsResult.ok && Array.isArray(domainsResult.value)) {
+        domainCount = domainsResult.value.filter(function (d) { return !d.archived; }).length;
+      }
+    }
+
+    // Association index size: count total association edges via Wire
+    let indexSize = 0;
+    if (wire && typeof wire.query === 'function') {
+      const assocResult = wire.query('associations');
+      if (assocResult && assocResult.ok && Array.isArray(assocResult.value)) {
+        indexSize = assocResult.value.length;
+      }
+    }
 
     // Build data object per D-01
     const data = {

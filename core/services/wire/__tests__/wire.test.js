@@ -73,6 +73,7 @@ describe('Wire Service', () => {
       expect(WIRE_SHAPE.optional).toContain('getQueueDepth');
       expect(WIRE_SHAPE.optional).toContain('flush');
       expect(WIRE_SHAPE.optional).toContain('createEnvelope');
+      expect(WIRE_SHAPE.optional).toContain('query');
     });
   });
 
@@ -365,6 +366,88 @@ describe('Wire Service', () => {
 
       const stopEvents = deps.emitted.filter(e => e.event === 'wire:stopped');
       expect(stopEvents.length).toBe(1);
+    });
+  });
+
+  describe('query()', () => {
+    it('query() returns data from ledger read by table name', () => {
+      const mockLedger = {
+        write: mock(function () { return ok({}); }),
+        read: mock(function (tableName) {
+          if (tableName === 'domains') {
+            return ok({
+              id: 'domains',
+              data: [
+                { id: 'd-1', name: 'technical', fragment_count: 5, archived: false },
+                { id: 'd-2', name: 'personal', fragment_count: 3, archived: true },
+              ],
+            });
+          }
+          return { ok: false, error: { code: 'NOT_FOUND' } };
+        }),
+      };
+
+      wire.init({
+        switchboard: deps.switchboard,
+        conductor: deps.conductor,
+        ledger: mockLedger,
+      });
+
+      const result = wire.query('domains');
+      expect(isOk(result)).toBe(true);
+      expect(result.value).toHaveLength(2);
+      expect(result.value[0].name).toBe('technical');
+    });
+
+    it('query() returns empty array when table has no data', () => {
+      const mockLedger = {
+        write: mock(function () { return ok({}); }),
+        read: mock(function () {
+          return { ok: false, error: { code: 'NOT_FOUND' } };
+        }),
+      };
+
+      wire.init({
+        switchboard: deps.switchboard,
+        conductor: deps.conductor,
+        ledger: mockLedger,
+      });
+
+      const result = wire.query('associations');
+      expect(isOk(result)).toBe(true);
+      expect(result.value).toEqual([]);
+    });
+
+    it('query() returns NO_LEDGER error when ledger not available', () => {
+      wire.init({
+        switchboard: deps.switchboard,
+        conductor: deps.conductor,
+        ledger: null,
+      });
+
+      const result = wire.query('domains');
+      expect(isErr(result)).toBe(true);
+      expect(result.error.code).toBe('NO_LEDGER');
+    });
+
+    it('query() wraps single object in array', () => {
+      const mockLedger = {
+        write: mock(function () { return ok({}); }),
+        read: mock(function () {
+          return ok({ id: 'entities', data: { id: 'e-1', name: 'test-entity' } });
+        }),
+      };
+
+      wire.init({
+        switchboard: deps.switchboard,
+        conductor: deps.conductor,
+        ledger: mockLedger,
+      });
+
+      const result = wire.query('entities');
+      expect(isOk(result)).toBe(true);
+      expect(result.value).toHaveLength(1);
+      expect(result.value[0].name).toBe('test-entity');
     });
   });
 

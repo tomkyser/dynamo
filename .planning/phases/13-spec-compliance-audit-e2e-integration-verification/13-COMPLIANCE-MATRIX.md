@@ -99,7 +99,14 @@ Spec sections 1.1-1.5. These are philosophical/theoretical constraints informing
 
 ## Section 4: Three-Session Architecture
 
-*To be completed by Plan 13-04.*
+| ID | Spec Section | Status | Implementing File(s) | Evidence | Notes |
+|----|-------------|--------|---------------------|----------|-------|
+| S4.1 | 4.1 Topology (Hub-spoke) | C | `modules/reverie/components/session/session-config.cjs:89-93`, `modules/reverie/components/session/wire-topology.cjs:101-112` | TOPOLOGY_RULES: primary->[secondary], secondary->[primary,tertiary], tertiary->[secondary]; validateRoute() blocks Primary<->Tertiary bypass; 14 topology tests in spec-sessions.test.cjs | Hub-spoke enforced at both config and runtime Wire routing levels |
+| S4.2 | 4.2 Primary Session (Face) | D | `modules/reverie/hooks/hook-handlers.cjs:112-170,182-293`, `modules/reverie/components/context/context-manager.cjs` | Face prompt injected via additionalContext (not systemMessage per D-03); handleUserPromptSubmit returns hookSpecificOutput.additionalContext; Primary does not directly access fragments/recall/REM; Wire snapshot forwarding from Primary to Secondary | D-03 [Phase 08]: additionalContext not systemMessage per Pitfall 1 |
+| S4.3 | 4.3 Secondary Session (Mind) | C | `modules/reverie/components/session/mind-cycle.cjs`, `modules/reverie/components/session/session-manager.cjs:92-135` | Mind cycle orchestrates: attention (prepareStimulus), formation, passive/explicit recall, sublimation evaluation (processSublimation), face prompt composition (composeFacePrompt with referential framing), directive generation; intake cap per D-08/Pitfall 4 | Self Model authority verified: Mind composes Face prompt for Primary |
+| S4.4 | 4.4 Tertiary Session (Subconscious) | C | `modules/reverie/components/session/sublimation-loop.cjs`, `modules/reverie/components/session/session-config.cjs:104-115` | Configurable cycle_ms (default 15000ms); system prompt instructs: header-only scanning, deterministic resonance scoring (attention tag overlap, entity co-occurrence, temporal clustering, emotional valence), background urgency emission, sensitivity threshold from Mind directives; pause/resume/recordCycle lifecycle | System prompt covers all spec 4.4 steps 1-7 |
+| S4.5 | 4.5 Subagent Usage | C | `modules/reverie/hooks/hook-handlers.cjs:500-592` | SubagentStart/SubagentStop handlers implemented; SubagentStop filters by agent_name='reverie-formation' per D-01 [Phase 09]; SES-06 (subagent delegation from Secondary/Tertiary) deferred to v2 per REQUIREMENTS.md | Subagent delegation pattern documented; v1 supports formation subagent only |
+| S4.6 | 4.6 Session Lifecycle | D | `modules/reverie/components/session/session-manager.cjs`, `modules/reverie/components/session/session-config.cjs:40-68`, `modules/reverie/components/session/triplet.cjs`, `modules/reverie/components/session/wire-topology.cjs` | 9-state machine (uninitialized->starting->passive->upgrading->active->degrading->shutting_down->rem_processing->stopped); startup: Conductor spawn + Wire register + triplet ID generation; shutdown: Tertiary first, then Secondary; REM path: initShutdown->transitionToRem (keeps Secondary)->completeRem; 4 urgency levels (background/active/directive/urgent); ACK protocol with timer-based timeout and _pendingAcks Map; triplet ID namespacing (triplet-XXXX:identity) | D-07 [Phase 10]: Session spawner in conductor/ (platform capability); D-04 [Phase 10]: STOPPED added to STARTING transitions for spawn failure |
 
 ---
 
@@ -183,4 +190,4 @@ All Section 9 items are open questions requiring empirical validation. They are 
 
 ---
 
-*Matrix last updated: 2026-03-25 by Plans 13-05/13-06 (REM Consolidation + Context Management + Platform Integration audit)*
+*Matrix last updated: 2026-03-25 by Plan 13-04 (Three-Session Architecture audit, sections 4.1-4.6)*

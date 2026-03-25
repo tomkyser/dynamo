@@ -1,0 +1,3 @@
+[submodule "modules/reverie"]
+	path = modules/reverie
+	url = git@github.com:tomkyser/module-reverie.git

@@ -93,7 +93,20 @@ Spec sections 1.1-1.5. These are philosophical/theoretical constraints informing
 
 ## Section 3: Fragment Memory Engine
 
-*To be completed by Plan 13-02.*
+| ID | Spec Section | Status | Implementing File(s) | Evidence | Notes |
+|----|-------------|--------|---------------------|----------|-------|
+| S3.1 | 3.1 What Fragments Are | C | `modules/reverie/lib/schemas.cjs`, `modules/reverie/components/fragments/fragment-writer.cjs` | Fragment schema: structured JSON frontmatter + fuzzy impressionistic body in markdown; dual-storage via FragmentWriter (Journal + Ledger); 88 tests in spec-fragments.test.cjs | |
+| S3.2 | 3.2 Fragments Are Not Transcripts | C | `modules/reverie/components/formation/prompt-templates.cjs` | Formation templates instruct LLM to produce experiential impressions, not verbatim records; verified in spec-formation-recall.test.cjs | Design philosophy enforced through prompt engineering |
+| S3.3 | 3.3 Fragment Schema | D | `modules/reverie/lib/schemas.cjs:10-120` | All spec-required fields present: id, type, created, source_session, self_model_version, formation_group, sibling_fragments, temporal, decay, associations, pointers, formation; origin field added in Phase 12 (non-breaking extension) | D-01: JSON frontmatter (not YAML); D-02: Zod 4 syntax; D-05: emotional_valence in associations |
+| S3.4 | 3.4 Fragment Types | C | `modules/reverie/lib/constants.cjs:23-29` (FRAGMENT_TYPES) | 5 types: experiential, meta-recall, sublimation, consolidation, source-reference; all validated in Zod schema enum; verified in spec-fragments.test.cjs | |
+| S3.5 | 3.5 Decay Function | C | `modules/reverie/lib/decay.cjs` | computeDecay: base_decay_rate * time_hours, consolidation_protection * consolidation_count, access_weight * access_count, relevance * self_model_factor; pinned fragments exempt; hand-computed formula verification in spec-fragments.test.cjs | |
+| S3.6 | 3.6 Formation Pipeline | D | `modules/reverie/components/formation/formation-pipeline.cjs`, `modules/reverie/components/formation/attention-gate.cjs`, `modules/reverie/components/formation/fragment-assembler.cjs` | 5-step pipeline: attention gate -> stimulus preparation -> subagent formation -> assembly -> dual-provider write; master table population before fragment writes (Pitfall 5); verified in spec-formation-recall.test.cjs | D-06: Formation agents at .claude/agents/ path |
+| S3.7 | 3.7 Real-Time Recall | C | `modules/reverie/components/recall/recall-engine.cjs`, `modules/reverie/components/recall/composite-scorer.cjs`, `modules/reverie/components/recall/query-builder.cjs`, `modules/reverie/components/recall/reconstruction-prompt.cjs` | Passive recall (5 fragments, nudge) + explicit recall (15 fragments, reconstruction prompt); same composite scorer instance for both paths per D-12; Assay-compatible queries; verified in spec-formation-recall.test.cjs | |
+| S3.8 | 3.8 Association Index | C | `modules/reverie/components/fragments/association-index.cjs` | 12 tables: domains, entities, associations, attention_tags, formation_groups, fragment_decay, source_locators, fragment_domains, fragment_entities, fragment_attention_tags, entity_domains, domain_relationships; DDL verified in spec-fragments.test.cjs | |
+| S3.9 | 3.9 Decay Function Parameters | C | `modules/reverie/lib/constants.cjs:79-89` (DECAY_DEFAULTS) | base_decay_rate=0.05, consolidation_protection=0.3, access_weight=0.1, archive_threshold=0.1, relevance_weights; shouldArchive() checks threshold; verified in spec-fragments.test.cjs | |
+| S3.10 | 3.10 Self-Organizing Taxonomy | C | `modules/reverie/components/rem/taxonomy-governor.cjs`, `modules/reverie/components/rem/editorial-pass.cjs` | Domain create/merge/split/retire during REM; hard caps (max_domains=100, max_entities_per_domain=200); taxonomy governor handles split/retire, editorial pass handles merge; verified in spec-formation-recall.test.cjs | |
+| S3.11 | 3.11 Source-Reference Model | C | `modules/reverie/lib/schemas.cjs:132-143` (sourceLocatorSchema), `modules/reverie/components/fragments/fragment-writer.cjs:169-182` | source_locator: type, path, url, content_hash, last_verified; source_locators Ledger table; sl-{fragment_id} deterministic ID; verified in spec-fragments.test.cjs | |
+| S3.12 | 3.12 Formation Example | C | `modules/reverie/components/formation/prompt-templates.cjs` | FORMATION_TEMPLATES structure matches spec example flow: attention -> multi-angle -> assembly; formation_group_prefix and sibling tracking; verified in spec-formation-recall.test.cjs | |
 
 ---
 
@@ -186,8 +199,56 @@ All Section 9 items are open questions requiring empirical validation. They are 
 
 ## Section 10: Success Criteria
 
-*To be completed by Plan 13-07 (final verification plan).*
+Spec section 10 defines 10 outcome-oriented success criteria. Most require runtime measurement over multiple sessions. Mapped to testable proxies where possible.
+
+| ID | Spec Criterion | Status | Testable Proxy / Parameter Location | Notes |
+|----|---------------|--------|-------------------------------------|-------|
+| SC-01 | Self Model evolves across sessions | EXP | `modules/reverie/components/rem/conditioning-updater.cjs` (EMA updates), `modules/reverie/components/self-model/self-model.cjs` (save/getAspect) | Conditioning EMA ensures evolution; magnitude requires multi-session observation |
+| SC-02 | Fragment recall produces relevant recollections | EXP | `modules/reverie/components/recall/composite-scorer.cjs` (6-factor ranking), `modules/reverie/components/recall/reconstruction-prompt.cjs` | Composite scorer architecture verified; relevance quality is runtime-dependent |
+| SC-03 | Sublimations influence conversation trajectory | EXP | `modules/reverie/components/session/sublimation-loop.cjs`, `modules/reverie/components/session/mind-cycle.cjs:processSublimation` | Pipeline wired end-to-end; influence measurement requires observational study |
+| SC-04 | REM improves subsequent session quality | EXP | `modules/reverie/components/rem/full-rem.cjs`, `modules/reverie/components/rem/quality-evaluator.cjs` | Quality evaluator computes behavioral + LLM composite score; improvement tracking requires multi-session baseline |
+| SC-05 | Taxonomy self-organizes to user-specific structure | EXP | `modules/reverie/components/rem/taxonomy-governor.cjs`, `modules/reverie/lib/constants.cjs:256-263` (TAXONOMY_DEFAULTS) | Governance mechanisms implemented (create/merge/split/retire); convergence requires empirical validation |
+| SC-06 | System runs stably on Claude Max subscription | EXP | `modules/reverie/components/session/session-config.cjs`, `modules/reverie/components/modes/mode-manager.cjs` | Passive fallback ensures degraded operation if limits hit; actual limits unknown (EXPERIMENTAL 9.4) |
+| SC-07 | User reports "system genuinely knows them" after 20+ sessions | EXP | N/A | Subjective outcome metric; no automated proxy. Self Model + recall + conditioning provide the substrate. |
+| SC-08 | Multi-angle formation surviving-sibling rate > 40% | EXP | `modules/reverie/lib/constants.cjs:135-140` (FORMATION_DEFAULTS), `modules/reverie/components/rem/retroactive-evaluator.cjs` | Formation group tracking + retroactive evaluation pipeline wired; survival rate requires REM cycle observations |
+| SC-09 | Source-reference chain traversal locates prior sources | EXP | `modules/reverie/components/recall/query-builder.cjs`, `modules/reverie/components/fragments/association-index.cjs:119-128` (source_locators table) | Source locator schema + association chain architecture in place; traversal quality is EXPERIMENTAL 9.11 |
+| SC-10 | Referential framing maintains influence at >75% context utilization | EXP | `modules/reverie/components/context/budget-tracker.cjs`, `modules/reverie/components/context/referential-framing.cjs` | Phase 3 reinforced (60-80%) is LARGER per D-04; Phase 4 adds compaction advocacy; effectiveness is EXPERIMENTAL 9.9 |
 
 ---
 
-*Matrix last updated: 2026-03-25 by Plan 13-04 (Three-Session Architecture audit, sections 4.1-4.6)*
+## Cross-Component Integration Seams
+
+Verified by `spec-integration-seams.test.cjs` (23 tests, 108 assertions). Per D-03: integration boundaries are where the most dangerous spec violations hide.
+
+| ID | Seam | Status | Component A | Component B | Evidence |
+|----|------|--------|-------------|-------------|----------|
+| IS-01 | Wire <-> Session Manager | C | `wire-topology.cjs` (validateRoute) | `session-manager.cjs` (start/upgrade) | Identity strings match TOPOLOGY_RULES keys; Wire registration receives correct identity metadata |
+| IS-02 | Formation Pipeline <-> Fragment Writer | C | `formation-pipeline.cjs` (prepareStimulus) | `fragment-writer.cjs` (writeFragment) | Stimulus shape has turn_context + self_model; fragment envelope passes Zod validation |
+| IS-03 | Formation Pipeline <-> Association Index | C | `formation-pipeline.cjs` (_populateMasterTables) | `association-index.cjs` (DDL) | Upsert data has id/name fields matching DDL PRIMARY KEY and NOT NULL columns |
+| IS-04 | Hook Handlers <-> Context Manager | C | `hook-handlers.cjs` (handleUserPromptSubmit) | `context-manager.cjs` (getInjection) | getInjection() returns string; handler wraps in hookSpecificOutput.additionalContext |
+| IS-05 | REM Consolidator <-> Editorial Pass | C | `rem-consolidator.cjs` (handleTier3) | `editorial-pass.cjs` (run) | Session context shape (summary, fragments, domainData) passed through fullRem.run; editorial pass returns { prompt, apply } |
+| IS-06 | REM Consolidator <-> Conditioning Updater | C | `rem-consolidator.cjs` -> `full-rem.cjs` | `conditioning-updater.cjs` (updateConditioning) | currentConditioning + sessionEvidence shapes accepted; EMA produces values between inputs |
+| IS-07 | Recall Engine <-> Assay | C | `query-builder.cjs` (buildPassiveQuery/buildExplicitQuery) | Assay search interface | Queries have { criteria, options, limit } shape; extractQueryContext produces { activeDomains, activeEntities, attentionTags, referenceTime } |
+| IS-08 | Mind Cycle <-> Formation Pipeline | C | `mind-cycle.cjs` (processTurn) | `formation-pipeline.cjs` (prepareStimulus) | Mind passes { user_prompt, tool_use } + { turnNumber }; pipeline returns stimulus with turn_context for worthiness check |
+| IS-09 | Sublimation Loop <-> Wire | C | `sublimation-loop.cjs` (getSystemPrompt) | `protocol.cjs` (MESSAGE_TYPES/URGENCY_LEVELS) | System prompt references 'sublimation' type + 'background' urgency matching Wire protocol constants |
+| IS-10 | Mode Manager <-> Session Manager | C | `mode-manager.cjs` (requestActive/requestPassive/requestRem/requestDormant) | `session-manager.cjs` (upgrade/degrade/stop) | Mode transitions call correct Session Manager API; dormant only reachable from REM |
+
+---
+
+## Summary
+
+| Status | Count |
+|--------|-------|
+| C (Compliant) | 56 |
+| D (Deviation) | 9 |
+| V (Violation - fixed) | 0 |
+| M (Missing) | 0 |
+| NA (Not Applicable) | 9 |
+| EXP (Experimental) | 23 |
+| **Total** | **97** |
+
+**Audit Verdict:** PASS -- 0 Missing (M) and 0 unfixed Violations (V). All 13 intentional deviations documented in STATE.md with justifications. 23 experimental items require runtime validation but are architecturally complete with configurable parameters in place. 10 cross-component integration seams verified with 23 tests and 108 assertions confirming contract compatibility across all major component boundaries.
+
+---
+
+*Matrix last updated: 2026-03-25 by Plan 13-07 (Cross-component integration seams, Section 3 backfill, Section 10 success criteria, summary with audit verdict)*

@@ -120,56 +120,57 @@
 
 ## Traceability
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| SM-01 | Phase 7 | Complete |
-| SM-02 | Phase 7 | Complete |
-| SM-03 | Phase 7 | Complete |
-| SM-04 | Phase 11 | Complete |
-| SM-05 | Phase 7 | Complete |
-| FRG-01 | Phase 7 | Complete |
-| FRG-02 | Phase 7 | Complete |
-| FRG-03 | Phase 9 | Complete |
-| FRG-04 | Phase 9 | Complete |
-| FRG-05 | Phase 7 | Complete |
-| FRG-06 | Phase 7 | Complete |
-| FRG-07 | Phase 12 | Complete |
-| FRG-08 | Phase 12 | Complete |
-| FRG-09 | Phase 7 | Complete |
-| FRG-10 | Phase 12 | Complete |
-| SES-01 | Phase 10 | Complete |
-| SES-02 | Phase 10 | Complete |
-| SES-03 | Phase 10 | Complete |
-| SES-04 | Phase 10 | Complete |
-| SES-05 | Phase 10 | Complete |
-| REM-01 | Phase 11 | Complete |
-| REM-02 | Phase 11 | Complete |
-| REM-03 | Phase 11 | Complete |
-| REM-04 | Phase 11 | Complete |
-| REM-05 | Phase 11 | Complete |
-| REM-06 | Phase 11 | Complete |
-| REM-07 | Phase 11 | Complete |
-| CTX-01 | Phase 8 | Complete |
-| CTX-02 | Phase 10 | Complete |
-| CTX-03 | Phase 8 | Complete |
-| CTX-04 | Phase 8 | Complete |
-| CTX-05 | Phase 8 | Complete |
-| OPS-01 | Phase 10 | Complete |
-| OPS-02 | Phase 10 | Complete |
-| OPS-03 | Phase 11 | Complete |
-| OPS-04 | Phase 11 | Complete |
-| INT-01 | Phase 8 | Complete |
-| INT-02 | Phase 12 | Complete |
-| INT-03 | Phase 12 | Complete |
-| PLT-01 | Phase 7 | Complete |
-| PLT-02 | Phase 9.1 | Complete |
-| PLT-03 | Phase 9.1 | Complete |
+| Requirement | Phase | Status | Evidence |
+|-------------|-------|--------|----------|
+| SM-01 | Phase 7 | Complete | `modules/reverie/components/self-model/self-model.cjs` (createSelfModel factory), `modules/reverie/lib/constants.cjs:59` (SM_ASPECTS) |
+| SM-02 | Phase 7 | Complete | `modules/reverie/lib/schemas.cjs:242-251` (identityCoreSchema: personality_traits, communication_style, value_orientations, expertise_map, boundaries) |
+| SM-03 | Phase 7 | Complete | `modules/reverie/lib/schemas.cjs:257-266` (relationalModelSchema: communication_patterns, domain_map, preference_history, trust_calibration, interaction_rhythm) |
+| SM-04 | Phase 11 | Complete | `modules/reverie/lib/schemas.cjs:272-281` (conditioningSchema), `modules/reverie/components/rem/conditioning-updater.cjs` (EMA updates) |
+| SM-05 | Phase 7 | Complete | `modules/reverie/components/self-model/cold-start.cjs` (createColdStartSeed: neutral 0.5 traits, empty relational, uniform conditioning) |
+| FRG-01 | Phase 7 | Complete | `modules/reverie/lib/schemas.cjs:10-120` (baseFragmentSchema), `modules/reverie/components/fragments/fragment-writer.cjs` (Journal+Ledger dual write) |
+| FRG-02 | Phase 7 | Complete | `modules/reverie/lib/constants.cjs:23-29` (FRAGMENT_TYPES: experiential, meta-recall, sublimation, consolidation, source-reference) |
+| FRG-03 | Phase 9 | Complete | `modules/reverie/components/formation/formation-pipeline.cjs` (prepareStimulus + processFormationOutput), `modules/reverie/components/formation/attention-gate.cjs`, `modules/reverie/components/formation/fragment-assembler.cjs` |
+| FRG-04 | Phase 9 | Complete | `modules/reverie/components/recall/recall-engine.cjs` (recallPassive:5/recallExplicit:15), `modules/reverie/components/recall/composite-scorer.cjs` (6-factor ranking), `modules/reverie/components/recall/reconstruction-prompt.cjs` |
+| FRG-05 | Phase 7 | Complete | `modules/reverie/components/fragments/association-index.cjs` (12 DDL tables), `modules/reverie/components/fragments/fragment-writer.cjs:96-185` (_queueAssociationIndexWrites) |
+| FRG-06 | Phase 7 | Complete | `modules/reverie/lib/decay.cjs` (computeDecay: time_decay + consolidation_protection + access_bonus + relevance), `modules/reverie/lib/constants.cjs:79-89` (DECAY_DEFAULTS) |
+| FRG-07 | Phase 12 | Complete | `modules/reverie/components/rem/taxonomy-governor.cjs` (applyDomainSplit, applyDomainRetire), `modules/reverie/components/rem/editorial-pass.cjs` (applyDomainMerge), `modules/reverie/lib/constants.cjs:256-263` (TAXONOMY_DEFAULTS) |
+| FRG-08 | Phase 12 | Complete | `modules/reverie/lib/schemas.cjs:132-143` (sourceLocatorSchema), `modules/reverie/components/fragments/fragment-writer.cjs:169-182` (source_locators write) |
+| FRG-09 | Phase 7 | Complete | `modules/reverie/components/fragments/fragment-writer.cjs` (writeFragment: Journal first -> Ledger via Wire -> rollback on failure) |
+| FRG-10 | Phase 12 | Complete | `modules/reverie/components/backfill/backfill-pipeline.cjs`, `modules/reverie/components/backfill/backfill-parser.cjs`, `modules/reverie/cli/register-commands.cjs` (backfill CLI) |
+| SES-01 | Phase 10 | Complete | `modules/reverie/hooks/hook-handlers.cjs:112-170` (handleSessionStart), `modules/reverie/components/context/context-manager.cjs` (getInjection -> additionalContext) |
+| SES-02 | Phase 10 | Complete | `modules/reverie/components/session/mind-cycle.cjs` (processTurn: attention, formation, recall, sublimation, face prompt composition, directives) |
+| SES-03 | Phase 10 | Complete | `modules/reverie/components/session/sublimation-loop.cjs` (getSystemPrompt, getCycleConfig, updateSensitivity), `modules/reverie/components/session/session-config.cjs:105` (sublimation_cycle_ms=15000) |
+| SES-04 | Phase 10 | Complete | `modules/reverie/components/session/wire-topology.cjs` (send, subscribe, validateRoute, ACK protocol), `core/services/wire/protocol.cjs` (MESSAGE_TYPES, URGENCY_LEVELS) |
+| SES-05 | Phase 10 | Complete | `modules/reverie/components/session/session-manager.cjs` (start/stop/upgrade/degrade/initShutdown/transitionToRem/completeRem), `modules/reverie/components/session/session-config.cjs:40-68` (TRANSITIONS) |
+| REM-01 | Phase 11 | Complete | `modules/reverie/components/rem/triage.cjs` (snapshot: 6-field state dump to Journal via Lathe), `modules/reverie/components/rem/rem-consolidator.cjs:74-84` (handleTier1) |
+| REM-02 | Phase 11 | Complete | `modules/reverie/components/rem/provisional-rem.cjs` (run: tentative pipeline with abort-revert), `modules/reverie/components/rem/heartbeat-monitor.cjs` |
+| REM-03 | Phase 11 | Complete | `modules/reverie/components/rem/full-rem.cjs` (run: 5-step editorial pipeline), `modules/reverie/components/rem/rem-consolidator.cjs:154-170` (handleTier3) |
+| REM-04 | Phase 11 | Complete | `modules/reverie/components/rem/retroactive-evaluator.cjs` (evaluate/apply: PROMOTE/DISCARD against completed session arc) |
+| REM-05 | Phase 11 | Complete | `modules/reverie/components/rem/editorial-pass.cjs` (entity dedup, domain merge, weight updates, taxonomy narrative; Phase 12: split/retire governance) |
+| REM-06 | Phase 11 | Complete | `modules/reverie/components/rem/conditioning-updater.cjs` (updateConditioning: EMA on attention_biases, sublimation_sensitivity, recall_strategies; enforceIdentityFloors, checkDiversityThreshold) |
+| REM-07 | Phase 11 | Complete | `modules/reverie/components/rem/rem-consolidator.cjs:15` ("Per REM-07: Nothing enters long-term storage without passing through the REM pipeline") |
+| CTX-01 | Phase 8 | Complete | `modules/reverie/components/context/context-manager.cjs:177-179` (getInjection: synchronous, zero I/O), `modules/reverie/hooks/hook-handlers.cjs:182-293` (handleUserPromptSubmit -> additionalContext) |
+| CTX-02 | Phase 10 | Complete | `modules/reverie/components/context/referential-framing.cjs` (FRAMING_TEMPLATES: full/dual/soft modes), `modules/reverie/components/context/template-composer.cjs:524` (slot 5) |
+| CTX-03 | Phase 8 | Complete | `modules/reverie/components/context/budget-tracker.cjs` (BUDGET_PHASES: 4 phases at 30/60/80% thresholds), `modules/reverie/components/context/template-composer.cjs:46-50` (PHASE_BUDGETS: 1300/800/1900/1800) |
+| CTX-04 | Phase 8 | Complete | `modules/reverie/hooks/hook-handlers.cjs:53-60` (COMPACTION_FRAMING), `modules/reverie/hooks/hook-handlers.cjs:378-421` (handlePreCompact: checkpoint + inject framing) |
+| CTX-05 | Phase 8 | Complete | `modules/reverie/components/context/context-manager.cjs:108-132` (init: warm-start reads face-prompt.md), `modules/reverie/components/context/context-manager.cjs:305-308` (persistWarmStart) |
+| OPS-01 | Phase 10 | Complete | `modules/reverie/components/modes/mode-manager.cjs:33,103-115` (ACTIVE mode, requestActive -> sessionManager.upgrade, 2 active sessions) |
+| OPS-02 | Phase 10 | Complete | `modules/reverie/components/modes/mode-manager.cjs:34,117-134` (PASSIVE mode, default, 1 active session, requestPassive -> sessionManager.degrade) |
+| OPS-03 | Phase 11 | Complete | `modules/reverie/components/modes/mode-manager.cjs:35,145-160` (REM mode, requestRem, degrades from Active first) |
+| OPS-04 | Phase 11 | Complete | `modules/reverie/components/modes/mode-manager.cjs:36,169-180` (DORMANT mode, requestDormant, only from REM, 0 sessions) |
+| INT-01 | Phase 8 | Complete | `modules/reverie/hooks/hook-handlers.cjs` (8 handlers), `modules/reverie/reverie.cjs:379-388` (exciter.registerHooks with all 8 hook types) |
+| INT-02 | Phase 12 | Complete | `modules/reverie/cli/register-commands.cjs` (status/reset/inspect/history/backfill commands), `core/sdk/pulley/pulley.cjs` (CLI framework) |
+| INT-03 | Phase 12 | Complete | `.gitmodules` (modules/reverie submodule), `core/services/relay/relay.cjs` + `core/services/forge/forge.cjs` (submodule management) |
+| PLT-01 | Phase 7 | Complete | `core/services/wire/write-coordinator.cjs` (retry with exponential backoff), `core/services/wire/write-ahead-journal.cjs` (WAJ) |
+| PLT-02 | Phase 9.1 | Complete | `core/providers/lithograph/lithograph.cjs` (parse, read, write, query), `core/providers/lithograph/parser.cjs` (PARSERS registry, v1 format detection) |
+| PLT-03 | Phase 9.1 | Complete | `core/services/exciter/exciter.cjs` (registerHooks, registerAgent, registerSkill), `core/services/exciter/skill-manager.cjs` (SKILL.md generation) |
 
 **Coverage:**
 - M2 requirements: 42 total
 - Mapped to phases: 42/42
+- Evidence provided: 42/42
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-23*
-*Last updated: 2026-03-23 -- phase assignments from roadmap*
+*Last updated: 2026-03-25 -- Phase 13 enrichment with file:line implementation evidence for all 42 requirements*

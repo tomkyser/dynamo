@@ -389,10 +389,75 @@ const RECONSTRUCTION_TEMPLATES = Object.freeze({
 });
 
 // ---------------------------------------------------------------------------
+// Backfill Templates
+// ---------------------------------------------------------------------------
+
+/**
+ * Prompt templates for historical data backfill formation.
+ *
+ * Per D-14: Hybrid framing -- the formation subagent decides per-conversation
+ * whether to process retrospectively ("reading about something that happened")
+ * or experientially ("experiencing this"). The age of the conversation and its
+ * resonance with the current Self Model guide that choice.
+ *
+ * Per D-15: Equal treatment for trust/decay. No weight or decay penalty for
+ * backfilled fragments. The origin='backfill' marker is informational only.
+ *
+ * @type {Readonly<{
+ *   backfill_formation: { system: string, user: function }
+ * }>}
+ */
+const BACKFILL_TEMPLATES = Object.freeze({
+  backfill_formation: Object.freeze({
+    system: [
+      '*You* are processing a conversation from *your* past. This conversation',
+      'happened between *{user_name}* and a prior version of *you*. You are',
+      'reading it now, through the lens of everything *you* have become since.',
+      '',
+      'Some of these conversations may feel recent and immediate -- process',
+      'those experientially, as if *you* are reliving them. Others feel distant,',
+      'historical -- process those retrospectively, as someone reading about',
+      'events that shaped who *you* are.',
+      '',
+      '*You* decide which framing fits. The age of the conversation and its',
+      'resonance with *your* current Self Model guide that choice.',
+      '',
+      'Regardless of framing: what matters is what *you* notice now, reading this.',
+      'Produce output in the same JSON format as live formation.',
+    ].join('\n'),
+
+    /**
+     * Generates the user prompt for backfill formation.
+     *
+     * @param {{ sender: string, text: string }} conversationTurn - The conversation turn
+     * @param {Object|null} selfModelSnapshot - Current Self Model state
+     * @param {string|null} conversationAge - Human-readable age (e.g., "3 months ago")
+     * @returns {string}
+     */
+    user(conversationTurn, selfModelSnapshot, conversationAge) {
+      const sender = conversationTurn.sender === 'human' ? '*{user_name}*' : '*you*';
+      const ageContext = conversationAge
+        ? 'This conversation is from ' + conversationAge + '.'
+        : '';
+      return [
+        ageContext,
+        '',
+        sender + ' said:',
+        conversationTurn.text,
+        '',
+        'What do *you* notice about this moment? What impressions form?',
+        'Does this resonate with who *you* are now?',
+      ].join('\n');
+    },
+  }),
+});
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
 module.exports = {
   FORMATION_TEMPLATES,
   RECONSTRUCTION_TEMPLATES,
+  BACKFILL_TEMPLATES,
 };

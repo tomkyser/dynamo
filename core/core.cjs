@@ -1,9 +1,11 @@
 'use strict';
 
+const path = require('node:path');
 const { ok, err } = require('../lib/result.cjs');
 const { discoverRoot, createPaths } = require('../lib/paths.cjs');
 const { loadConfig } = require('../lib/config.cjs');
 const { createContainer, createLifecycle } = require('./armature/index.cjs');
+const { discoverModules, loadModule } = require('./armature/module-discovery.cjs');
 
 // Service factories
 const { createSwitchboard } = require('./services/switchboard/switchboard.cjs');
@@ -197,8 +199,35 @@ async function bootstrap(options = {}) {
     packageVersion,
   });
 
+  // 7.5d. Discover and register modules
+  const modulesDir = options.modulesDir || paths.root + '/modules';
+  const moduleResults = [];
+  const moduleDirs = discoverModules(modulesDir);
+
+  for (const moduleDir of moduleDirs) {
+    try {
+      const loadResult = loadModule(moduleDir);
+      if (!loadResult.ok) {
+        moduleResults.push({ name: path.basename(moduleDir), status: 'skipped', reason: loadResult.error });
+        continue;
+      }
+
+      const { name, manifest, entryPath } = loadResult.value;
+      const entry = require(entryPath);
+      const regResult = circuit.registerModule(manifest, entry.register);
+      moduleResults.push({
+        name,
+        status: regResult.ok ? 'registered' : 'error',
+        error: regResult.ok ? undefined : regResult.error,
+      });
+    } catch (e) {
+      // Module failure is isolated -- platform continues (per plugin isolation pattern)
+      moduleResults.push({ name: path.basename(moduleDir), status: 'error', error: e.message });
+    }
+  }
+
   // 8. Return success
-  return ok({ container, lifecycle, config, paths, circuit, pulley });
+  return ok({ container, lifecycle, config, paths, circuit, pulley, modules: moduleResults });
 }
 
 module.exports = { bootstrap };

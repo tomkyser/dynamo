@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
-status: Ready to plan
-stopped_at: Phase 12 context gathered
-last_updated: "2026-03-25T04:11:38.891Z"
+status: Ready to execute
+stopped_at: Completed 12-05-PLAN.md
+last_updated: "2026-03-25T05:21:59.166Z"
 progress:
   total_phases: 7
   completed_phases: 6
-  total_plans: 26
-  completed_plans: 26
+  total_plans: 32
+  completed_plans: 28
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** Everything routes through Dynamo -- the holistic wrapper via its APIs and interfaces. No component bypasses the patterns and paths Dynamo defines.
-**Current focus:** Phase 11 — rem-consolidation
+**Current focus:** Phase 12 — integration-surface-backfill
 
 ## Current Position
 
-Phase: 12
-Plan: Not started
+Phase: 12 (integration-surface-backfill) — EXECUTING
+Plan: 6 of 6
 
 ## Performance Metrics
 
@@ -79,6 +79,11 @@ Plan: Not started
 | Phase 11 P04 | 5min | 2 tasks | 4 files |
 | Phase 11 P05 | 6min | 3 tasks | 6 files |
 | Phase 11 P06 | 5min | 2 tasks | 3 files |
+| Phase 12 P01 | 3min | 2 tasks | 7 files |
+| Phase 12 P02 | 4min | 2 tasks | 5 files |
+| Phase 12 P03 | 4min | 2 tasks | 5 files |
+| Phase 12 P04 | 5min | 2 tasks | 4 files |
+| Phase 12 P05 | 5min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -154,6 +159,16 @@ Recent decisions affecting current work:
 - [Phase 11]: Provisional REM uses _running/_aborted/_tentativeFragmentIds state machine for clean lifecycle
 - [Phase 11]: REM consolidator is single entry point for all consolidation -- enforces REM-07 gate
 - [Phase 11]: handleStop REM transition is fire-and-forget: hook returns immediately, Tier 3 runs async on Secondary
+- [Phase 12]: source_locator id format: sl-{fragment_id} for deterministic uniqueness
+- [Phase 12]: origin field placed between formation and source_locator in baseFragmentSchema for logical provenance grouping
+- [Phase 12]: Mode Manager API uses getMode() returning string -- adapted from actual code vs plan interface block
+- [Phase 12]: process.argv direct check for --confirm since Pulley only parses --json/--raw/--help
+- [Phase 12]: Confirm check BEFORE any destructive operation per Pitfall 6 -- no partial resets
+- [Phase 12]: Pressure gradient uses max() across domain/entity/edge dimensions for threshold determination
+- [Phase 12]: taxonomyGovernor injected as optional dependency into editorial pass via null guard pattern
+- [Phase 12]: Backfill parser uses PARSERS registry pattern from Lithograph for versioned format detection
+- [Phase 12]: BACKFILL_TEMPLATES composed in backfill-pipeline and passed as stimulus.backfill_prompt for formation override
+- [Phase 12]: Per-conversation fragment cap enforced in processConversation loop for backfill safety
 
 ### Roadmap Evolution
 
@@ -175,6 +190,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T04:11:38.888Z
-Stopped at: Phase 12 context gathered
-Resume file: .planning/phases/12-integration-surface-backfill/12-CONTEXT.md
+Last session: 2026-03-25T05:21:59.164Z
+Stopped at: Completed 12-05-PLAN.md
+Resume file: None

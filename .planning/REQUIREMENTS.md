@@ -21,10 +21,10 @@
 - [x] **FRG-04**: Real-time recall via Assay (retrieval, composite ranking, reconstruction through current Self Model frame)
 - [x] **FRG-05**: Association index in Ledger (domains, entities, associations, attention tags, formation groups, source locators, fragment decay)
 - [x] **FRG-06**: Deterministic decay function (time decay, consolidation protection, access bonus, relevance factor)
-- [ ] **FRG-07**: Self-organizing taxonomy (domain creation/merge/split/retire during REM)
-- [ ] **FRG-08**: Source-reference model (association chain termini, source locator pointers, experiential relationship to sources)
+- [x] **FRG-07**: Self-organizing taxonomy (domain creation/merge/split/retire during REM)
+- [x] **FRG-08**: Source-reference model (association chain termini, source locator pointers, experiential relationship to sources)
 - [x] **FRG-09**: FragmentWriter abstraction — atomic dual-provider writes (Journal + Ledger) with rollback to prevent split-storage inconsistency
-- [ ] **FRG-10**: Historical data backfill — import Claude conversation exports (or analogous app data) through backfill-specific formation pathway with retrospective framing, provenance marking, and appropriate trust/decay parameters for reconstructed (non-experiential) memories
+- [x] **FRG-10**: Historical data backfill — import Claude conversation exports (or analogous app data) through backfill-specific formation pathway with retrospective framing, provenance marking, and appropriate trust/decay parameters for reconstructed (non-experiential) memories
 
 ### Three-Session Architecture
 
@@ -62,7 +62,7 @@
 ### Module Integration
 
 - [x] **INT-01**: Hook wiring for 8 Claude Code hooks (SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, Stop, PreCompact, SubagentStart, SubagentStop)
-- [ ] **INT-02**: CLI surface via Pulley (`dynamo reverie status/reset/inspect/history`)
+- [x] **INT-02**: CLI surface via Pulley (`dynamo reverie status/reset/inspect/history`)
 - [ ] **INT-03**: Reverie installed and managed as git submodule via Forge/Relay
 
 ### Platform Prerequisites
@@ -133,10 +133,10 @@
 | FRG-04 | Phase 9 | Complete |
 | FRG-05 | Phase 7 | Complete |
 | FRG-06 | Phase 7 | Complete |
-| FRG-07 | Phase 12 | Pending |
-| FRG-08 | Phase 12 | Pending |
+| FRG-07 | Phase 12 | Complete |
+| FRG-08 | Phase 12 | Complete |
 | FRG-09 | Phase 7 | Complete |
-| FRG-10 | Phase 12 | Pending |
+| FRG-10 | Phase 12 | Complete |
 | SES-01 | Phase 10 | Complete |
 | SES-02 | Phase 10 | Complete |
 | SES-03 | Phase 10 | Complete |
@@ -159,7 +159,7 @@
 | OPS-03 | Phase 11 | Complete |
 | OPS-04 | Phase 11 | Complete |
 | INT-01 | Phase 8 | Complete |
-| INT-02 | Phase 12 | Pending |
+| INT-02 | Phase 12 | Complete |
 | INT-03 | Phase 12 | Pending |
 | PLT-01 | Phase 7 | Complete |
 | PLT-02 | Phase 9.1 | Complete |

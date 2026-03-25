@@ -1179,4 +1179,307 @@ describe('Hook Handlers', () => {
       });
     });
   });
+
+  // =========================================================================
+  // Phase 11: REM Consolidation Integration
+  // =========================================================================
+
+  describe('Phase 11: handleSessionStart with remConsolidator', () => {
+    it('calls remConsolidator.handleCrashRecovery (fire-and-forget)', async () => {
+      const _calls = [];
+      const mockRemConsolidator = {
+        async handleCrashRecovery(sessionId) {
+          _calls.push({ handleCrashRecovery: sessionId });
+          return { hasOrphans: false, orphanedSessions: [], recoveryTriggered: false };
+        },
+        async handleDormantMaintenance() {
+          _calls.push('handleDormantMaintenance');
+          return { checked: 0, archived: 0, still_active: 0 };
+        },
+        async handleTier1(mindState) { _calls.push({ handleTier1: mindState }); },
+        async handleTier3(ctx) { _calls.push({ handleTier3: ctx }); },
+      };
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        remConsolidator: mockRemConsolidator,
+      });
+
+      await handlers.handleSessionStart({ session_id: 'test-session-1' });
+      await new Promise(function (r) { setTimeout(r, 10); });
+      const crashCalls = _calls.filter(function (c) { return typeof c === 'object' && c.handleCrashRecovery; });
+      expect(crashCalls.length).toBe(1);
+      expect(crashCalls[0].handleCrashRecovery).toBe('test-session-1');
+    });
+
+    it('calls remConsolidator.handleDormantMaintenance (fire-and-forget, per OPS-04)', async () => {
+      const _calls = [];
+      const mockRemConsolidator = {
+        async handleCrashRecovery(sessionId) { _calls.push({ handleCrashRecovery: sessionId }); return { hasOrphans: false }; },
+        async handleDormantMaintenance() {
+          _calls.push('handleDormantMaintenance');
+          return { checked: 5, archived: 1, still_active: 4 };
+        },
+        async handleTier1() {},
+        async handleTier3() {},
+      };
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        remConsolidator: mockRemConsolidator,
+      });
+
+      await handlers.handleSessionStart({ session_id: 'test' });
+      await new Promise(function (r) { setTimeout(r, 10); });
+      expect(_calls).toContain('handleDormantMaintenance');
+    });
+
+    it('calls heartbeatMonitor.start()', async () => {
+      const _calls = [];
+      const mockHeartbeatMonitor = {
+        start() { _calls.push('start'); },
+        stop() { _calls.push('stop'); },
+        isActive() { return true; },
+      };
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        heartbeatMonitor: mockHeartbeatMonitor,
+      });
+
+      await handlers.handleSessionStart({ session_id: 'test' });
+      expect(_calls).toContain('start');
+    });
+
+    it('works without remConsolidator and heartbeatMonitor (backward compat)', async () => {
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+      });
+
+      const result = await handlers.handleSessionStart({ session_id: 'test' });
+      expect(result.hookSpecificOutput.hookEventName).toBe('SessionStart');
+    });
+  });
+
+  describe('Phase 11: handleUserPromptSubmit with heartbeat', () => {
+    it('sends HEARTBEAT message via Wire', async () => {
+      const _sentEnvelopes = [];
+      const mockWireTopology = {
+        async send(envelope) {
+          _sentEnvelopes.push(envelope);
+          return { ok: true, value: { sent: true } };
+        },
+      };
+      const mockSessionManager = {
+        getState() { return { state: 'passive', secondary: 'sec-1', tertiary: null, config: {} }; },
+      };
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        wireTopology: mockWireTopology,
+        sessionManager: mockSessionManager,
+      });
+
+      await handlers.handleUserPromptSubmit({ user_prompt: 'Hello', session_id: 'test' });
+      await new Promise(function (r) { setTimeout(r, 10); });
+      const heartbeats = _sentEnvelopes.filter(function (e) { return e.type === 'heartbeat'; });
+      expect(heartbeats.length).toBe(1);
+      expect(heartbeats[0].from).toBe('primary');
+      expect(heartbeats[0].to).toBe('secondary');
+      expect(heartbeats[0].urgency).toBe('background');
+      expect(heartbeats[0].payload.timestamp).toBeDefined();
+    });
+  });
+
+  describe('Phase 11: handlePreCompact with remConsolidator', () => {
+    it('calls remConsolidator.handleTier1 (fire-and-forget)', async () => {
+      const _calls = [];
+      const mockRemConsolidator = {
+        async handleCrashRecovery() { return { hasOrphans: false }; },
+        async handleDormantMaintenance() { return { checked: 0, archived: 0, still_active: 0 }; },
+        async handleTier1(mindState) {
+          _calls.push({ handleTier1: mindState });
+          return { ok: true, value: {} };
+        },
+        async handleTier3() {},
+      };
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager({ _injection: 'face prompt text for testing' }),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        remConsolidator: mockRemConsolidator,
+      });
+
+      await handlers.handlePreCompact({ session_id: 'test' });
+      await new Promise(function (r) { setTimeout(r, 10); });
+      const tier1Calls = _calls.filter(function (c) { return c.handleTier1; });
+      expect(tier1Calls.length).toBe(1);
+      expect(tier1Calls[0].handleTier1.attention_pointer).toBe(null);
+      expect(tier1Calls[0].handleTier1.self_model_prompt_state).toBeDefined();
+    });
+  });
+
+  describe('Phase 11: handleStop with REM transition', () => {
+    it('calls modeManager.requestRem then sessionManager.transitionToRem', async () => {
+      const _calls = [];
+      const mockModeManager = {
+        async requestRem(reason) { _calls.push({ requestRem: reason }); return { ok: true, value: { mode: 'rem', changed: true } }; },
+        async requestDormant() { _calls.push('requestDormant'); return { ok: true, value: { mode: 'dormant', changed: true } }; },
+      };
+      const mockSessionManager = {
+        async start() { return { ok: true }; },
+        async stop() { _calls.push('stop'); return { ok: true }; },
+        async transitionToRem() { _calls.push('transitionToRem'); return { ok: true, value: { state: 'rem_processing' } }; },
+        async completeRem() { _calls.push('completeRem'); return { ok: true }; },
+        getState() { return { state: 'passive' }; },
+      };
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        modeManager: mockModeManager,
+        sessionManager: mockSessionManager,
+      });
+
+      await handlers.handleStop({ session_id: 'test' });
+      const remCalls = _calls.filter(function (c) { return typeof c === 'object' && c.requestRem; });
+      expect(remCalls.length).toBe(1);
+      expect(remCalls[0].requestRem).toBe('session_end');
+      expect(_calls).toContain('transitionToRem');
+    });
+
+    it('fires-and-forgets remConsolidator.handleTier3', async () => {
+      const _calls = [];
+      const mockModeManager = {
+        async requestRem(reason) { _calls.push({ requestRem: reason }); return { ok: true, value: { mode: 'rem' } }; },
+        async requestDormant() { _calls.push('requestDormant'); return { ok: true }; },
+      };
+      const mockSessionManager = {
+        async start() { return { ok: true }; },
+        async stop() { _calls.push('stop'); return { ok: true }; },
+        async transitionToRem() { _calls.push('transitionToRem'); return { ok: true }; },
+        async completeRem() { _calls.push('completeRem'); return { ok: true }; },
+        getState() { return { state: 'passive' }; },
+      };
+      const mockRemConsolidator = {
+        async handleCrashRecovery() { return { hasOrphans: false }; },
+        async handleDormantMaintenance() { return { checked: 0, archived: 0, still_active: 0 }; },
+        async handleTier1() {},
+        async handleTier3(ctx) {
+          _calls.push({ handleTier3: true });
+          return { promoted: 3, discarded: 1, conditioningUpdated: true };
+        },
+      };
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        modeManager: mockModeManager,
+        sessionManager: mockSessionManager,
+        remConsolidator: mockRemConsolidator,
+      });
+
+      await handlers.handleStop({ session_id: 'test' });
+      // Tier 3 is fire-and-forget, give it a tick
+      await new Promise(function (r) { setTimeout(r, 20); });
+      const tier3Calls = _calls.filter(function (c) { return typeof c === 'object' && c.handleTier3; });
+      expect(tier3Calls.length).toBe(1);
+      // After Tier 3, requestDormant and completeRem should also be called
+      expect(_calls).toContain('requestDormant');
+      expect(_calls).toContain('completeRem');
+    });
+
+    it('still calls contextManager.persistWarmStart', async () => {
+      const cm = createMockContextManager();
+      const mockModeManager = {
+        async requestRem() { return { ok: true, value: { mode: 'rem' } }; },
+        async requestDormant() { return { ok: true }; },
+      };
+      const mockSessionManager = {
+        async stop() { return { ok: true }; },
+        async transitionToRem() { return { ok: true }; },
+        async completeRem() { return { ok: true }; },
+        getState() { return { state: 'passive' }; },
+      };
+      const handlers = createHookHandlers({
+        contextManager: cm,
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        modeManager: mockModeManager,
+        sessionManager: mockSessionManager,
+      });
+
+      await handlers.handleStop({ session_id: 'test' });
+      expect(cm.getCalls()).toContain('persistWarmStart');
+    });
+
+    it('fallback to sessionManager.stop when modeManager not available', async () => {
+      const _calls = [];
+      const mockSessionManager = {
+        async start() { return { ok: true }; },
+        async stop() { _calls.push('stop'); return { ok: true }; },
+        getState() { return { state: 'passive' }; },
+      };
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        sessionManager: mockSessionManager,
+        // no modeManager -- Phase 10 fallback path
+      });
+
+      await handlers.handleStop({ session_id: 'test' });
+      expect(_calls).toContain('stop');
+    });
+
+    it('calls heartbeatMonitor.stop()', async () => {
+      const _calls = [];
+      const mockHeartbeatMonitor = {
+        start() { _calls.push('hb-start'); },
+        stop() { _calls.push('hb-stop'); },
+        isActive() { return true; },
+      };
+      const handlers = createHookHandlers({
+        contextManager: createMockContextManager(),
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+        heartbeatMonitor: mockHeartbeatMonitor,
+      });
+
+      await handlers.handleStop({ session_id: 'test' });
+      expect(_calls).toContain('hb-stop');
+    });
+
+    it('all existing Phase 8/9/10 behavior preserved via null-guard backward compat', async () => {
+      // No remConsolidator, no heartbeatMonitor, no modeManager -- pure Phase 8/10 behavior
+      const cm = createMockContextManager();
+      const handlers = createHookHandlers({
+        contextManager: cm,
+        switchboard: createMockSwitchboard(),
+        lathe: createMockLathe(),
+        dataDir: '/tmp/test-reverie',
+      });
+
+      const result = await handlers.handleStop({ session_id: 'test' });
+      expect(cm.getCalls()).toContain('persistWarmStart');
+      expect(result).toEqual({});
+    });
+  });
 });

@@ -74,6 +74,8 @@ const COMPACTION_FRAMING = [
  * @param {Object} [options.sessionManager] - Phase 10: Session Manager for lifecycle ops
  * @param {Object} [options.wireTopology] - Phase 10: Wire topology for inter-session messaging
  * @param {Object} [options.modeManager] - Phase 10: Mode Manager for operational mode
+ * @param {Object} [options.remConsolidator] - Phase 11: REM Consolidator for tiered consolidation
+ * @param {Object} [options.heartbeatMonitor] - Phase 11: Heartbeat monitor for Tier 2 detection
  * @returns {Object} Object with 8 handler functions
  */
 function createHookHandlers(options) {
@@ -84,6 +86,8 @@ function createHookHandlers(options) {
   const sessionManager = (options && options.sessionManager) || null;
   const wireTopology = (options && options.wireTopology) || null;
   const modeManager = (options && options.modeManager) || null;
+  const remConsolidator = (options && options.remConsolidator) || null;
+  const heartbeatMonitor = (options && options.heartbeatMonitor) || null;
 
   // Resolve ~ to HOME for dataDir
   const resolvedDataDir = dataDir && dataDir.startsWith('~')
@@ -133,6 +137,28 @@ function createHookHandlers(options) {
       sessionManager.start().catch(function (_e) {
         // Session Manager start failure is non-fatal for the hook
       });
+    }
+
+    // Phase 11: Crash recovery -- detect orphaned working/ fragments from prior sessions
+    if (remConsolidator) {
+      const sessionId = (payload && payload.session_id) || 'reverie';
+      remConsolidator.handleCrashRecovery(sessionId).catch(function (_e) {
+        // Crash recovery failure is non-fatal for the hook
+      });
+    }
+
+    // Phase 11: Dormant maintenance -- decay catch-up on session start per D-14/OPS-04
+    // This is the trigger point for dormant maintenance. Decay is time-based so
+    // retroactive computation on SessionStart produces the same result as scheduled runs.
+    if (remConsolidator) {
+      remConsolidator.handleDormantMaintenance().catch(function (_e) {
+        // Dormant maintenance failure is non-fatal for the hook
+      });
+    }
+
+    // Phase 11: Start heartbeat monitor for Tier 2 detection
+    if (heartbeatMonitor) {
+      heartbeatMonitor.start();
     }
 
     return {
@@ -226,6 +252,23 @@ function createHookHandlers(options) {
           },
         }).catch(function (_e) {
           // Snapshot send failure is non-fatal
+        });
+      } catch (_e) {
+        // Non-fatal
+      }
+    }
+
+    // Phase 11: Send heartbeat to Secondary for Tier 2 idle detection per D-02
+    if (wireTopology && sessionManager && sessionManager.getState().state !== 'stopped') {
+      try {
+        wireTopology.send({
+          from: 'primary',
+          to: 'secondary',
+          type: MESSAGE_TYPES.HEARTBEAT,
+          urgency: URGENCY_LEVELS.BACKGROUND,
+          payload: { timestamp: Date.now() },
+        }).catch(function (_e) {
+          // Heartbeat send failure is non-fatal
         });
       } catch (_e) {
         // Non-fatal
@@ -335,6 +378,23 @@ function createHookHandlers(options) {
   async function handlePreCompact(payload) {
     await contextManager.checkpoint();
 
+    // Phase 11: Tier 1 triage -- fast state snapshot per D-01
+    if (remConsolidator) {
+      try {
+        const mindState = {
+          attention_pointer: null, // Context Manager provides this
+          working_fragments: [],   // Populated from Journal working/ listing
+          sublimation_candidates: [],
+          self_model_prompt_state: contextManager.getInjection ? contextManager.getInjection().slice(0, 100) : null,
+        };
+        remConsolidator.handleTier1(mindState).catch(function (_e) {
+          // Tier 1 failure is non-fatal -- compaction still proceeds
+        });
+      } catch (_e) {
+        // Non-fatal
+      }
+    }
+
     // Phase 10: Notify Secondary of compaction via Wire
     if (wireTopology) {
       try {
@@ -370,15 +430,52 @@ function createHookHandlers(options) {
    * @returns {Promise<Object>} Empty object (no injection on Stop)
    */
   async function handleStop(payload) {
-    // Phase 10: Ordered shutdown of Tertiary then Secondary
-    if (sessionManager) {
-      try {
-        await sessionManager.stop();
-      } catch (_e) {
-        // Session Manager stop failure is non-fatal for the hook
-      }
+    // Phase 11: Stop heartbeat monitor
+    if (heartbeatMonitor) {
+      heartbeatMonitor.stop();
     }
 
+    // Phase 11: Transition to REM mode instead of direct stop per D-13, D-15
+    // Stop hook must return quickly (Pitfall 6). REM runs asynchronously on Secondary.
+    if (modeManager && sessionManager) {
+      try {
+        // Step 1: Request REM mode (stops Tertiary, keeps Secondary)
+        await modeManager.requestRem('session_end');
+
+        // Step 2: Transition Session Manager to REM_PROCESSING state
+        // This stops Tertiary but keeps Secondary alive for REM
+        await sessionManager.transitionToRem();
+
+        // Step 3: Fire-and-forget Tier 3 REM on Secondary
+        // Secondary will run REM, then call sessionManager.completeRem() and terminate itself
+        if (remConsolidator) {
+          // Build session context for REM
+          const sessionContext = {
+            summary: contextManager.getSessionSnapshot ? contextManager.getSessionSnapshot() : {},
+            fragments: [],  // Populated from Journal working/ listing
+            recallEvents: [],
+            metrics: {},
+            domainData: { domainPairs: [], entityList: [], associationStats: [] },
+          };
+          remConsolidator.handleTier3(sessionContext).then(function (_result) {
+            // After REM completes, transition to Dormant
+            if (modeManager) modeManager.requestDormant();
+            if (sessionManager) sessionManager.completeRem();
+          }).catch(function (_e) {
+            // REM failure -- still complete the session
+            if (sessionManager) sessionManager.completeRem().catch(function () {});
+          });
+        }
+      } catch (_e) {
+        // Fallback: if REM transition fails, do direct stop
+        try { await sessionManager.stop(); } catch (__e) { }
+      }
+    } else if (sessionManager) {
+      // No REM components -- fall back to Phase 10 direct stop behavior
+      try { await sessionManager.stop(); } catch (_e) { }
+    }
+
+    // These still execute regardless of REM:
     await contextManager.persistWarmStart();
 
     const snapshot = contextManager.getSessionSnapshot();

@@ -34,6 +34,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 - [x] **Phase 10: Three-Session Architecture** - Highest-risk phase: Wire-based session orchestration with go/no-go gate on Claude Max resource limits (completed 2026-03-24)
 - [x] **Phase 11: REM Consolidation** - Memory consolidation, Self Model evolution, and the working-to-long-term memory gate (completed 2026-03-25)
 - [ ] **Phase 12: Integration Surface & Backfill** - CLI exposure, submodule management, taxonomy self-organization, and historical data import
+- [ ] **Phase 14: Deployment Readiness & Architecture Compliance** - Fix audit tech debt, close broken E2E flows, verify install-to-use user flow, architecture compliance audit
 
 ## Phase Details
 
@@ -201,6 +202,8 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 9.1 -> 10 -> 11 -> 12 -> 12.1
 | 11. REM Consolidation | M2 | 5/6 | Complete    | 2026-03-25 |
 | 12. Integration Surface | M2 | 6/6 | Complete    | 2026-03-25 |
 | 12.1 Platform Launch Readiness | M2 | 5/5 | Complete    | 2026-03-25 |
+| 13. Spec Compliance Audit | M2 | 7/7 | Complete | 2026-03-25 |
+| 14. Deployment Readiness | M2 | 0/0 | Planned | - |
 
 ### Phase 12.1: Platform Launch Readiness (INSERTED)
 
@@ -232,3 +235,21 @@ Plans:
 
 Plans:
 - [x] TBD (run /gsd:plan-phase 13 to break down) (completed 2026-03-25)
+
+### Phase 14: Deployment Readiness & Architecture Compliance
+
+**Goal:** Fix all HIGH and WARNING tech debt from M2 audit, close 2 broken E2E flows, verify end-to-end install-to-use user flow works, and audit that all code routes through Dynamo's framework without bypassing patterns or hardcoding values
+**Depends on:** Phase 13
+**Requirements**: INT-01, INT-02, PLT-03
+**Gap Closure**: Closes INT-01/PLT-03 partial wiring, INT-02 partial wiring, 2 broken E2E flows, 4 tech debt items from v1.0-M2-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. Exciter.start() wires hooks to Switchboard AFTER module registration — 8 Reverie handlers reachable via Switchboard dispatch in production boot order
+  2. `.claude/settings.json` hook entries exist and route Claude Code lifecycle events to Dynamo's entry point
+  3. Backfill CLI flags (--dry-run/--limit/--batch-size) read from Pulley flags param, not process.argv — works in both direct CLI and programmatic context
+  4. status.cjs domain_count and association_index_size return real values from Ledger queries, not hardcoded 0
+  5. Full E2E user flow verified: install Dynamo -> boot platform -> Reverie loads -> personality injects -> formation fires -> recall returns -> REM runs -> hooks dispatch via Claude Code events
+  6. Architecture compliance audit passes: no component bypasses Armature/Circuit contracts, no hardcoded paths/values that should route through config/Magnet/providers
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 14 to break down)

@@ -203,7 +203,7 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 9.1 -> 10 -> 11 -> 12 -> 12.1
 | 12. Integration Surface | M2 | 6/6 | Complete    | 2026-03-25 |
 | 12.1 Platform Launch Readiness | M2 | 5/5 | Complete    | 2026-03-25 |
 | 13. Spec Compliance Audit | M2 | 7/7 | Complete | 2026-03-25 |
-| 14. Deployment Readiness | M2 | 0/0 | Planned | - |
+| 14. Deployment Readiness | M2 | 0/3 | Planned | - |
 
 ### Phase 12.1: Platform Launch Readiness (INSERTED)
 
@@ -249,7 +249,9 @@ Plans:
   4. status.cjs domain_count and association_index_size return real values from Ledger queries, not hardcoded 0
   5. Full E2E user flow verified: install Dynamo -> boot platform -> Reverie loads -> personality injects -> formation fires -> recall returns -> REM runs -> hooks dispatch via Claude Code events
   6. Architecture compliance audit passes: no component bypasses Armature/Circuit contracts, no hardcoded paths/values that should route through config/Magnet/providers
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 14 to break down)
+- [ ] 14-01-PLAN.md — Idempotent wireToSwitchboard + bootstrap re-wire + settings.json generation + hook entry point (INT-01, PLT-03)
+- [ ] 14-02-PLAN.md — CLI flag migration: backfill + reset from process.argv to Pulley flags + status metrics verification (INT-02)
+- [ ] 14-03-PLAN.md — Architecture compliance audit + human deployment readiness verification (INT-01, INT-02, PLT-03)

@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
 status: Ready to execute
-last_updated: "2026-03-27T17:09:18.427Z"
+last_updated: "2026-03-27T17:09:30.091Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 10
@@ -204,6 +204,9 @@ Recent decisions affecting current work:
 - [Phase 13]: Compliance matrix audit verdict: PASS -- 0 Missing, 0 unfixed Violations across 97 total rows
 - [Phase 14]: Defined --dry-run, --confirm, --limit, --batch-size as explicit parseArgs options rather than relying on strict:false unknown flag parsing
 - [Phase 14]: Status Wire.query() code is correctly wired -- the 0 default is for empty data, not a stub
+- [Phase 14]: _wiredTypes Set for idempotent wireToSwitchboard prevents duplicate Switchboard handler registration
+- [Phase 14]: Bootstrap step 7.6 re-wires Exciter after module registration; step 7.7 generates settings.json entries for all 8 hook types
+- [Phase 14]: Lathe readJson/writeJson implemented as sync fs ops for settings-manager compatibility
 
 ### Roadmap Evolution
 

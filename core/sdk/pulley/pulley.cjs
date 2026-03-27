@@ -87,6 +87,10 @@ function createPulley(options = {}) {
           json: { type: 'boolean', short: 'j', default: false },
           raw: { type: 'boolean', default: false },
           help: { type: 'boolean', short: 'h', default: false },
+          'dry-run': { type: 'boolean', default: false },
+          confirm: { type: 'boolean', default: false },
+          limit: { type: 'string' },
+          'batch-size': { type: 'string' },
         },
         allowPositionals: true,
         strict: false,
@@ -138,10 +142,7 @@ function createPulley(options = {}) {
     const remainingPositionals = positionals.slice(matchLength);
 
     // Call the command handler
-    const handlerResult = await commandMeta.handler(remainingPositionals, {
-      json: values.json,
-      raw: values.raw,
-    });
+    const handlerResult = await commandMeta.handler(remainingPositionals, values);
 
     // If handler returns an error, pass it through
     if (handlerResult && handlerResult.ok === false) {

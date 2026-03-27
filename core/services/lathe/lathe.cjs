@@ -183,6 +183,40 @@ function createLathe() {
     }
   }
 
+  /**
+   * Read and parse a JSON file synchronously.
+   * Returns an Err if the file does not exist or contains invalid JSON.
+   * @param {string} filePath - Absolute path to the JSON file
+   * @returns {import('../../../lib/result.cjs').Result<Object>}
+   */
+  function readJson(filePath) {
+    try {
+      const content = fs.readFileSync(filePath, 'utf8');
+      return ok(JSON.parse(content));
+    } catch (e) {
+      if (e.code === 'ENOENT') {
+        return err('FILE_NOT_FOUND', `File not found: ${filePath}`, { path: filePath });
+      }
+      return err('READ_FAILED', `Failed to read JSON: ${e.message}`, { path: filePath });
+    }
+  }
+
+  /**
+   * Write an object to a file as formatted JSON, creating parent directories as needed.
+   * @param {string} filePath - Absolute path to the JSON file
+   * @param {Object} data - Object to serialize
+   * @returns {import('../../../lib/result.cjs').Result<undefined>}
+   */
+  function writeJson(filePath, data) {
+    try {
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+      return ok(undefined);
+    } catch (e) {
+      return err('WRITE_FAILED', `Failed to write JSON: ${e.message}`, { path: filePath });
+    }
+  }
+
   const impl = {
     init,
     start,
@@ -194,7 +228,9 @@ function createLathe() {
     listDir,
     exists,
     mkdir,
-    writeFileAtomic
+    writeFileAtomic,
+    readJson,
+    writeJson,
   };
 
   return createContract('lathe', LATHE_SHAPE, impl);

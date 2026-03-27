@@ -34,7 +34,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 - [x] **Phase 10: Three-Session Architecture** - Highest-risk phase: Wire-based session orchestration with go/no-go gate on Claude Max resource limits (completed 2026-03-24)
 - [x] **Phase 11: REM Consolidation** - Memory consolidation, Self Model evolution, and the working-to-long-term memory gate (completed 2026-03-25)
 - [ ] **Phase 12: Integration Surface & Backfill** - CLI exposure, submodule management, taxonomy self-organization, and historical data import
-- [ ] **Phase 14: Deployment Readiness & Architecture Compliance** - Fix audit tech debt, close broken E2E flows, verify install-to-use user flow, architecture compliance audit
+- [x] **Phase 14: Deployment Readiness & Architecture Compliance** - Fix audit tech debt, close broken E2E flows, verify install-to-use user flow, architecture compliance audit (completed 2026-03-27)
 
 ## Phase Details
 
@@ -203,7 +203,7 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 9.1 -> 10 -> 11 -> 12 -> 12.1
 | 12. Integration Surface | M2 | 6/6 | Complete    | 2026-03-25 |
 | 12.1 Platform Launch Readiness | M2 | 5/5 | Complete    | 2026-03-25 |
 | 13. Spec Compliance Audit | M2 | 7/7 | Complete | 2026-03-25 |
-| 14. Deployment Readiness | M2 | 2/3 | In Progress|  |
+| 14. Deployment Readiness | M2 | 3/3 | Complete    | 2026-03-27 |
 
 ### Phase 12.1: Platform Launch Readiness (INSERTED)
 
@@ -249,9 +249,9 @@ Plans:
   4. status.cjs domain_count and association_index_size return real values from Ledger queries, not hardcoded 0
   5. Full E2E user flow verified: install Dynamo -> boot platform -> Reverie loads -> personality injects -> formation fires -> recall returns -> REM runs -> hooks dispatch via Claude Code events
   6. Architecture compliance audit passes: no component bypasses Armature/Circuit contracts, no hardcoded paths/values that should route through config/Magnet/providers
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 14-01-PLAN.md — Idempotent wireToSwitchboard + bootstrap re-wire + settings.json generation + hook entry point (INT-01, PLT-03)
 - [x] 14-02-PLAN.md — CLI flag migration: backfill + reset from process.argv to Pulley flags + status metrics verification (INT-02)
-- [ ] 14-03-PLAN.md — Architecture compliance audit + human deployment readiness verification (INT-01, INT-02, PLT-03)
+- [x] 14-03-PLAN.md — Architecture compliance audit + human deployment readiness verification (INT-01, INT-02, PLT-03)

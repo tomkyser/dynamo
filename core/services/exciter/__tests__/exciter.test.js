@@ -272,6 +272,64 @@ describe('exciter', () => {
     });
   });
 
+  describe('post-registration re-wire (idempotent wireToSwitchboard)', () => {
+    let exciter;
+
+    beforeEach(() => {
+      const result = createExciter();
+      exciter = result.value;
+      exciter.init({ switchboard, lathe, config: { projectRoot: tmpDir } });
+    });
+
+    it('wireToSwitchboard is idempotent -- second call wires 0 additional types', () => {
+      exciter.registerHooks('testmod', { SessionStart: () => {} });
+
+      const first = exciter.start();
+      expect(first.ok).toBe(true);
+      expect(first.value).toBe(1); // 1 hook type wired
+
+      const second = exciter.start();
+      expect(second.ok).toBe(true);
+      expect(second.value).toBe(0); // 0 additional -- already wired
+    });
+
+    it('start() after registerHooks() wires newly registered hook types', () => {
+      // First start -- nothing registered yet
+      const first = exciter.start();
+      expect(first.ok).toBe(true);
+      expect(first.value).toBe(0);
+
+      // Register hooks after start
+      exciter.registerHooks('reverie', { SessionStart: () => {} });
+
+      // Second start -- should wire newly registered type
+      const second = exciter.start();
+      expect(second.ok).toBe(true);
+      expect(second.value).toBe(1);
+
+      // Verify Switchboard received the listener
+      const handlers = switchboard.getHandlers();
+      expect(handlers.has('hook:session-start')).toBe(true);
+      expect(handlers.get('hook:session-start')).toHaveLength(1);
+    });
+
+    it('start() after registerHooks() does not duplicate previously wired types', () => {
+      // Register hook A, start
+      exciter.registerHooks('mod-a', { SessionStart: () => {} });
+      exciter.start();
+
+      // Register hook B (different type), start again
+      exciter.registerHooks('mod-b', { Stop: () => {} });
+      exciter.start();
+
+      // Switchboard should have exactly 1 listener for SessionStart (not 2)
+      const handlers = switchboard.getHandlers();
+      expect(handlers.get('hook:session-start')).toHaveLength(1);
+      // And exactly 1 for Stop
+      expect(handlers.get('hook:stop')).toHaveLength(1);
+    });
+  });
+
   describe('settings delegation', () => {
     let exciter;
 

@@ -226,6 +226,34 @@ async function bootstrap(options = {}) {
     }
   }
 
+  // 7.6. Re-wire Exciter hooks to Switchboard (MUST be after module registration)
+  // Exciter.start() during lifecycle boot wired 0 listeners because no modules
+  // had registered yet. Now that modules have registered hooks via
+  // exciter.registerHooks(), re-wire to connect them to Switchboard.
+  // wireToSwitchboard is idempotent -- already-wired types are skipped.
+  const exciterFacade = lifecycle.getFacade('services.exciter');
+  if (exciterFacade && typeof exciterFacade.start === 'function') {
+    exciterFacade.start();
+  }
+
+  // 7.7. Generate .claude/settings.json hook entries for Claude Code dispatch
+  // Each hook type gets an entry pointing to Dynamo's hook entry point.
+  // Exciter.updateSettings handles deduplication -- safe to call on every boot.
+  if (exciterFacade && typeof exciterFacade.updateSettings === 'function') {
+    const hookTypes = [
+      'SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse',
+      'Stop', 'PreCompact', 'SubagentStart', 'SubagentStop',
+    ];
+    for (const hookType of hookTypes) {
+      exciterFacade.updateSettings('project', hookType, {
+        hooks: [{
+          type: 'command',
+          command: 'bun run bin/dynamo.cjs hook ' + hookType,
+        }],
+      });
+    }
+  }
+
   // 8. Return success
   return ok({ container, lifecycle, config, paths, circuit, pulley, modules: moduleResults });
 }

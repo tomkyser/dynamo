@@ -90,6 +90,14 @@ function createHookRegistry() {
   const _listeners = new Map();
 
   /**
+   * Tracks which hook types have already been wired to Switchboard.
+   * Ensures wireToSwitchboard is idempotent -- calling it multiple times
+   * only wires each hook type once (first call wins).
+   * @type {Set<string>}
+   */
+  const _wiredTypes = new Set();
+
+  /**
    * Registers a service handler for a specific hook type.
    *
    * @param {string} hookType - The hook type name (must be in HOOK_SCHEMAS)
@@ -132,7 +140,7 @@ function createHookRegistry() {
     let wiredCount = 0;
 
     for (const [hookType, listeners] of _listeners) {
-      if (listeners.length === 0) {
+      if (listeners.length === 0 || _wiredTypes.has(hookType)) {
         continue;
       }
 
@@ -147,6 +155,7 @@ function createHookRegistry() {
         }
       });
 
+      _wiredTypes.add(hookType);
       wiredCount++;
     }
 

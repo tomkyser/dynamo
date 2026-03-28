@@ -59,11 +59,23 @@ function spawnTerminalWindow({ command, env = {}, title = 'dynamo-session', _dep
     // Write temp script with executable permissions
     _writeFileSync(scriptPath, content, { mode: 0o755 });
 
-    // Build AppleScript to tell Terminal.app to run the script in a new window
-    const appleScript = 'tell application "Terminal" to do script "bash ' + scriptPath + '"';
+    // Detect terminal emulator and spawn accordingly.
+    // Terminal.app-specific osascript only works when Terminal.app is the
+    // active terminal. For Ghostty, iTerm2, and other emulators, use `open`
+    // with a .command file — macOS routes these to the default terminal handler.
+    const termProgram = process.env.TERM_PROGRAM || '';
 
-    // Execute osascript
-    _execSync('osascript -e ' + JSON.stringify(appleScript));
+    if (termProgram === 'Apple_Terminal' || termProgram === '') {
+      // Terminal.app path (original): use osascript for direct window control
+      const appleScript = 'tell application "Terminal" to do script "bash ' + scriptPath + '"';
+      _execSync('osascript -e ' + JSON.stringify(appleScript));
+    } else {
+      // Generic path: write a .command file and open it.
+      // macOS opens .command files in the default terminal emulator.
+      const commandFilePath = scriptPath.replace(/\.sh$/, '.command');
+      _writeFileSync(commandFilePath, '#!/bin/bash\nexec bash ' + JSON.stringify(scriptPath) + '\n', { mode: 0o755 });
+      _execSync('open ' + JSON.stringify(commandFilePath));
+    }
 
     return ok({ scriptPath, title });
   } catch (e) {

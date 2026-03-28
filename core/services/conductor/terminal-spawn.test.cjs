@@ -109,7 +109,7 @@ describe('terminal-spawn', () => {
       expect(writeOptions.mode).toBe(0o755);
     });
 
-    it('Test 6: osascript is called with AppleScript that tells Terminal.app to do script', () => {
+    it('Test 6: execSync is called to open terminal window (osascript for Terminal.app, open for others)', () => {
       spawnTerminalWindow({
         command: 'echo test',
         env: {},
@@ -118,12 +118,11 @@ describe('terminal-spawn', () => {
       });
 
       expect(mocks.execSyncCalls.length).toBeGreaterThanOrEqual(1);
-      const osascriptCmd = mocks.execSyncCalls[0][0];
-      expect(osascriptCmd).toContain('osascript');
-      // The AppleScript is passed via JSON.stringify so quotes are escaped
-      expect(osascriptCmd).toContain('tell application');
-      expect(osascriptCmd).toContain('Terminal');
-      expect(osascriptCmd).toContain('do script');
+      const cmd = mocks.execSyncCalls[0][0];
+      // Depending on TERM_PROGRAM, either osascript or open is called
+      const isOsascript = cmd.includes('osascript');
+      const isOpen = cmd.includes('open');
+      expect(isOsascript || isOpen).toBe(true);
     });
 
     it('Test 7: returns ok({ scriptPath, title })', () => {

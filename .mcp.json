@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "dynamo-wire": {
+      "command": "bun",
+      "args": ["./core/services/wire/channel-server.cjs"]
+    }
+  }
+}

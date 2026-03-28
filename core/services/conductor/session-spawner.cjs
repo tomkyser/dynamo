@@ -55,7 +55,11 @@ function createSessionSpawner(options = {}) {
 
       if (_useTerminal) {
         // Terminal window path: visible macOS Terminal.app window
-        const command = 'claude --dangerously-load-development-channels server:' + (channelServerPath || '');
+        // channelServerPath is treated as the MCP server name registered in .mcp.json.
+        // Per Claude Code channels API: --dangerously-load-development-channels takes
+        // server:<name> where <name> matches an mcpServers key, NOT a file path.
+        const channelName = channelServerPath || 'dynamo-wire';
+        const command = 'claude --dangerously-load-development-channels server:' + channelName;
         const title = 'dynamo-' + identity + '-' + sessionId.slice(0, 8);
 
         const termResult = spawnTerminalWindow({ command, env: mergedEnv, title });
@@ -81,7 +85,8 @@ function createSessionSpawner(options = {}) {
       }
 
       // Piped stdio path: invisible background process (tests, non-macOS)
-      const args = ['claude', '--dangerously-load-development-channels', 'server:' + (channelServerPath || '')];
+      const pipedChannelName = channelServerPath || 'dynamo-wire';
+      const args = ['claude', '--dangerously-load-development-channels', 'server:' + pipedChannelName];
 
       const proc = Bun.spawn(args, {
         env: mergedEnv,

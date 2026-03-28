@@ -102,9 +102,11 @@ function createConductor() {
       }
 
       // Initialize session spawner for Claude Code session management
+      // channelServerPath is now the MCP config name (e.g., 'dynamo-wire'), not a file path.
+      // Per Claude Code channels API: --dangerously-load-development-channels server:<name>
+      // where <name> matches an mcpServers key in .mcp.json.
       _sessionSpawner = createSessionSpawner({
-        channelServerPath: (options && options.channelServerPath)
-          || path.resolve(__dirname, '../wire/channel-server.cjs'),
+        channelServerPath: (options && options.channelServerPath) || 'dynamo-wire',
         switchboard: _switchboard,
         useTerminal: (options && options.useTerminal !== undefined)
           ? options.useTerminal

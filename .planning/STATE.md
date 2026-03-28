@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
-status: Ready to execute
-last_updated: "2026-03-28T16:21:45.710Z"
+status: Phase complete — ready for verification
+last_updated: "2026-03-28T16:22:53.712Z"
 last_activity: 2026-03-28
 progress:
   total_phases: 11
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 51
-  completed_plans: 50
+  completed_plans: 51
 ---
 
 # Project State
@@ -102,6 +102,7 @@ Plan: 4 of 4
 | Phase 15 P02 | 3min | 2 tasks | 3 files |
 | Phase 15 P01 | 3min | 2 tasks | 5 files |
 | Phase 15 P04 | 3min | 2 tasks | 4 files |
+| Phase 15 P03 | 3min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -215,6 +216,8 @@ Recent decisions affecting current work:
 - [Phase 15]: Added sessionManager, remConsolidator, contextManager to cliContext in reverie.cjs for stop command REM shutdown
 - [Phase 15]: Error recovery format: What happened -- context. Try: bun bin/dynamo.cjs <recovery command>
 - [Phase 15]: README serves as first-user onboarding document with complete CLI command list, correct fragment types, and first-run experience
+- [Phase 15]: Removed Bash from formation agent tools -- agent only reads stimulus and writes JSON, Read + Write sufficient (least privilege)
+- [Phase 15]: Skill content cross-reference test pattern: extract command refs via regex, validate against known command arrays from register-commands.cjs and platform-commands.cjs
 
 ### Roadmap Evolution
 

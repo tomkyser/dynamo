@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
-status: Milestone complete
-last_updated: "2026-03-28T15:38:19.067Z"
-last_activity: 2026-03-27
+status: Ready to execute
+last_updated: "2026-03-28T16:16:07.388Z"
+last_activity: 2026-03-28
 progress:
   total_phases: 11
   completed_phases: 10
-  total_plans: 47
-  completed_plans: 47
+  total_plans: 51
+  completed_plans: 49
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** Everything routes through Dynamo -- the holistic wrapper via its APIs and interfaces. No component bypasses the patterns and paths Dynamo defines.
-**Current focus:** Phase 14 — deployment-readiness-architecture-compliance
+**Current focus:** Phase 15 — user-journey-gap-closure
 
 ## Current Position
 
-Phase: 14
-Plan: Not started
+Phase: 15 (user-journey-gap-closure) — EXECUTING
+Plan: 2 of 4
 
 ## Performance Metrics
 
@@ -99,6 +99,7 @@ Plan: Not started
 | Phase 13 P07 | 8min | 2 tasks | 4 files |
 | Phase 14 P02 | 3min | 2 tasks | 5 files |
 | Phase 14 P01 | 4min | 2 tasks | 5 files |
+| Phase 15 P02 | 3min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -207,6 +208,7 @@ Recent decisions affecting current work:
 - [Phase 14]: _wiredTypes Set for idempotent wireToSwitchboard prevents duplicate Switchboard handler registration
 - [Phase 14]: Bootstrap step 7.6 re-wires Exciter after module registration; step 7.7 generates settings.json entries for all 8 hook types
 - [Phase 14]: Lathe readJson/writeJson implemented as sync fs ops for settings-manager compatibility
+- [Phase 15]: Welcome flag at resolvedDataDir/.welcome-shown survives reset all; cold-start branch only; null-guard backward compat
 
 ### Roadmap Evolution
 
@@ -238,5 +240,5 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-03-27
-Resume file: .planning/phases/15-user-journey-gap-closure/15-CONTEXT.md
+Last activity: 2026-03-28
+Resume file: None

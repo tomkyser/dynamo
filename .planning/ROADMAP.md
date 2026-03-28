@@ -204,7 +204,7 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 9.1 -> 10 -> 11 -> 12 -> 12.1
 | 12.1 Platform Launch Readiness | M2 | 5/5 | Complete    | 2026-03-25 |
 | 13. Spec Compliance Audit | M2 | 7/7 | Complete | 2026-03-25 |
 | 14. Deployment Readiness | M2 | 3/3 | Complete    | 2026-03-27 |
-| 15. User Journey Gap Closure | M2 | 0/4 | Planned | - |
+| 15. User Journey Gap Closure | M2 | 2/4 | In Progress|  |
 
 ### Phase 12.1: Platform Launch Readiness (INSERTED)
 
@@ -269,10 +269,10 @@ Plans:
   4. Every user-visible error message includes an actionable recovery suggestion
   5. Formation agent definition matches what handleSubagentStop and fragment-assembler.cjs actually parse
   6. README accurately documents prerequisites, install steps, first-run experience, skills, and all CLI commands with correct fragment types
-**Plans:** 4 plans
+**Plans:** 2/4 plans executed
 
 Plans:
-- [ ] 15-01-PLAN.md — Start/stop CLI command handlers + registration + validation tests (INT-02)
-- [ ] 15-02-PLAN.md — Welcome message injection in Context Manager + hook wiring (INT-01)
+- [x] 15-01-PLAN.md — Start/stop CLI command handlers + registration + validation tests (INT-02)
+- [x] 15-02-PLAN.md — Welcome message injection in Context Manager + hook wiring (INT-01)
 - [ ] 15-03-PLAN.md — Skill content rewrites + formation agent audit (INT-01, INT-02)
 - [ ] 15-04-PLAN.md — Error message audit + README rewrite (INT-02)

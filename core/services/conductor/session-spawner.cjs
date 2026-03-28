@@ -50,6 +50,9 @@ function createSessionSpawner(options = {}) {
         WIRE_RELAY_URL: env.relayUrl || '',
         SESSION_ID: sessionId,
         SESSION_IDENTITY: identity,
+        // Spawned sessions MUST have hooks active for Wire communication.
+        // Override any dev bypass inherited from the parent process.
+        DYNAMO_DEV_BYPASS: '0',
         ...env,
       };
 

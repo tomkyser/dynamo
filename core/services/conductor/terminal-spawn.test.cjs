@@ -93,7 +93,9 @@ describe('terminal-spawn', () => {
       const lines = scriptContent.split('\n').filter(l => l.trim() !== '');
       const lastLine = lines[lines.length - 1];
       expect(lastLine).toStartWith('exec ');
-      expect(lastLine).toContain('claude --dangerously-load-development-channels');
+      expect(lastLine).toContain('claude');
+      expect(lastLine).toContain('dangerously-load-development-channels');
+      expect(lastLine).toContain('server:/path/to/server.cjs');
     });
 
     it('Test 5: temp script has executable permissions (mode 0o755)', () => {

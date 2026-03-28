@@ -52,7 +52,11 @@ function spawnTerminalWindow({ command, env = {}, title = 'dynamo-session', _dep
     }
 
     // Add exec command as last line (process replacement)
-    lines.push('exec ' + command);
+    // Quote the command to handle paths with spaces (e.g. iCloud "Mobile Documents")
+    lines.push('exec ' + command.split(' ').map(function (arg, i) {
+      // First arg (binary name) doesn't need quoting; quote the rest
+      return i === 0 ? arg : JSON.stringify(arg);
+    }).join(' '));
 
     const content = lines.join('\n');
 
@@ -60,21 +64,21 @@ function spawnTerminalWindow({ command, env = {}, title = 'dynamo-session', _dep
     _writeFileSync(scriptPath, content, { mode: 0o755 });
 
     // Detect terminal emulator and spawn accordingly.
-    // Terminal.app-specific osascript only works when Terminal.app is the
-    // active terminal. For Ghostty, iTerm2, and other emulators, use `open`
-    // with a .command file — macOS routes these to the default terminal handler.
+    // Use __CFBundleIdentifier (macOS bundle ID) to open in the correct app.
+    // The `open -b` flag takes a bundle ID and is the most reliable cross-emulator approach.
+    const bundleId = process.env.__CFBundleIdentifier || '';
     const termProgram = process.env.TERM_PROGRAM || '';
 
     if (termProgram === 'Apple_Terminal' || termProgram === '') {
-      // Terminal.app path (original): use osascript for direct window control
+      // Terminal.app path: use osascript for direct window control
       const appleScript = 'tell application "Terminal" to do script "bash ' + scriptPath + '"';
       _execSync('osascript -e ' + JSON.stringify(appleScript));
+    } else if (bundleId) {
+      // Known terminal with bundle ID: open script in that app directly
+      _execSync('open -b ' + JSON.stringify(bundleId) + ' ' + JSON.stringify(scriptPath));
     } else {
-      // Generic path: write a .command file and open it.
-      // macOS opens .command files in the default terminal emulator.
-      const commandFilePath = scriptPath.replace(/\.sh$/, '.command');
-      _writeFileSync(commandFilePath, '#!/bin/bash\nexec bash ' + JSON.stringify(scriptPath) + '\n', { mode: 0o755 });
-      _execSync('open ' + JSON.stringify(commandFilePath));
+      // Fallback: open with default handler
+      _execSync('open ' + JSON.stringify(scriptPath));
     }
 
     return ok({ scriptPath, title });

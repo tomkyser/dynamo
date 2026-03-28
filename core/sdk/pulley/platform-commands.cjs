@@ -323,7 +323,87 @@ function registerPlatformCommands(pulley, context) {
     description: 'Show configuration',
   });
 
-  return ok({ registered: 6 });
+  // ---- reverie kill ----
+
+  /**
+   * Force-kills all Reverie session processes (relay, channel servers, spawned Claude sessions).
+   * Brute-force cleanup that works regardless of Reverie state or bootstrap health.
+   *
+   * Searches for processes by name pattern, kills them, and clears Magnet PIDs if available.
+   *
+   * @param {string[]} args - Positional arguments (unused)
+   * @param {Object} flags - Command flags (unused)
+   * @returns {import('../../../lib/result.cjs').Result<{human: string, json: Object, raw: string}>}
+   */
+  function handleReverieKill(args, flags) {
+    const { execSync } = require('node:child_process');
+    const killed = [];
+
+    // Patterns that identify Reverie session processes
+    const patterns = [
+      'relay-server.cjs',
+      'channel-server.cjs',
+      'dangerously-load-development-channels.*dynamo-wire',
+    ];
+
+    for (const pattern of patterns) {
+      try {
+        const output = execSync(
+          'ps aux | grep -E ' + JSON.stringify(pattern) + ' | grep -v grep',
+          { encoding: 'utf8', timeout: 5000 }
+        ).trim();
+
+        if (!output) continue;
+
+        const lines = output.split('\n');
+        for (const line of lines) {
+          const parts = line.trim().split(/\s+/);
+          const pid = parseInt(parts[1], 10);
+          if (pid && pid !== process.pid) {
+            try {
+              process.kill(pid, 'SIGTERM');
+              killed.push({ pid, pattern, command: parts.slice(10).join(' ').slice(0, 80) });
+            } catch (_e) {
+              // Already dead or permission denied
+            }
+          }
+        }
+      } catch (_e) {
+        // grep returns exit 1 when no matches -- expected
+      }
+    }
+
+    // Clear Magnet PIDs if available
+    const magnetFacade = context.lifecycle.getFacade('services.magnet');
+    if (magnetFacade && typeof magnetFacade.set === 'function') {
+      try {
+        magnetFacade.set('global', 'relay_pid', null);
+        magnetFacade.set('global', 'relay_port', null);
+        magnetFacade.set('global', 'secondary_pid', null);
+        magnetFacade.set('global', 'tertiary_pid', null);
+        magnetFacade.set('global', 'triplet_id', null);
+      } catch (_e) { /* best-effort */ }
+    }
+
+    const result = { killed: killed.length, processes: killed };
+    const humanLines = killed.length === 0
+      ? 'No Reverie processes found'
+      : 'Killed ' + killed.length + ' process(es):\n' + killed.map(function (p) {
+          return '  PID ' + p.pid + ' — ' + p.command;
+        }).join('\n');
+
+    return ok({
+      human: humanLines,
+      json: result,
+      raw: JSON.stringify(result),
+    });
+  }
+
+  pulley.registerCommand('reverie kill', handleReverieKill, {
+    description: 'Force-kill all Reverie session processes',
+  });
+
+  return ok({ registered: 7 });
 }
 
 module.exports = { registerPlatformCommands };

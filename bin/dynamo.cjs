@@ -113,7 +113,67 @@ async function handleHook() {
  * Calls process.exit() after completion because persistent handles
  * (DuckDB connections, EventEmitter listeners) keep the event loop alive.
  */
+/**
+ * Force-kill all Reverie session processes without bootstrap.
+ *
+ * Pre-bootstrap handler for `dynamo reverie kill` — works even when
+ * DuckDB is locked, bootstrap is broken, or Reverie fails to load.
+ * Scans process table, kills matching processes, and exits.
+ */
+function handleReverieKill() {
+  const { execSync } = require('node:child_process');
+  const killed = [];
+
+  const patterns = [
+    'relay-server\\.cjs',
+    'channel-server\\.cjs',
+    'dangerously-load-development-channels.*dynamo-wire',
+  ];
+
+  for (const pattern of patterns) {
+    try {
+      const output = execSync(
+        'ps aux | grep -E ' + JSON.stringify(pattern) + ' | grep -v grep',
+        { encoding: 'utf8', timeout: 5000 }
+      ).trim();
+
+      if (!output) continue;
+      for (const line of output.split('\n')) {
+        const parts = line.trim().split(/\s+/);
+        const pid = parseInt(parts[1], 10);
+        if (pid && pid !== process.pid) {
+          try {
+            process.kill(pid, 'SIGTERM');
+            killed.push({ pid, desc: parts.slice(10).join(' ').slice(0, 80) });
+          } catch (_e) { /* already dead */ }
+        }
+      }
+    } catch (_e) { /* grep returns 1 on no match */ }
+  }
+
+  // Also clear the DuckDB lock file if it exists
+  const path = require('node:path');
+  const lockPath = path.join(process.cwd(), 'data', 'dynamo.duckdb.wal');
+  try { require('node:fs').unlinkSync(lockPath); } catch (_e) { /* no lock */ }
+
+  if (killed.length === 0) {
+    process.stdout.write('No Reverie processes found\n');
+  } else {
+    process.stdout.write('Killed ' + killed.length + ' process(es):\n');
+    for (const p of killed) {
+      process.stdout.write('  PID ' + p.pid + ' — ' + p.desc + '\n');
+    }
+  }
+  process.exit(0);
+}
+
 async function run() {
+  // Pre-bootstrap handlers (must work without DuckDB, bootstrap, etc.)
+  if (process.argv[2] === 'reverie' && process.argv[3] === 'kill') {
+    handleReverieKill();
+    return;
+  }
+
   // Hook dispatch mode: invoked by Claude Code via settings.json
   if (process.argv[2] === 'hook') {
     await handleHook();

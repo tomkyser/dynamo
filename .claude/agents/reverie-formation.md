@@ -1,7 +1,7 @@
 ---
 name: reverie-formation
 description: Internal Reverie formation agent. Runs automatically in background after each turn to form memory fragments from conversation context.
-tools: Read, Write, Bash
+tools: Read, Write
 model: sonnet
 background: true
 permissionMode: bypassPermissions

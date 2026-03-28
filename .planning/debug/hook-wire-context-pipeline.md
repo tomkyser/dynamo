@@ -1,24 +1,24 @@
 ---
-status: awaiting_human_verify
+status: fixing
 trigger: "hook-wire-context-pipeline: hooks not sending Wire messages, potential hook scope conflicts, possibly stubbed context management pipeline"
 created: 2026-03-28T12:00:00-06:00
-updated: 2026-03-28T12:05:00-06:00
+updated: 2026-03-28T14:00:00-06:00
 ---
 
 ## Current Focus
 
-hypothesis: CONFIRMED AND FIXED — Two compounding bugs prevented hook-to-Wire message flow
-test: Applied fix, ran full test suite (2416/2417 pass, 1 pre-existing failure)
-expecting: Human verification in live Reverie session
-next_action: User runs Reverie session and verifies Wire messages flow from hooks to Secondary
+hypothesis: CONFIRMED — Hook handlers use in-memory sessionManager/wireTopology/modeManager that are freshly bootstrapped per ephemeral process, so they have no state from the long-lived `reverie start` CLI session.
+test: Replace all in-memory session/wire/mode dependencies with Magnet-based state reads and direct HTTP POST to relay
+expecting: Hook handlers will read persisted state from Magnet (relay_port, mode, relay_pid), send Wire messages via direct HTTP POST to relay, and skip session spawning entirely
+next_action: Implement all 4 fixes in hook-handlers.cjs and start.cjs
 
 ## Symptoms
 
 expected: When Claude Code hooks fire (PreToolUse, PostToolUse, UserPromptSubmit, Stop), the hook handler in ephemeral `bun run bin/dynamo.cjs hook <type>` should call wireTopology.send() which POSTs to Wire relay at http://127.0.0.1:9876, delivering messages to registered Secondary/Tertiary sessions.
-actual: Infrastructure works — relay runs, sessions register (2/2), manual curl delivers messages. But AUTOMATED path (hook fires -> hook-handlers.cjs -> wireTopology.send() -> relay) silently fails. No messages arrive at relay.
+actual: Infrastructure works — relay runs, sessions register (2/2), manual curl delivers messages. But AUTOMATED path (hook fires -> hook-handlers.cjs -> wireTopology.send() -> relay) silently fails. No messages arrive at relay because: (1) sessionManager.start() in SessionStart re-spawns terminal windows from ephemeral process, (2) wireTopology.send() goes through Wire service which isn't registered with relay in ephemeral process, (3) start.cjs checks in-memory sessionManager.getState() which is always 'uninitialized'.
 errors: No explicit errors — hook processes complete without crashing, messages just don't arrive. Silent failure.
 reproduction: Start Reverie session (relay + Secondary + Tertiary spawned), use Primary Claude normally — hooks should fire and send snapshots to Secondary via Wire. They don't.
-started: Never worked end-to-end in automated mode. Manual curl delivery proven working.
+started: Fundamental architecture issue — hooks were built for long-lived process model.
 
 ## Eliminated
 
@@ -34,56 +34,45 @@ started: Never worked end-to-end in automated mode. Manual curl delivery proven 
   evidence: Lifecycle hooks (SessionStart, UserPromptSubmit, Stop, PreCompact, SubagentStart, SubagentStop) have matching event names between Commutator HOOK_EVENT_MAP and hook registry HOOK_EVENT_NAMES. PreToolUse/PostToolUse DO mismatch (resolved dynamically to domain:action), but this is secondary — the fix bypasses Switchboard entirely for hook dispatch.
   timestamp: 2026-03-28T12:01:30-06:00
 
+- hypothesis: Commutator dispatch returns wrong value / async handlers never awaited
+  evidence: PREVIOUSLY CONFIRMED AND FIXED in bin/dynamo.cjs — handleHook() now resolves Exciter, calls handlers directly, and awaits them. This was the first-layer fix. The current issue is the SECOND layer: the handlers themselves use in-memory objects (wireTopology, sessionManager, modeManager) that have no state in ephemeral processes.
+  timestamp: 2026-03-28T12:04:00-06:00
+
 ## Evidence
 
 - timestamp: 2026-03-28T12:00:30-06:00
   checked: bin/dynamo.cjs handleHook() function (lines 18-71)
   found: handleHook() calls commutator.ingest() which returns ok(undefined). The response variable gets this Result object, not the hook handler's output. Reverie hook handlers are NEVER directly invoked in this path — only indirectly via Switchboard fire-and-forget emit.
-  implication: ROOT CAUSE 1 — handleHook() used Commutator as the dispatch mechanism, but Commutator only emits Switchboard events. It never returns the hook handler's output (additionalContext, etc.).
+  implication: ROOT CAUSE 1 (FIXED) — handleHook() used Commutator as the dispatch mechanism, but Commutator only emits Switchboard events. It never returns the hook handler's output (additionalContext, etc.).
 
 - timestamp: 2026-03-28T12:00:35-06:00
   checked: Switchboard emit() and hooks.cjs wireToSwitchboard()
   found: Switchboard.emit() calls handler.fn(payload) synchronously without awaiting. Reverie hook handlers are ALL async. Their Promises are discarded. Then process.exit(0) kills any pending operations.
-  implication: ROOT CAUSE 2 — Async handlers (including wireTopology.send()) never complete before the ephemeral process exits.
+  implication: ROOT CAUSE 2 (FIXED) — Async handlers (including wireTopology.send()) never complete before the ephemeral process exits.
 
-- timestamp: 2026-03-28T12:00:40-06:00
-  checked: Commutator resolveEventName() vs HOOK_EVENT_NAMES mapping
-  found: Lifecycle hooks match, but PreToolUse/PostToolUse diverge (Commutator emits 'file:pending' but registry listens on 'hook:pre-tool-use'). Confirmed via runtime comparison.
-  implication: Secondary issue — tool-specific hooks would not have been dispatched even via Switchboard. Fixed by bypassing Switchboard entirely.
+- timestamp: 2026-03-28T14:00:00-06:00
+  checked: hook-handlers.cjs factory options — sessionManager, wireTopology, modeManager
+  found: All three are in-memory objects created fresh by reverie.cjs register() on each bootstrap. In ephemeral hook processes: sessionManager state is always 'uninitialized', wireTopology wraps a Wire service that is not registered with the relay, modeManager mode is always null/dormant.
+  implication: ROOT CAUSE 3 — Wire sends go through wireTopology -> wire.send() -> Wire service (not registered with relay in ephemeral process) = messages never reach the relay HTTP server. Must bypass Wire service entirely and POST directly to relay.
 
-- timestamp: 2026-03-28T12:00:45-06:00
-  checked: Dual hook scope — project .claude/settings.json vs user ~/.claude/settings.json
-  found: Project scope runs `bun run bin/dynamo.cjs hook <Type>` (v1). User scope runs `node "$HOME/.claude/dynamo/cc/hooks/dynamo-hooks.cjs"` (v0 legacy). Both fire in parallel. Not a conflict — separate systems.
-  implication: Not a bug, but a note: the v0 user-scope hooks are a separate system that does not use Wire.
+- timestamp: 2026-03-28T14:00:05-06:00
+  checked: handleSessionStart() lines 145-149 — sessionManager.start() call
+  found: sessionManager.start() in the SessionStart hook spawns terminal windows for Secondary/Tertiary. In an ephemeral hook process, this re-spawns everything that `reverie start` CLI already spawned. Session tracking dies with the process.
+  implication: ROOT CAUSE 4 — sessionManager.start() belongs exclusively in `reverie start` CLI, not in the SessionStart hook. Hook should only do context initialization.
 
-- timestamp: 2026-03-28T12:00:50-06:00
-  checked: handleHook() response chain
-  found: commutator.ingest() returns { ok: true, value: undefined }. This gets JSON-serialized and written to stdout. Claude Code expects { hookSpecificOutput: { additionalContext: "..." } }. Face prompt injection was also broken.
-  implication: Confirms ROOT CAUSE 1 — wrong response sent to Claude Code.
-
-- timestamp: 2026-03-28T12:01:00-06:00
-  checked: wireTopology.send() calls in hook-handlers.cjs (handleUserPromptSubmit, handlePreCompact)
-  found: Wire sends use `.catch()` but are NOT awaited. Pattern: `wireTopology.send({...}).catch(fn)` — creates a detached promise. Even if the handler was called and awaited, the Wire send itself would not complete before process.exit(0).
-  implication: ROOT CAUSE 3 — Wire sends within handlers must be awaited for ephemeral processes.
-
-- timestamp: 2026-03-28T12:03:00-06:00
-  checked: Functional test of fix — bootstrap, resolve Exciter, invoke handler directly
-  found: UserPromptSubmit handler returns { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: ... } } correctly when called via getRegisteredHooks().
-  implication: Fix confirmed — handlers are accessible via Exciter and return correct response format.
-
-- timestamp: 2026-03-28T12:04:00-06:00
-  checked: Full test suite after fix
-  found: 2416 pass, 1 fail (pre-existing, unrelated bootstrap-integration.test.js). Verified pre-existing by running same test without changes — same failure.
-  implication: Fix introduces zero regressions.
+- timestamp: 2026-03-28T14:00:10-06:00
+  checked: start.cjs lines 62-67 — isLiveSession check
+  found: start.cjs checks `sessionManager.getState()` and `modeManager.getMode()` for live session detection. Both are in-memory state from fresh bootstrap. sessionManager state is always 'uninitialized', modeManager mode is always dormant/null. This means start.cjs ALWAYS thinks there's no live session, triggering the clean-start path even when Reverie is already running.
+  implication: ROOT CAUSE 5 — start.cjs must use Magnet (persisted state) to detect live sessions, not in-memory sessionManager/modeManager.
 
 ## Resolution
 
-root_cause: Two compounding bugs in the ephemeral hook process dispatch chain. (1) handleHook() in bin/dynamo.cjs used Commutator.ingest() as the dispatch mechanism, which only emits fire-and-forget Switchboard events and returns ok(undefined). The Reverie hook handlers were never directly invoked, their response (hookSpecificOutput with additionalContext) was never captured, and a Result object was written to stdout instead. (2) Wire sends (wireTopology.send()) inside the hook handlers were fire-and-forget (detached promises with .catch()), so even if the handlers ran, the HTTP POST to the relay would not complete before process.exit(0).
+root_cause: Fundamental architecture violation — hook handlers and CLI commands were built as if they run in a long-lived process, but each `bun bin/dynamo.cjs hook <Type>` invocation is an ephemeral process with fresh in-memory state. Three specific problems: (1) handleSessionStart calls sessionManager.start() which re-spawns sessions, (2) Wire sends go through wireTopology -> Wire service which is not registered with the relay in the ephemeral process, (3) start.cjs checks in-memory state instead of Magnet-persisted state.
 
-fix: Two changes. In bin/dynamo.cjs: replaced the Commutator-only dispatch with direct handler invocation via Exciter.getRegisteredHooks(). handleHook() now resolves the Exciter facade, gets the registered listeners for the hook type, awaits each handler, and captures the last non-empty response for stdout. Commutator.ingest() is still called for observability/Switchboard events. In modules/reverie/hooks/hook-handlers.cjs: changed wireTopology.send() calls in handleUserPromptSubmit and handlePreCompact from fire-and-forget (.catch()) to awaited (await ... with try/catch), ensuring Wire sends complete before the handler returns.
+fix: Four changes. (1) Remove sessionManager.start() from handleSessionStart — session spawning belongs in `reverie start` CLI only. (2) Replace wireTopology.send() in all hook handlers with direct HTTP POST to relay via fetch(), reading relay_port from Magnet. (3) In start.cjs, replace in-memory sessionManager.getState()/modeManager.getMode() with Magnet reads for live session detection. (4) Remove the requestDormant() hack in start.cjs that was compensating for wrong state source.
 
-verification: Full test suite passes (2416/2417, 1 pre-existing). Functional test confirms handler invocation via Exciter returns correct hookSpecificOutput format. Awaiting human verification in live Reverie session.
+verification: [pending]
 
 files_changed:
-- bin/dynamo.cjs
 - modules/reverie/hooks/hook-handlers.cjs
+- modules/reverie/components/cli/start.cjs

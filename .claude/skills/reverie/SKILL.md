@@ -19,8 +19,6 @@ Run `bun bin/dynamo.cjs reverie status` to see:
 
 - Start Active mode: `bun bin/dynamo.cjs reverie start`
 - Graceful shutdown with REM: `bun bin/dynamo.cjs reverie stop`
-- Force-kill all sessions: `bun bin/dynamo.cjs reverie kill`
-  (brute-force — finds and kills relay, channel servers, spawned Claude sessions regardless of state)
 
 ## Inspect
 

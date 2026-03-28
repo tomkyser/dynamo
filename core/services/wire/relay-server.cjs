@@ -301,6 +301,14 @@ if (require.main === module) {
 
   const server = _createServer({ port, pollTimeoutMs });
   console.log(`Wire relay server listening on port ${server.port}`);
+
+  // Graceful shutdown on SIGTERM (sent by stop command via process.kill)
+  process.on('SIGTERM', function () {
+    if (server && typeof server.stop === 'function') {
+      server.stop();
+    }
+    process.exit(0);
+  });
 }
 
 module.exports = { _createServer };

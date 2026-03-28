@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
 status: Ready to execute
-last_updated: "2026-03-28T17:53:51.677Z"
+last_updated: "2026-03-28T17:58:03.359Z"
 last_activity: 2026-03-28
 progress:
   total_phases: 12
@@ -104,6 +104,7 @@ Plan: 2 of 4
 | Phase 15 P04 | 3min | 2 tasks | 4 files |
 | Phase 15 P03 | 3min | 2 tasks | 5 files |
 | Phase 16 P01 | 3min | 2 tasks | 4 files |
+| Phase 16 P02 | 6min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -221,6 +222,9 @@ Recent decisions affecting current work:
 - [Phase 15]: Skill content cross-reference test pattern: extract command refs via regex, validate against known command arrays from register-commands.cjs and platform-commands.cjs
 - [Phase 16]: Ledger provider writes immediately on every save() -- no delayed batching, DuckDB is fast enough
 - [Phase 16]: Provider selection priority: explicit (tests) > Ledger > JSON file > null for backward compatibility
+- [Phase 16]: Options-based DI (_deps) for terminal-spawn.cjs test isolation -- consistent with project pattern
+- [Phase 16]: useTerminal flag defaults to process.platform === 'darwin' for automatic macOS detection
+- [Phase 16]: Terminal-spawned sessions report alive=true in health -- real liveness via relay /health
 
 ### Roadmap Evolution
 

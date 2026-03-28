@@ -346,7 +346,7 @@ describe('Conductor', () => {
         return proc;
       };
 
-      conductor.init({ switchboard: mockSwitchboard });
+      conductor.init({ switchboard: mockSwitchboard, useTerminal: false });
       conductor.start();
     });
 

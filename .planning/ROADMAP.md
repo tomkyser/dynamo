@@ -276,3 +276,13 @@ Plans:
 - [x] 15-02-PLAN.md — Welcome message injection in Context Manager + hook wiring (INT-01)
 - [x] 15-03-PLAN.md — Skill content rewrites + formation agent audit (INT-01, INT-02)
 - [x] 15-04-PLAN.md — Error message audit + README rewrite (INT-02)
+
+### Phase 16: Reverie End-to-End Delivery
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 15
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 16 to break down)

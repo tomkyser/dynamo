@@ -193,7 +193,7 @@ function registerPlatformCommands(pulley, context) {
 
     const relay = context.lifecycle.getFacade('services.relay');
     if (!relay) {
-      return err('NO_RELAY', 'Relay service not available');
+      return err('NO_RELAY', 'Relay service not available -- platform may not be fully initialized. Try: bun bin/dynamo.cjs health to check service status');
     }
 
     const installType = flags.type || 'plugin';
@@ -299,7 +299,7 @@ function registerPlatformCommands(pulley, context) {
       const key = args[0];
       const value = configData[key];
       if (value === undefined) {
-        return err('CONFIG_KEY_NOT_FOUND', `Config key "${key}" not found`);
+        return err('CONFIG_KEY_NOT_FOUND', `Config key "${key}" not found. Try: bun bin/dynamo.cjs config to list all available config keys`);
       }
       return ok({
         human: `${key}: ${JSON.stringify(value, null, 2)}`,

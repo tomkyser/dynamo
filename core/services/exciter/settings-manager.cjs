@@ -96,12 +96,20 @@ function createSettingsManager(options) {
       settings.hooks[hookEvent] = [];
     }
 
-    // Deduplication: check if an entry with the same command already exists
+    // Deduplication: check if an entry with the same core command already exists.
+    // Compares the base command (after any bypass/wrapper prefix) to handle cases
+    // where the settings file has a wrapped command (e.g., dev bypass prefix)
+    // but bootstrap tries to re-add the unwrapped version.
     const newCommand = entry.hooks && entry.hooks[0] && entry.hooks[0].command;
     if (newCommand) {
-      const duplicate = settings.hooks[hookEvent].some(
-        (existing) => existing.hooks && existing.hooks[0] && existing.hooks[0].command === newCommand
-      );
+      const duplicate = settings.hooks[hookEvent].some(function (existing) {
+        const existingCmd = existing.hooks && existing.hooks[0] && existing.hooks[0].command;
+        if (!existingCmd) return false;
+        // Exact match
+        if (existingCmd === newCommand) return true;
+        // One contains the other (handles bypass wrappers)
+        return existingCmd.includes(newCommand) || newCommand.includes(existingCmd);
+      });
       if (duplicate) {
         return ok(undefined);
       }

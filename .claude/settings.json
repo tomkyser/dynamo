@@ -1,0 +1,89 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "test \"$DYNAMO_DEV_BYPASS\" = 1 && echo '{}' && exit 0; bun run bin/dynamo.cjs hook SessionStart"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "test \"$DYNAMO_DEV_BYPASS\" = 1 && echo '{}' && exit 0; bun run bin/dynamo.cjs hook UserPromptSubmit"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "test \"$DYNAMO_DEV_BYPASS\" = 1 && echo '{}' && exit 0; bun run bin/dynamo.cjs hook PreToolUse"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "test \"$DYNAMO_DEV_BYPASS\" = 1 && echo '{}' && exit 0; bun run bin/dynamo.cjs hook PostToolUse"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "test \"$DYNAMO_DEV_BYPASS\" = 1 && echo '{}' && exit 0; bun run bin/dynamo.cjs hook Stop"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "test \"$DYNAMO_DEV_BYPASS\" = 1 && echo '{}' && exit 0; bun run bin/dynamo.cjs hook PreCompact"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "test \"$DYNAMO_DEV_BYPASS\" = 1 && echo '{}' && exit 0; bun run bin/dynamo.cjs hook SubagentStart"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "test \"$DYNAMO_DEV_BYPASS\" = 1 && echo '{}' && exit 0; bun run bin/dynamo.cjs hook SubagentStop"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {},
+  "env": {
+    "DYNAMO_DEV_BYPASS": "1"
+  },
+  "effortLevel": "max"
+}

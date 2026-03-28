@@ -151,10 +151,32 @@ function handleReverieKill() {
     } catch (_e) { /* grep returns 1 on no match */ }
   }
 
-  // Also clear the DuckDB lock file if it exists
+  // Kill any stale bun processes holding DB locks (e.g., orphaned test runs)
+  try {
+    const output = execSync(
+      'lsof ' + JSON.stringify(require('node:path').join(process.cwd(), 'data', 'ledger.db')) + ' 2>/dev/null',
+      { encoding: 'utf8', timeout: 5000 }
+    ).trim();
+    if (output) {
+      for (const line of output.split('\n').slice(1)) {
+        const parts = line.trim().split(/\s+/);
+        const cmd = parts[0];
+        const pid = parseInt(parts[1], 10);
+        // Only kill bun/node processes, not system daemons like fileprovi
+        if (pid && pid !== process.pid && (cmd === 'bun' || cmd === 'node')) {
+          try { process.kill(pid, 'SIGTERM'); killed.push({ pid, desc: cmd + ' (holding ledger.db lock)' }); } catch (_e) { /* dead */ }
+        }
+      }
+    }
+  } catch (_e) { /* no lsof output = no locks */ }
+
+  // Clean up WAL/journal files that can cause lock issues
+  const fs = require('node:fs');
   const path = require('node:path');
-  const lockPath = path.join(process.cwd(), 'data', 'dynamo.duckdb.wal');
-  try { require('node:fs').unlinkSync(lockPath); } catch (_e) { /* no lock */ }
+  const dataDir = path.join(process.cwd(), 'data');
+  for (const suffix of ['.wal', '-journal', '-shm']) {
+    try { fs.unlinkSync(path.join(dataDir, 'ledger.db' + suffix)); } catch (_e) { /* not present */ }
+  }
 
   if (killed.length === 0) {
     process.stdout.write('No Reverie processes found\n');

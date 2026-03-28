@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
 status: Ready to execute
-last_updated: "2026-03-28T17:58:03.359Z"
+last_updated: "2026-03-28T18:06:39.065Z"
 last_activity: 2026-03-28
 progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 55
-  completed_plans: 52
+  completed_plans: 54
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-23)
 ## Current Position
 
 Phase: 16 (reverie-end-to-end-delivery) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 
 ## Performance Metrics
 
@@ -105,6 +105,7 @@ Plan: 2 of 4
 | Phase 15 P03 | 3min | 2 tasks | 5 files |
 | Phase 16 P01 | 3min | 2 tasks | 4 files |
 | Phase 16 P02 | 6min | 2 tasks | 6 files |
+| Phase 16 P03 | 4min | 4 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -225,6 +226,9 @@ Recent decisions affecting current work:
 - [Phase 16]: Options-based DI (_deps) for terminal-spawn.cjs test isolation -- consistent with project pattern
 - [Phase 16]: useTerminal flag defaults to process.platform === 'darwin' for automatic macOS detection
 - [Phase 16]: Terminal-spawned sessions report alive=true in health -- real liveness via relay /health
+- [Phase 16]: Magnet fire-and-forget in sync _setMode/_transition: data in-memory immediately, Ledger write async
+- [Phase 16]: Clean-start kills stale Secondary/Tertiary/relay PIDs via SIGTERM with catch for already-dead
+- [Phase 16]: Relay port placeholder (9876) persisted by start handler; Plan 04 wires real relay lifecycle
 
 ### Roadmap Evolution
 

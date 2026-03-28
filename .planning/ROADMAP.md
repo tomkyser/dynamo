@@ -205,7 +205,7 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 9.1 -> 10 -> 11 -> 12 -> 12.1
 | 13. Spec Compliance Audit | M2 | 7/7 | Complete | 2026-03-25 |
 | 14. Deployment Readiness | M2 | 3/3 | Complete    | 2026-03-27 |
 | 15. User Journey Gap Closure | M2 | 4/4 | Complete    | 2026-03-28 |
-| 16. Reverie E2E Delivery | M2 | 1/4 | In Progress|  |
+| 16. Reverie E2E Delivery | M2 | 3/4 | In Progress|  |
 
 ### Phase 12.1: Platform Launch Readiness (INSERTED)
 
@@ -291,12 +291,12 @@ Plans:
   5. `reverie start` performs clean start (kills stale processes, clears state, spawns relay + terminal sessions)
   6. `reverie stop` kills relay server, initiates REM consolidation, and persists shutdown state
   7. User sees 3 distinct terminal windows when running `reverie start` (Primary + Secondary + Tertiary)
-**Plans:** 2/4 plans executed
+**Plans:** 3/4 plans executed
 
 Plans:
 - [x] 16-01-PLAN.md — Ledger-backed Magnet provider + bootstrap wiring (D-01, D-05, D-06)
 - [x] 16-02-PLAN.md — Terminal window spawning abstraction + session spawner modification (D-02)
-- [ ] 16-03-PLAN.md — Session/Mode Manager Magnet persistence + CLI handler rewrites (D-03, D-07, D-08)
+- [x] 16-03-PLAN.md — Session/Mode Manager Magnet persistence + CLI handler rewrites (D-03, D-07, D-08)
 - [ ] 16-04-PLAN.md — Relay server lifecycle + end-to-end integration verification (D-04, D-08)
 
 **Research flag**: RESEARCH COMPLETE -- Ledger-backed provider pattern, macOS terminal spawning via osascript, cross-invocation state persistence all designed from existing codebase analysis

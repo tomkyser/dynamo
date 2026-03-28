@@ -62,8 +62,19 @@ function createMagnet() {
 
     _switchboard = options.switchboard || null;
 
-    // Wire json-provider if lathe and statePath are injected via mapDeps/config
-    if (options.lathe && options.statePath) {
+    // Provider selection priority:
+    // 1. Explicit provider option (for tests)
+    // 2. Ledger provider (D-05: Ledger-backed, not JSON)
+    // 3. JSON file provider (fallback if Ledger unavailable)
+    if (options.provider) {
+      _provider = options.provider;
+    } else if (options.ledger) {
+      const { createLedgerProvider } = require('./ledger-provider.cjs');
+      const provResult = createLedgerProvider({ ledger: options.ledger });
+      if (provResult.ok) {
+        _provider = provResult.value;
+      }
+    } else if (options.lathe && options.statePath) {
       const { createJsonProvider } = require('./json-provider.cjs');
       const provResult = createJsonProvider({
         lathe: options.lathe,
@@ -73,7 +84,7 @@ function createMagnet() {
         _provider = provResult.value;
       }
     } else {
-      _provider = options.provider || null;
+      _provider = null;
     }
 
     // Hydrate state from provider if available

@@ -91,9 +91,13 @@ async function bootstrap(options = {}) {
   });
 
   container.singleton('services.magnet', createMagnet, {
-    deps: ['services.switchboard', 'services.lathe'],
+    deps: ['services.switchboard', 'services.lathe', 'providers.ledger'],
     tags: ['service', 'state'],
-    mapDeps: { 'services.switchboard': 'switchboard', 'services.lathe': 'lathe' },
+    mapDeps: {
+      'services.switchboard': 'switchboard',
+      'services.lathe': 'lathe',
+      'providers.ledger': 'ledger',
+    },
     config: { statePath: paths.root + '/data/state.json' },
   });
 

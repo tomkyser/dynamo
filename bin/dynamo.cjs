@@ -86,8 +86,10 @@ async function handleHook() {
             if (handlerResult && typeof handlerResult === 'object' && Object.keys(handlerResult).length > 0) {
               response = handlerResult;
             }
-          } catch (_e) {
-            // Individual handler failure is non-fatal -- continue to next
+          } catch (handlerErr) {
+            // Individual handler failure is non-fatal -- log and continue to next
+            process.stderr.write('Hook handler error (' + hookType + '): ' + (handlerErr.message || handlerErr) + '\n');
+            if (handlerErr.stack) process.stderr.write(handlerErr.stack + '\n');
           }
         }
       }

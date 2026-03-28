@@ -62,7 +62,8 @@ function _resolveSchemas() {
  * @returns {Object} Channel server instance { mcp, start, stop, getSessionId }
  */
 function createChannelServer(options = {}) {
-  const _sessionId = options.sessionId || process.env.WIRE_SESSION_ID || 'session-' + Date.now();
+  const _sessionId = options.sessionId || process.env.WIRE_SESSION_ID || process.env.SESSION_ID || 'session-' + Date.now();
+  const _identity = options.identity || process.env.SESSION_IDENTITY || 'unknown';
   const _relayUrl = options.relayUrl || process.env.WIRE_RELAY_URL || 'http://127.0.0.1:9876';
   const _pollInterval = options.pollInterval || 2000;
   let _pollTimer = null;
@@ -315,6 +316,24 @@ function createChannelServer(options = {}) {
     const StdioServerTransport = _resolveStdioTransport();
     const transport = new StdioServerTransport();
     await mcp.connect(transport);
+
+    // Auto-register with relay so sessions appear in /health and can receive messages.
+    // Without this, the relay shows 0 sessions and can't route traffic.
+    try {
+      await fetch(_relayUrl + '/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: _sessionId,
+          identity: _identity,
+          capabilities: ['channel'],
+        }),
+      });
+    } catch (_e) {
+      // Registration failure is non-fatal — relay may not be up yet.
+      // Polling will still work once relay starts.
+    }
+
     _startPolling();
   }
 

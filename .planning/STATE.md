@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
-status: Milestone complete
-last_updated: "2026-03-28T17:09:09.435Z"
+status: Ready to execute
+last_updated: "2026-03-28T17:53:51.677Z"
 last_activity: 2026-03-28
 progress:
   total_phases: 12
   completed_phases: 11
-  total_plans: 51
-  completed_plans: 51
+  total_plans: 55
+  completed_plans: 52
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** Everything routes through Dynamo -- the holistic wrapper via its APIs and interfaces. No component bypasses the patterns and paths Dynamo defines.
-**Current focus:** Phase 15 — user-journey-gap-closure
+**Current focus:** Phase 16 — reverie-end-to-end-delivery
 
 ## Current Position
 
-Phase: 15
-Plan: Not started
+Phase: 16 (reverie-end-to-end-delivery) — EXECUTING
+Plan: 2 of 4
 
 ## Performance Metrics
 
@@ -103,6 +103,7 @@ Plan: Not started
 | Phase 15 P01 | 3min | 2 tasks | 5 files |
 | Phase 15 P04 | 3min | 2 tasks | 4 files |
 | Phase 15 P03 | 3min | 2 tasks | 5 files |
+| Phase 16 P01 | 3min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -218,6 +219,8 @@ Recent decisions affecting current work:
 - [Phase 15]: README serves as first-user onboarding document with complete CLI command list, correct fragment types, and first-run experience
 - [Phase 15]: Removed Bash from formation agent tools -- agent only reads stimulus and writes JSON, Read + Write sufficient (least privilege)
 - [Phase 15]: Skill content cross-reference test pattern: extract command refs via regex, validate against known command arrays from register-commands.cjs and platform-commands.cjs
+- [Phase 16]: Ledger provider writes immediately on every save() -- no delayed batching, DuckDB is fast enough
+- [Phase 16]: Provider selection priority: explicit (tests) > Ledger > JSON file > null for backward compatibility
 
 ### Roadmap Evolution
 
@@ -251,4 +254,4 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-28
-Resume file: .planning/phases/16-reverie-end-to-end-delivery/16-CONTEXT.md
+Resume file: None

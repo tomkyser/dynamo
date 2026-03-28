@@ -255,3 +255,13 @@ Plans:
 - [x] 14-01-PLAN.md — Idempotent wireToSwitchboard + bootstrap re-wire + settings.json generation + hook entry point (INT-01, PLT-03)
 - [x] 14-02-PLAN.md — CLI flag migration: backfill + reset from process.argv to Pulley flags + status metrics verification (INT-02)
 - [x] 14-03-PLAN.md — Architecture compliance audit + human deployment readiness verification (INT-01, INT-02, PLT-03)
+
+### Phase 15: User Journey Gap Closure
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 14
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 15 to break down)

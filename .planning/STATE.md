@@ -215,6 +215,7 @@ Recent decisions affecting current work:
 - Phase 9.1 inserted after Phase 9: Claude Code Integration Layer (Lithograph provider + Exciter service) — platform-level Claude Code transcript access and integration surface management
 - Phase 12.1 inserted after Phase 12: Platform Launch Readiness (URGENT) — module discovery/loading, Claude Code hook wiring, session triplet spawning/management via Claude skills, multi-triplet concurrency, visual session distinction, end-to-end system validation
 - Phase 13 added: Spec Compliance Audit & E2E Integration Verification — adversarial audit of every component against canonical specs, live bootstrap verification, zero tolerance for spec violations
+- Phase 15 added: User Journey Gap Closure — walk every user-facing surface (skills, CLI, agents) as a first-time user, close gaps where promised actions fail or don't exist. All fixes must route through Armature/Circuit/Pulley. Known starting point: /reverie skill references non-existent `reverie start` command
 - Phase 14 added: Deployment Readiness & Architecture Compliance — fix Exciter bootstrap timing + settings.json, migrate backfill CLI to Pulley flags, wire status metrics, verify E2E install-to-use flow, architecture compliance audit
 
 ### Pending Todos

@@ -44,6 +44,8 @@ function spawnTerminalWindow({ command, env = {}, title = 'dynamo-session', _dep
     const lines = [
       '#!/bin/bash',
       '# Dynamo session launcher: ' + title,
+      '# cd to project root so Claude Code can find .mcp.json for channel config',
+      'cd ' + JSON.stringify(process.cwd()),
     ];
 
     // Add env export lines

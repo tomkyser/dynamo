@@ -204,6 +204,7 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 9.1 -> 10 -> 11 -> 12 -> 12.1
 | 12.1 Platform Launch Readiness | M2 | 5/5 | Complete    | 2026-03-25 |
 | 13. Spec Compliance Audit | M2 | 7/7 | Complete | 2026-03-25 |
 | 14. Deployment Readiness | M2 | 3/3 | Complete    | 2026-03-27 |
+| 15. User Journey Gap Closure | M2 | 0/4 | Planned | - |
 
 ### Phase 12.1: Platform Launch Readiness (INSERTED)
 
@@ -258,10 +259,20 @@ Plans:
 
 ### Phase 15: User Journey Gap Closure
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Walk every user-facing surface (skills, CLI, agents) as a first-time user and close gaps where promised actions fail or don't exist -- implement start/stop CLI commands, add first-run welcome experience, rewrite skills from CLI ground truth, audit error messages and formation agent, rewrite README for first-time users
 **Depends on:** Phase 14
-**Plans:** 0 plans
+**Requirements**: INT-01, INT-02
+**Success Criteria** (what must be TRUE):
+  1. `reverie start` and `reverie stop` CLI commands exist and compose Mode Manager + Session Manager APIs -- start upgrades to Active mode, stop triggers REM consolidation before shutdown
+  2. First-ever cold start shows a one-time welcome message via additionalContext injection, orienting the user to /reverie and /dynamo skills
+  3. All three skill .md files (/dynamo, /reverie, /dynamo-validate) rewritten from CLI ground truth -- every command referenced in a skill maps to a real Pulley command
+  4. Every user-visible error message includes an actionable recovery suggestion
+  5. Formation agent definition matches what handleSubagentStop and fragment-assembler.cjs actually parse
+  6. README accurately documents prerequisites, install steps, first-run experience, skills, and all CLI commands with correct fragment types
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 15 to break down)
+- [ ] 15-01-PLAN.md — Start/stop CLI command handlers + registration + validation tests (INT-02)
+- [ ] 15-02-PLAN.md — Welcome message injection in Context Manager + hook wiring (INT-01)
+- [ ] 15-03-PLAN.md — Skill content rewrites + formation agent audit (INT-01, INT-02)
+- [ ] 15-04-PLAN.md — Error message audit + README rewrite (INT-02)

@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-03-28T20:14:10.642Z",
+  "phase": "16",
+  "phase_name": "reverie-end-to-end-delivery",
+  "phase_dir": ".planning/phases/16-reverie-end-to-end-delivery",
+  "plan": 4,
+  "task": 2,
+  "total_tasks": 2,
+  "status": "paused",
+  "completed_tasks": [
+    {"id": 1, "name": "Plans 16-01 through 16-04 Task 1 all executed", "status": "done"},
+    {"id": 2, "name": "16-04 Task 2: Human verification checkpoint", "status": "in_progress", "progress": "Infrastructure verified working, hook-to-Wire message flow not firing"}
+  ],
+  "remaining_tasks": [
+    {"id": 1, "name": "Debug why hook handlers don't send Wire messages to Secondary/Tertiary during active conversation", "status": "not_started"},
+    {"id": 2, "name": "Complete human verification of full E2E flow", "status": "not_started"},
+    {"id": 3, "name": "Create 16-04-SUMMARY.md and close phase", "status": "not_started"}
+  ],
+  "blockers": [
+    {
+      "description": "Hook handlers (PreToolUse/PostToolUse/Stop) run as separate CLI processes via 'bun run bin/dynamo.cjs hook <type>'. Each invocation bootstraps Dynamo fresh. wireTopology.send() in the hook process needs relay URL and target session IDs from Magnet. The data IS persisted in DuckDB now (relay_port, triplet_id), but wireTopology.send() may not be reading them correctly, OR the Wire service in the ephemeral hook process may not connect to the relay properly. The full chain: hook fires -> hook-handlers.cjs -> wireTopology.send() -> wire.send() -> HTTP POST to relay -> relay delivers to registered session -> channel server polls and pushes to Claude. Each link needs verification in the hook's ephemeral process context.",
+      "type": "technical",
+      "workaround": "Can manually send messages via curl to relay (proven working: delivered:true, message appears in Secondary Claude session)"
+    }
+  ],
+  "human_actions_pending": [
+    {"action": "Start Primary Claude session with --dangerously-load-development-channels server:dynamo-wire flag", "context": "Primary needs the channel flag at launch time to participate in Wire communication", "blocking": false}
+  ],
+  "decisions": [
+    {"decision": "Explicit state persist via awaited magnet.set at end of start/stop handlers", "rationale": "Fire-and-forget writes from _setMode/_transition race process exit. Last-write-wins with explicit values defeats the race.", "phase": "16"},
+    {"decision": "Terminal detection via __CFBundleIdentifier + open -b", "rationale": "osascript targets Terminal.app specifically. User runs Ghostty. open -b uses the macOS bundle ID to open in the correct terminal.", "phase": "16"},
+    {"decision": "Channel server registered in .mcp.json as dynamo-wire", "rationale": "Claude Code Channels API requires server:<name> where name is an mcpServers key in .mcp.json, not a file path", "phase": "16"},
+    {"decision": "cd to project root in temp scripts", "rationale": "Spawned sessions run from /tmp where .mcp.json is absent. cd to process.cwd() ensures Claude Code finds the MCP config.", "phase": "16"},
+    {"decision": "Channel server auto-registers with relay on start()", "rationale": "Without auto-registration, relay showed 0 sessions. Channel server now POSTs to /register on startup with session ID from SESSION_ID env var.", "phase": "16"},
+    {"decision": "channelServerPath changed from file path to MCP config name", "rationale": "Conductor was resolving full file path and passing to session-spawner, overriding the dynamo-wire default.", "phase": "16"}
+  ],
+  "uncommitted_files": [],
+  "next_action": "Debug the hook -> wireTopology -> wire -> relay message flow in ephemeral hook processes. Start by adding console.error logging to hook-handlers.cjs at the wireTopology.send() call sites (lines 243, 264, 411) to verify the hook process reaches that code path and what wireTopology returns. Then check if wire.send() in the hook process can reach the relay at http://127.0.0.1:9876.",
+  "context_notes": "Phase 16 plans 01-04 all executed by subagents. Human verification revealed 6 bugs found and fixed during UAT: (1) Magnet state race on process exit, (2) Terminal.app vs Ghostty, (3) path spaces in iCloud dir, (4) channels API format (server:name not server:path), (5) conductor passing file path instead of MCP name, (6) channel server not auto-registering with relay. Infrastructure is now proven working end-to-end: relay runs, sessions register (2/2), test messages deliver (curl -> relay -> channel server -> Claude session shows <channel> tag). The remaining gap is the AUTOMATED message flow: hooks fire on tool use in Primary -> hook-handlers.cjs calls wireTopology.send() -> wire.send() POSTs to relay -> relay delivers to Secondary/Tertiary. This chain exists in code but hasn't been verified in a live hook invocation. The hook runs as a fresh process so it may have initialization issues getting wireTopology connected to the relay."
+}

@@ -106,6 +106,9 @@ function createConductor() {
         channelServerPath: (options && options.channelServerPath)
           || path.resolve(__dirname, '../wire/channel-server.cjs'),
         switchboard: _switchboard,
+        useTerminal: (options && options.useTerminal !== undefined)
+          ? options.useTerminal
+          : undefined,
       });
 
       return ok(undefined);

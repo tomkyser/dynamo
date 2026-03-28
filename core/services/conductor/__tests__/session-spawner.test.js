@@ -52,6 +52,7 @@ describe('session-spawner', () => {
     spawner = createSessionSpawner({
       channelServerPath: '/path/to/channel-server.cjs',
       switchboard: mockSwitchboard,
+      useTerminal: false,
     });
   });
 

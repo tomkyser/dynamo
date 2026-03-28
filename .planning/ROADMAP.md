@@ -205,6 +205,7 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 9.1 -> 10 -> 11 -> 12 -> 12.1
 | 13. Spec Compliance Audit | M2 | 7/7 | Complete | 2026-03-25 |
 | 14. Deployment Readiness | M2 | 3/3 | Complete    | 2026-03-27 |
 | 15. User Journey Gap Closure | M2 | 4/4 | Complete    | 2026-03-28 |
+| 16. Reverie E2E Delivery | M2 | 0/4 | Planned    | - |
 
 ### Phase 12.1: Platform Launch Readiness (INSERTED)
 
@@ -279,10 +280,23 @@ Plans:
 
 ### Phase 16: Reverie End-to-End Delivery
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Deliver a fully functional Reverie system where every user-facing command produces real, persistent, observable results -- state persists across CLI invocations via Magnet/Ledger, sessions spawn as real terminal windows via Conductor, Wire enables real inter-session communication, zero stubs
 **Depends on:** Phase 15
-**Plans:** 0 plans
+**Requirements**: D-01, D-02, D-03, D-04, D-05, D-06, D-07, D-08
+**Success Criteria** (what must be TRUE):
+  1. Magnet state persists to DuckDB via a Ledger-backed provider, replacing the JSON file provider as the primary persistence backend
+  2. Session spawner opens visible Terminal.app windows for Secondary and Tertiary via osascript, not invisible piped background processes
+  3. Mode Manager and Session Manager persist all state to Magnet on every transition, enabling cross-invocation reads
+  4. `reverie status` reads persisted state from Magnet/Ledger and works from a fresh CLI invocation in a new terminal
+  5. `reverie start` performs clean start (kills stale processes, clears state, spawns relay + terminal sessions)
+  6. `reverie stop` kills relay server, initiates REM consolidation, and persists shutdown state
+  7. User sees 3 distinct terminal windows when running `reverie start` (Primary + Secondary + Tertiary)
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 16 to break down)
+- [ ] 16-01-PLAN.md — Ledger-backed Magnet provider + bootstrap wiring (D-01, D-05, D-06)
+- [ ] 16-02-PLAN.md — Terminal window spawning abstraction + session spawner modification (D-02)
+- [ ] 16-03-PLAN.md — Session/Mode Manager Magnet persistence + CLI handler rewrites (D-03, D-07, D-08)
+- [ ] 16-04-PLAN.md — Relay server lifecycle + end-to-end integration verification (D-04, D-08)
+
+**Research flag**: RESEARCH COMPLETE -- Ledger-backed provider pattern, macOS terminal spawning via osascript, cross-invocation state persistence all designed from existing codebase analysis

@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
 status: Ready to execute
-last_updated: "2026-03-28T18:06:39.065Z"
-last_activity: 2026-03-28
+last_updated: "2026-03-29T04:18:30.378Z"
+last_activity: 2026-03-29
 progress:
   total_phases: 12
-  completed_phases: 11
-  total_plans: 55
+  completed_phases: 10
+  total_plans: 48
   completed_plans: 54
 ---
 
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-23)
 ## Current Position
 
 Phase: 16 (reverie-end-to-end-delivery) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 
 ## Performance Metrics
 
@@ -106,6 +106,7 @@ Plan: 3 of 4
 | Phase 16 P01 | 3min | 2 tasks | 4 files |
 | Phase 16 P02 | 6min | 2 tasks | 6 files |
 | Phase 16 P03 | 4min | 4 tasks | 8 files |
+| Phase 17 P01 | 3min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -229,6 +230,9 @@ Recent decisions affecting current work:
 - [Phase 16]: Magnet fire-and-forget in sync _setMode/_transition: data in-memory immediately, Ledger write async
 - [Phase 16]: Clean-start kills stale Secondary/Tertiary/relay PIDs via SIGTERM with catch for already-dead
 - [Phase 16]: Relay port placeholder (9876) persisted by start handler; Plan 04 wires real relay lifecycle
+- [Phase 17]: Slot detection regex excludes block syntax via [^#/>!{] negative class
+- [Phase 17]: Raw blocks use null-byte placeholder tokens during engine processing
+- [Phase 17]: Nested conditionals resolved via iterative innermost-first regex, not recursive descent
 
 ### Roadmap Evolution
 
@@ -261,5 +265,5 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-03-28
+Last activity: 2026-03-29
 Resume file: None

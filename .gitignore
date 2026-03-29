@@ -25,6 +25,7 @@ dist/
 *.log
 
 # Runtime data
+.dynamo/
 data/
 
 # Temp

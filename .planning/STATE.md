@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
 status: Ready to execute
-last_updated: "2026-03-29T04:28:13.688Z"
+last_updated: "2026-03-29T04:35:26.485Z"
 last_activity: 2026-03-29
 progress:
   total_phases: 13
-  completed_phases: 11
-  total_plans: 65
-  completed_plans: 59
+  completed_phases: 10
+  total_plans: 58
+  completed_plans: 60
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-23)
 ## Current Position
 
 Phase: 17 (persistent-runtime-prompt-infrastructure) — EXECUTING
-Plan: 4 of 10
+Plan: 5 of 10
 
 ## Performance Metrics
 
@@ -109,6 +109,7 @@ Plan: 4 of 10
 | Phase 17 P03 | 3min | 2 tasks | 4 files |
 | Phase 17 P02 | 4min | 2 tasks | 4 files |
 | Phase 17 P05 | 3min | 2 tasks | 3 files |
+| Phase 17 P06 | 4min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -241,6 +242,8 @@ Recent decisions affecting current work:
 - [Phase 17]: cast() computes resolved_slots from Matrix slot keys present in context
 - [Phase 17]: require.main guard on main dispatch for testability without mock.module
 - [Phase 17]: dispatchHook uses listener.service matching hook registry schema from hooks.cjs
+- [Phase 17]: Template registry uses Map<namespacedName, Matrix> for O(1) lookup
+- [Phase 17]: Daemon module handlers delegate to Circuit when available, fallback to simple state tracking
 
 ### Roadmap Evolution
 

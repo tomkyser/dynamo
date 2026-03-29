@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
 status: Ready to execute
-last_updated: "2026-03-29T04:45:10.259Z"
+last_updated: "2026-03-29T04:46:38.820Z"
 last_activity: 2026-03-29
 progress:
   total_phases: 13
   completed_phases: 11
   total_plans: 65
-  completed_plans: 62
+  completed_plans: 63
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-23)
 ## Current Position
 
 Phase: 17 (persistent-runtime-prompt-infrastructure) — EXECUTING
-Plan: 7 of 10
+Plan: 8 of 10
 
 ## Performance Metrics
 
@@ -112,6 +112,7 @@ Plan: 7 of 10
 | Phase 17 P06 | 4min | 2 tasks | 7 files |
 | Phase 17 P09 | 6min | 2 tasks | 5 files |
 | Phase 17 P07 | 7min | 2 tasks | 10 files |
+| Phase 17 P08 | 7min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -249,6 +250,9 @@ Recent decisions affecting current work:
 - [Phase 17]: getSessionIdentity() checks payload.env first (daemon model), falls back to process.env (pre-daemon compat)
 - [Phase 17]: Module exports name+register+cleanup+manifest for Circuit module lifecycle contract
 - [Phase 17]: System-only templates for formation/recall prompts; literal {user_name} preserved as LLM-directed placeholder per D-09 hybrid
+- [Phase 17]: Framing templates have zero slots -- static content resolved at module init via cast with empty context
+- [Phase 17]: Editorial pass uses D-09 hybrid pattern: data formatting in code, template provides structural sections with conditionals
+- [Phase 17]: Sublimation system prompt slots all string type -- numeric config cast to String() for Linotype variable substitution
 
 ### Roadmap Evolution
 

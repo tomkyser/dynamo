@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
 status: Ready to execute
-last_updated: "2026-03-28T18:06:39.065Z"
-last_activity: 2026-03-28
+last_updated: "2026-03-29T04:16:29.508Z"
+last_activity: 2026-03-29
 progress:
-  total_phases: 12
+  total_phases: 13
   completed_phases: 11
-  total_plans: 55
-  completed_plans: 54
+  total_plans: 65
+  completed_plans: 55
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** Everything routes through Dynamo -- the holistic wrapper via its APIs and interfaces. No component bypasses the patterns and paths Dynamo defines.
-**Current focus:** Phase 16 — reverie-end-to-end-delivery
+**Current focus:** Phase 17 — persistent-runtime-prompt-infrastructure
 
 ## Current Position
 
-Phase: 16 (reverie-end-to-end-delivery) — EXECUTING
-Plan: 3 of 4
+Phase: 17 (persistent-runtime-prompt-infrastructure) — EXECUTING
+Plan: 2 of 10
 
 ## Performance Metrics
 
@@ -106,6 +106,7 @@ Plan: 3 of 4
 | Phase 16 P01 | 3min | 2 tasks | 4 files |
 | Phase 16 P02 | 6min | 2 tasks | 6 files |
 | Phase 16 P03 | 4min | 4 tasks | 8 files |
+| Phase 17 P03 | 3min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -229,6 +230,10 @@ Recent decisions affecting current work:
 - [Phase 16]: Magnet fire-and-forget in sync _setMode/_transition: data in-memory immediately, Ledger write async
 - [Phase 16]: Clean-start kills stale Secondary/Tertiary/relay PIDs via SIGTERM with catch for already-dead
 - [Phase 16]: Relay port placeholder (9876) persisted by start handler; Plan 04 wires real relay lifecycle
+- [Phase 17]: Daemon spawned via nohup + Bun.spawn with .unref() for full detachment from parent shell
+- [Phase 17]: Atomic PID file write pattern (tmp + rename) to prevent partial reads by thin client
+- [Phase 17]: 10MB log cap with tail-keep (last 5MB) rather than external log rotation
+- [Phase 17]: EPERM from process.kill(pid, 0) treated as alive (different owner) to avoid false stale detection
 
 ### Roadmap Evolution
 
@@ -240,6 +245,7 @@ Recent decisions affecting current work:
 - Phase 15 added: User Journey Gap Closure — walk every user-facing surface (skills, CLI, agents) as a first-time user, close gaps where promised actions fail or don't exist. All fixes must route through Armature/Circuit/Pulley. Known starting point: /reverie skill references non-existent `reverie start` command
 - Phase 16 added: Reverie End-to-End Delivery — real state persistence via Magnet/Ledger, real session spawning via Conductor (3 terminal windows), real Wire communication, zero stubs. Triggered by discovering all state is in-memory only and resets every CLI invocation.
 - Phase 14 added: Deployment Readiness & Architecture Compliance — fix Exciter bootstrap timing + settings.json, migrate backfill CLI to Pulley flags, wire status metrics, verify E2E install-to-use flow, architecture compliance audit
+- Phase 17 added: Persistent Runtime & Prompt Infrastructure — daemon runtime + Linotype prompt infrastructure. Inserted after Phase 16 pause due to architectural violation in hook handlers (hooks are stateless CLI invocations but Phase 16 needs persistent state)
 
 ### Pending Todos
 
@@ -261,5 +267,5 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-03-28
+Last activity: 2026-03-29
 Resume file: None

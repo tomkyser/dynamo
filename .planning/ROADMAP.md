@@ -300,3 +300,13 @@ Plans:
 - [ ] 16-04-PLAN.md — Relay server lifecycle + end-to-end integration verification (D-04, D-08)
 
 **Research flag**: RESEARCH COMPLETE -- Ledger-backed provider pattern, macOS terminal spawning via osascript, cross-invocation state persistence all designed from existing codebase analysis
+
+### Phase 17: Persistent Runtime & Prompt Infrastructure
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 16
+**Plans:** 1/10 plans executed
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 17 to break down)

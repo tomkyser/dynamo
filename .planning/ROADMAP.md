@@ -1,0 +1,312 @@
+# Roadmap: Dynamo Platform
+
+## Milestones
+
+- ✅ **v1.0 M1: Platform SDK** — Phases 1-6 (shipped 2026-03-23)
+- 🚧 **v1.0 M2: Reverie Module** — Phases 7-12 (in progress)
+
+## Phases
+
+<details>
+<summary>✅ v1.0 M1: Platform SDK (Phases 1-6) — SHIPPED 2026-03-23</summary>
+
+- [x] Phase 1: Core Library (3/3 plans) — completed 2026-03-22
+- [x] Phase 2: Foundational Services (4/4 plans) — completed 2026-03-22
+- [x] Phase 3: Data Providers & Infrastructure Services (5/5 plans) — completed 2026-03-23
+- [x] Phase 3.1: Wire Communication Service (4/4 plans) — completed 2026-03-23
+- [x] Phase 3.2: Assay Federated Search (1/1 plan) — completed 2026-03-23
+- [x] Phase 4: Framework (4/4 plans) — completed 2026-03-23
+- [x] Phase 5: SDK & Platform Infrastructure (5/5 plans) — completed 2026-03-23
+- [x] Phase 6: Bootstrap Integration Fixes (2/2 plans) — completed 2026-03-23
+
+**28 plans, 57 tasks, 851 tests, 27/27 requirements**
+Full details: `.planning/milestones/v1.0-ROADMAP.md`
+
+</details>
+
+### 🚧 v1.0 M2: Reverie Module (In Progress)
+
+**Milestone Goal:** Build the first module on the Dynamo platform -- Reverie delivers persistent, evolving AI memory through a three-session architecture with fragment-based recall, Self Model personality, and REM consolidation.
+
+- [ ] **Phase 7: Foundation Infrastructure** - Irreversible architectural decisions, data schemas, write integrity, and the gravitational center every subsequent phase references
+- [ ] **Phase 8: Single-Session Personality Injection** - Validate that personality persistence actually works before adding multi-session complexity
+- [ ] **Phase 9: Fragment Memory Engine** - Fragment formation and recall validated in single-session context before inter-session orchestration
+- [x] **Phase 10: Three-Session Architecture** - Highest-risk phase: Wire-based session orchestration with go/no-go gate on Claude Max resource limits (completed 2026-03-24)
+- [x] **Phase 11: REM Consolidation** - Memory consolidation, Self Model evolution, and the working-to-long-term memory gate (completed 2026-03-25)
+- [ ] **Phase 12: Integration Surface & Backfill** - CLI exposure, submodule management, taxonomy self-organization, and historical data import
+- [x] **Phase 14: Deployment Readiness & Architecture Compliance** - Fix audit tech debt, close broken E2E flows, verify install-to-use user flow, architecture compliance audit (completed 2026-03-27)
+
+## Phase Details
+
+### Phase 7: Foundation Infrastructure
+**Goal**: Resolve irreversible architectural decisions and establish the data schemas, write integrity guarantees, and foundational abstractions that every subsequent Reverie component depends on
+**Depends on**: Phase 6 (M1 platform complete -- all services, providers, framework, SDK validated)
+**Requirements**: PLT-01, SM-01, SM-02, SM-03, SM-05, FRG-01, FRG-02, FRG-05, FRG-06, FRG-09
+**Success Criteria** (what must be TRUE):
+  1. Wire write coordinator retries failed DuckDB writes with exponential backoff and logs to a write-ahead journal, so that burst formation events do not silently drop association index entries
+  2. Fragment files use JSON frontmatter (not YAML) with zod-validated schema covering all 5 fragment types, and a round-trip test proves parse-write-parse identity for each type
+  3. FragmentWriter abstraction performs atomic dual-provider writes (Journal file + Ledger index rows) as a logical unit, with rollback removing partial state when either write fails
+  4. Self Model schema (Identity Core, Relational Model, Conditioning) persists to Journal + Ledger + Magnet with cold start initialization producing valid sparse defaults from a seed prompt
+  5. Association index tables exist in Ledger with the deterministic decay function computing correct survival scores for synthetic fragment histories
+**Plans:** 5 plans
+
+Plans:
+- [x] 07-01-PLAN.md — Reverie module structure + JSON frontmatter parser
+- [x] 07-02-PLAN.md — Wire write coordinator retry + WAJ
+- [x] 07-03-PLAN.md — Zod schemas, association index DDL, decay function
+- [x] 07-04-PLAN.md — Self Model state manager + cold start + entropy engine
+- [x] 07-05-PLAN.md — FragmentWriter atomic dual-provider writes
+
+**Research flag**: STANDARD PATTERNS -- write coordinator enhancement, schema definitions, and zod validation are well-specified in research
+
+### Phase 8: Single-Session Personality Injection
+**Goal**: Validate that continuous Self Model personality injection via Claude Code hooks produces measurable personality persistence across turns at varying context utilization levels -- the empirical gate before multi-session complexity
+**Depends on**: Phase 7
+**Requirements**: CTX-01, CTX-03, CTX-04, CTX-05, INT-01
+**Success Criteria** (what must be TRUE):
+  1. UserPromptSubmit hook injects Self Model personality into every turn via additionalContext within the target token budget (~800-1800 tokens), and the injection completes under 50ms (measured, not estimated)
+  2. Context budget manager transitions through 4 phases (full -> compressed -> reinforced -> compaction advocacy) based on context utilization, with injection size adapting at each phase boundary
+  3. PreCompact hook preserves Self Model perspective in the compaction frame so that post-compaction context retains personality directives (not neutral summary)
+  4. Warm-start face prompt cache persists the final Face prompt from the prior session and injects it on SessionStart before Secondary is ready, so the first user turn has personality
+  5. All 8 Claude Code hook types (SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, Stop, PreCompact, SubagentStart, SubagentStop) are wired through Armature's hook registry to Reverie handlers
+**Plans:** 2 plans
+
+Plans:
+- [x] 08-01-PLAN.md — Budget tracker state machine + template composer 5-slot system
+- [x] 08-02-PLAN.md — Context Manager orchestrator + hook handlers + Armature wiring
+
+**Research flag**: STANDARD PATTERNS for hook wiring and state file pattern (validated by Claude-Mem). Personality injection size at high context utilization needs empirical measurement (PITFALLS research contradicts spec's "minimal injection at 75-90%").
+
+### Phase 9: Fragment Memory Engine
+**Goal**: Validate that multi-angle fragment formation and Assay-based recall produce useful memories in a single-session context before the complexity of inter-session communication is layered on
+**Depends on**: Phase 8
+**Requirements**: FRG-03, FRG-04
+**Success Criteria** (what must be TRUE):
+  1. Formation pipeline processes a stimulus through attention check gate, domain fan-out, and per-domain body composition, producing 1-3 fragments per stimulus with distinct formation group tags
+  2. Recall via Assay returns ranked fragments using composite scoring (association pointers, domain overlap, entity co-occurrence, decay weighting, Self Model relevance) and reconstructs them through the current Self Model frame
+**Plans:** 4 plans
+
+Plans:
+- [x] 09-01-PLAN.md — Formation components: attention gate, prompt templates, fragment assembler, nudge manager
+- [x] 09-02-PLAN.md — Recall components: composite scorer, query builder, reconstruction prompt
+- [x] 09-03-PLAN.md — Formation pipeline orchestrator + recall engine orchestrator
+- [x] 09-04-PLAN.md — Hook wiring, agent definition, Context Manager nudge integration, Reverie module wiring
+
+**Research flag**: NEEDS RESEARCH -- formation fan-out signal-to-noise ratio (EXPERIMENTAL 9.10) and recall reconstruction quality (EXPERIMENTAL 9.8) have no validated production references. Empirical measurement required during this phase.
+**Design note**: Single-session mode uses turn-scoped background subagents (fire-and-forget via Agent tool) as an intuitive inner voice — high-perception, low-deliberation formation. Self Model framing shifts to ISFP/INFP cognitive style (impressionistic, not analytical). Phase 9.1 (Lithograph) will later enable richer transcript-based stimulus context for these agents. See `.planning/phases/09.1-claude-code-integration-layer/09.1-RESEARCH-TRANSCRIPT-CONTROL.md`.
+
+### Phase 09.1: Claude Code Integration Layer (INSERTED)
+
+**Goal**: Establish the platform-level interface between Dynamo and Claude Code's native features — Lithograph provider for transcript read/write/query and Exciter service for managing hooks, agents, skills, settings, and CLAUDE.md at project and user scope. Modules and extensions go through Exciter to implement Claude Code features, maintaining architectural integrity.
+**Depends on**: Phase 9
+**Requirements**: PLT-02, PLT-03
+**Success Criteria** (what must be TRUE):
+  1. Lithograph provider reads Claude Code transcript JSONL, parses conversation turns and tool use blocks, and supports atomic content manipulation (replace block content, clear inputs) with rollback on failure
+  2. Exciter service owns Claude Code integration surface: hook registration/wiring, agent definition management, skill definitions, settings.json management (project + user scope), CLAUDE.md management — other services and modules access Claude Code features through Exciter's contract
+  3. Reverie's existing hook registration (Phase 8) can be migrated to use Exciter without breaking existing tests or behavior
+**Plans:** 3/3 plans complete
+**Canonical refs**: `.claude/reverie-spec-v2.md`, `core/armature/hooks.cjs`, `core/services/commutator/commutator.cjs`, `.planning/phases/09.1-claude-code-integration-layer/09.1-RESEARCH-TRANSCRIPT-CONTROL.md`
+**Research flag**: RESEARCH COMPLETE — transcript control mechanism verified via claude-mem source code analysis (2026-03-24). Transcript JSONL is read/write via hook `transcript_path`. `additionalContext` for injection, direct JSONL manipulation for removal.
+
+Plans:
+- [x] 09.1-01-PLAN.md — Lithograph provider: versioned JSONL parser + transcript read/write/query/delete
+- [x] 09.1-02-PLAN.md — Exciter service: sub-managers (settings, CLAUDE.md, agents) + service factory with registerHooks facade
+- [ ] 09.1-03-PLAN.md — Bootstrap registration + Reverie hook migration to Exciter
+
+### Phase 10: Three-Session Architecture
+**Goal**: Prove that Primary (Face), Secondary (Mind), and Tertiary (Subconscious) sessions can operate concurrently via Wire with acceptable latency and resource consumption on Claude Max -- with Passive mode as the fallback if three sessions exceed subscription limits
+**Depends on**: Phase 9.1
+**Requirements**: SES-01, SES-02, SES-03, SES-04, SES-05, OPS-01, OPS-02, CTX-02
+**Success Criteria** (what must be TRUE):
+  1. Session Manager spawns Secondary and Tertiary sessions via Bun.spawn, enforces the Primary <-> Secondary <-> Tertiary Wire topology, and completes the full startup sequence (Wire connect -> load Self Model -> compose Face prompt -> inject to Primary) within a measurable time budget
+  2. Wire-based inter-session communication delivers messages at all four urgency levels (background/active/directive/urgent) with ACK protocol for critical message types and message loss detection
+  3. Tertiary session runs continuous sublimation cycles at a configurable frequency without overwhelming Wire or exceeding Claude Max rate limits -- measured, not assumed
+  4. Active mode (three sessions) and Passive mode (Primary + lightweight Secondary only) both function end-to-end, with automatic fallback from Active to Passive when resource limits are detected
+  5. Referential framing prompt causes Primary to treat injected context as reference material subordinate to Self Model directives, verified against test scenarios where technically correct answers conflict with relational directives
+**Plans:** 6/6 plans complete
+
+Plans:
+- [x] 10-01-PLAN.md — Session config constants + Conductor session spawning expansion
+- [x] 10-02-PLAN.md — Referential framing prompt templates + Tertiary sublimation loop config
+- [x] 10-03-PLAN.md — Session Manager state machine + Mode Manager (Active/Passive)
+- [x] 10-04-PLAN.md — Mind cognitive cycle orchestrator + Wire topology enforcement
+- [x] 10-05-PLAN.md — Hook handler migration + Reverie module wiring
+- [x] 10-06-PLAN.md — Gap closure: Wire Secondary face prompt authority pipeline (SES-02, CTX-02)
+
+**Research flag**: RESEARCH COMPLETE -- Channels API contract stability verified, Claude Max concurrent session limits documented (EXPERIMENTAL 9.4), referential framing dual-mode calibration designed (EXPERIMENTAL 9.9). Go/no-go gate: if three sessions exceed Max limits, Passive mode becomes default and Tertiary defers to v2.
+
+### Phase 11: REM Consolidation
+**Goal**: Implement the three-tier consolidation pipeline that gates all fragment promotion from working memory to long-term storage, evolves the Self Model through conditioning updates, and maintains association index integrity
+**Depends on**: Phase 10
+**Requirements**: REM-01, REM-02, REM-03, REM-04, REM-05, REM-06, REM-07, SM-04, OPS-03, OPS-04
+**Success Criteria** (what must be TRUE):
+  1. Tier 1 triage on PreCompact events preserves working state to Journal within the hook time budget, so that compaction never destroys uncommitted memory
+  2. Tier 2 provisional REM fires on idle timeout, performs full consolidation flagged as tentative, and covers the ambiguous-session-end case where Tier 3 never triggers
+  3. Tier 3 full REM on session end performs retroactive evaluation, meta-fragment creation, association index editorial pass (entity dedup, weight updates, domain boundary review), and promotes fragments from working/ to active/ -- nothing enters consolidated storage without passing through REM (REM-07)
+  4. Self Model conditioning updates (attention biases, recall strategies, error history) accumulate across sessions with trait floor constraints preventing identity collapse
+  5. REM mode and Dormant mode operate correctly: REM mode runs Secondary-only consolidation, Dormant mode runs only scheduled decay maintenance with no active sessions
+**Plans:** 6/6 plans complete
+
+Plans:
+- [x] 11-01-PLAN.md — REM constants + Mode Manager/Session Manager REM state extensions
+- [x] 11-02-PLAN.md — Tier 1 triage (PreCompact state snapshot) + heartbeat monitor (Tier 2 trigger)
+- [x] 11-03-PLAN.md — Conditioning updater (EMA + identity floors) + quality evaluator (entropy)
+- [x] 11-04-PLAN.md — Retroactive evaluator (fragment re-evaluation) + editorial pass (index editorial)
+- [x] 11-05-PLAN.md — Full REM pipeline (Tier 3) + provisional REM (Tier 2) + REM consolidator
+- [ ] 11-06-PLAN.md — Hook handler REM integration + Reverie module wiring
+
+**Research flag**: STANDARD PATTERNS for Tier 1 and Tier 3 (spec is explicit). NEEDS RESEARCH on decay constant tuning (EXPERIMENTAL 9.3) and conditioning update calibration (EXPERIMENTAL 9.6). Recommend building a simulation harness for decay before live deployment.
+
+### Phase 12: Integration Surface & Backfill
+**Goal**: Expose Reverie's capabilities through CLI and submodule management, complete the self-organizing taxonomy and source-reference models, and enable historical data import through a backfill-specific formation pathway
+**Depends on**: Phase 11
+**Requirements**: INT-02, INT-03, FRG-07, FRG-08, FRG-10
+**Success Criteria** (what must be TRUE):
+  1. CLI commands via Pulley (`dynamo reverie status`, `dynamo reverie inspect`, `dynamo reverie history`, `dynamo reverie reset`) expose module state, fragment inspection, and operational controls in all three output modes (human/json/raw)
+  2. Reverie installs and updates as a git submodule managed by Forge/Relay, with the module discoverable and bootable through Armature's plugin/module lifecycle
+  3. Self-organizing taxonomy creates, merges, splits, and retires domains during REM based on fragment accumulation patterns, with hard caps (100 domains, 200 entities per domain, 10K association edges) preventing unbounded growth
+  4. Source-reference model stores association chain termini and source locator pointers, establishing experiential relationships to source material without direct file indexing
+  5. Historical data backfill imports conversation exports through a backfill-specific formation pathway with retrospective framing, provenance marking, and decay/trust parameters appropriate for reconstructed (non-experiential) memories
+**Plans:** 5/6 plans executed
+
+Plans:
+- [x] 12-01-PLAN.md — Taxonomy/backfill constants, schema origin field, FragmentWriter source_locators write (FRG-08)
+- [x] 12-02-PLAN.md — CLI status + inspect subcommands (INT-02)
+- [x] 12-03-PLAN.md — CLI history + reset subcommands (INT-02)
+- [x] 12-04-PLAN.md — Taxonomy governor + editorial pass governance extensions (FRG-07)
+- [x] 12-05-PLAN.md — Backfill parser, formation template, pipeline orchestrator (FRG-10)
+- [ ] 12-06-PLAN.md — Module manifest, wiring: CLI + taxonomy + backfill into Reverie (INT-03)
+
+**Research flag**: RESEARCH COMPLETE -- backfill formation pathway designed with hybrid framing, provenance model, and versioned parser approach. CLI and submodule integration follow established Pulley/Circuit patterns.
+
+## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 7 -> 8 -> 9 -> 9.1 -> 10 -> 11 -> 12 -> 12.1
+
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Core Library | M1 | 3/3 | Complete | 2026-03-22 |
+| 2. Foundational Services | M1 | 4/4 | Complete | 2026-03-22 |
+| 3. Data Providers & Infra | M1 | 5/5 | Complete | 2026-03-23 |
+| 3.1 Wire Communication | M1 | 4/4 | Complete | 2026-03-23 |
+| 3.2 Assay Federated Search | M1 | 1/1 | Complete | 2026-03-23 |
+| 4. Framework | M1 | 4/4 | Complete | 2026-03-23 |
+| 5. SDK & Platform Infra | M1 | 5/5 | Complete | 2026-03-23 |
+| 6. Bootstrap Integration | M1 | 2/2 | Complete | 2026-03-23 |
+| 7. Foundation Infrastructure | M2 | 0/5 | Planned | - |
+| 8. Single-Session Personality | M2 | 1/2 | In Progress | - |
+| 9. Fragment Memory Engine | M2 | 0/4 | Planned | - |
+| 9.1 Claude Code Integration | M2 | 0/3 | Planned    |  |
+| 10. Three-Session Architecture | M2 | 6/6 | Complete    | 2026-03-24 |
+| 11. REM Consolidation | M2 | 5/6 | Complete    | 2026-03-25 |
+| 12. Integration Surface | M2 | 6/6 | Complete    | 2026-03-25 |
+| 12.1 Platform Launch Readiness | M2 | 5/5 | Complete    | 2026-03-25 |
+| 13. Spec Compliance Audit | M2 | 7/7 | Complete | 2026-03-25 |
+| 14. Deployment Readiness | M2 | 3/3 | Complete    | 2026-03-27 |
+| 15. User Journey Gap Closure | M2 | 4/4 | Complete    | 2026-03-28 |
+| 16. Reverie E2E Delivery | M2 | 3/4 | In Progress|  |
+
+### Phase 12.1: Platform Launch Readiness (INSERTED)
+
+**Goal:** Close every gap between "tests pass" and "the platform runs" — module discovery and loading, Claude Code hook wiring, session triplet spawning and management via Claude skills, multi-triplet concurrency, visual session distinction, and full end-to-end system validation. Claude skills serve as the user-facing entry points for initializing and managing Dynamo and Reverie.
+**Requirements**: INT-01, INT-02, INT-03, SES-01, SES-02, SES-03
+**Depends on:** Phase 12
+**Success Criteria** (what must be TRUE):
+  1. Bootstrap discovers modules from `modules/` directory and loads them via Circuit automatically — Reverie registers on platform boot without manual wiring
+  2. Claude Code hooks (SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, Stop, PreCompact, SubagentStart, SubagentStop) fire through Dynamo's Exciter/Armature registry into Reverie's handlers during a live session
+  3. Claude skills (`/dynamo`, `/reverie`) provide user-facing init, status, and session management — users can start, inspect, and stop Reverie through natural skill invocations
+  4. Secondary and Tertiary sessions spawn as separate Claude Code windows via Conductor/SessionManager, with Wire topology connecting the triplet and visual markers distinguishing session roles
+  5. Multiple simultaneous Reverie-enabled session triplets can run without interference — Wire registry isolates each triplet's message routing, Switchboard scopes events per-triplet
+  6. Full end-to-end validation: a user starts Claude Code, Dynamo boots, Reverie loads, personality injects on first turn, formation fires on SubagentStop, recall returns fragments, REM runs on session end
+**Plans:** 5/5 plans complete
+
+Plans:
+- [x] 12.1-01-PLAN.md — Module discovery + bootstrap wiring + config keys (INT-01, INT-03)
+- [x] 12.1-02-PLAN.md — Exciter registerSkill() + skill-manager sub-module (INT-02)
+- [x] 12.1-03-PLAN.md — Skill content modules + Reverie skill registration (INT-02, SES-01, SES-02)
+- [x] 12.1-04-PLAN.md — Triplet ID namespace + visual markers + Session Manager updates (SES-01, SES-02, SES-03)
+- [x] 12.1-05-PLAN.md — Integration test harness (SC-1 through SC-6) + checkpoint log (all requirements)
+
+### Phase 13: Spec Compliance Audit & E2E Integration Verification
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 12
+**Plans:** 7/7 plans complete
+
+Plans:
+- [x] TBD (run /gsd:plan-phase 13 to break down) (completed 2026-03-25)
+
+### Phase 14: Deployment Readiness & Architecture Compliance
+
+**Goal:** Fix all HIGH and WARNING tech debt from M2 audit, close 2 broken E2E flows, verify end-to-end install-to-use user flow works, and audit that all code routes through Dynamo's framework without bypassing patterns or hardcoding values
+**Depends on:** Phase 13
+**Requirements**: INT-01, INT-02, PLT-03
+**Gap Closure**: Closes INT-01/PLT-03 partial wiring, INT-02 partial wiring, 2 broken E2E flows, 4 tech debt items from v1.0-M2-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. Exciter.start() wires hooks to Switchboard AFTER module registration — 8 Reverie handlers reachable via Switchboard dispatch in production boot order
+  2. `.claude/settings.json` hook entries exist and route Claude Code lifecycle events to Dynamo's entry point
+  3. Backfill CLI flags (--dry-run/--limit/--batch-size) read from Pulley flags param, not process.argv — works in both direct CLI and programmatic context
+  4. status.cjs domain_count and association_index_size return real values from Ledger queries, not hardcoded 0
+  5. Full E2E user flow verified: install Dynamo -> boot platform -> Reverie loads -> personality injects -> formation fires -> recall returns -> REM runs -> hooks dispatch via Claude Code events
+  6. Architecture compliance audit passes: no component bypasses Armature/Circuit contracts, no hardcoded paths/values that should route through config/Magnet/providers
+**Plans:** 3/3 plans complete
+
+Plans:
+- [x] 14-01-PLAN.md — Idempotent wireToSwitchboard + bootstrap re-wire + settings.json generation + hook entry point (INT-01, PLT-03)
+- [x] 14-02-PLAN.md — CLI flag migration: backfill + reset from process.argv to Pulley flags + status metrics verification (INT-02)
+- [x] 14-03-PLAN.md — Architecture compliance audit + human deployment readiness verification (INT-01, INT-02, PLT-03)
+
+### Phase 15: User Journey Gap Closure
+
+**Goal:** Walk every user-facing surface (skills, CLI, agents) as a first-time user and close gaps where promised actions fail or don't exist -- implement start/stop CLI commands, add first-run welcome experience, rewrite skills from CLI ground truth, audit error messages and formation agent, rewrite README for first-time users
+**Depends on:** Phase 14
+**Requirements**: INT-01, INT-02
+**Success Criteria** (what must be TRUE):
+  1. `reverie start` and `reverie stop` CLI commands exist and compose Mode Manager + Session Manager APIs -- start upgrades to Active mode, stop triggers REM consolidation before shutdown
+  2. First-ever cold start shows a one-time welcome message via additionalContext injection, orienting the user to /reverie and /dynamo skills
+  3. All three skill .md files (/dynamo, /reverie, /dynamo-validate) rewritten from CLI ground truth -- every command referenced in a skill maps to a real Pulley command
+  4. Every user-visible error message includes an actionable recovery suggestion
+  5. Formation agent definition matches what handleSubagentStop and fragment-assembler.cjs actually parse
+  6. README accurately documents prerequisites, install steps, first-run experience, skills, and all CLI commands with correct fragment types
+**Plans:** 4/4 plans complete
+
+Plans:
+- [x] 15-01-PLAN.md — Start/stop CLI command handlers + registration + validation tests (INT-02)
+- [x] 15-02-PLAN.md — Welcome message injection in Context Manager + hook wiring (INT-01)
+- [x] 15-03-PLAN.md — Skill content rewrites + formation agent audit (INT-01, INT-02)
+- [x] 15-04-PLAN.md — Error message audit + README rewrite (INT-02)
+
+### Phase 16: Reverie End-to-End Delivery
+
+**Goal:** Deliver a fully functional Reverie system where every user-facing command produces real, persistent, observable results -- state persists across CLI invocations via Magnet/Ledger, sessions spawn as real terminal windows via Conductor, Wire enables real inter-session communication, zero stubs
+**Depends on:** Phase 15
+**Requirements**: D-01, D-02, D-03, D-04, D-05, D-06, D-07, D-08
+**Success Criteria** (what must be TRUE):
+  1. Magnet state persists to DuckDB via a Ledger-backed provider, replacing the JSON file provider as the primary persistence backend
+  2. Session spawner opens visible Terminal.app windows for Secondary and Tertiary via osascript, not invisible piped background processes
+  3. Mode Manager and Session Manager persist all state to Magnet on every transition, enabling cross-invocation reads
+  4. `reverie status` reads persisted state from Magnet/Ledger and works from a fresh CLI invocation in a new terminal
+  5. `reverie start` performs clean start (kills stale processes, clears state, spawns relay + terminal sessions)
+  6. `reverie stop` kills relay server, initiates REM consolidation, and persists shutdown state
+  7. User sees 3 distinct terminal windows when running `reverie start` (Primary + Secondary + Tertiary)
+**Plans:** 3/4 plans executed
+
+Plans:
+- [x] 16-01-PLAN.md — Ledger-backed Magnet provider + bootstrap wiring (D-01, D-05, D-06)
+- [x] 16-02-PLAN.md — Terminal window spawning abstraction + session spawner modification (D-02)
+- [x] 16-03-PLAN.md — Session/Mode Manager Magnet persistence + CLI handler rewrites (D-03, D-07, D-08)
+- [ ] 16-04-PLAN.md — Relay server lifecycle + end-to-end integration verification (D-04, D-08)
+
+**Research flag**: RESEARCH COMPLETE -- Ledger-backed provider pattern, macOS terminal spawning via osascript, cross-invocation state persistence all designed from existing codebase analysis
+
+### Phase 17: Persistent Runtime & Prompt Infrastructure
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 16
+**Plans:** 1/10 plans executed
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 17 to break down)

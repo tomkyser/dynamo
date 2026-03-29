@@ -111,12 +111,14 @@ async function handleCli() {
   } catch (e) { process.stderr.write('Error: ' + e.message + '\n'); process.exit(1); }
 }
 
-const cmd = process.argv[2];
-if (cmd === 'reverie' && process.argv[3] === 'kill') handleReverieKill();
-else if (cmd === 'start') handleStart();
-else if (cmd === 'stop') handleStop();
-else if (cmd === 'status') handleStatus();
-else if (cmd === 'hook') handleHook();
-else handleCli();
+if (require.main === module) {
+  const cmd = process.argv[2];
+  if (cmd === 'reverie' && process.argv[3] === 'kill') handleReverieKill();
+  else if (cmd === 'start') handleStart();
+  else if (cmd === 'stop') handleStop();
+  else if (cmd === 'status') handleStatus();
+  else if (cmd === 'hook') handleHook();
+  else handleCli();
+}
 
 module.exports = { parseSimpleFlags, readTriadFile };

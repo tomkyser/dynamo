@@ -24,7 +24,7 @@ const EXCITER_SHAPE = {
     'updateSettings', 'readSettings',
     'claimSection', 'updateSection', 'releaseSection',
   ],
-  optional: ['getAgent', 'registerSkill'],
+  optional: ['getAgent', 'registerSkill', 'dispatchHook'],
 };
 
 /**
@@ -342,6 +342,41 @@ function createExciter() {
     return _skillManager.registerSkill(skillName, options || {}, targetDir);
   }
 
+  /**
+   * Dispatches a hook event to all registered handlers.
+   *
+   * Called by the daemon's /hook route handler. Enriches the payload with
+   * environment context (SESSION_IDENTITY, TRIPLET_ID) and invokes each
+   * registered listener sequentially, returning the last non-empty response.
+   *
+   * @param {string} type - Hook type (e.g., 'SessionStart')
+   * @param {Object} payload - Hook payload from Claude Code
+   * @param {Object} env - Environment context (SESSION_IDENTITY, TRIPLET_ID)
+   * @returns {Promise<Object>} Last non-empty handler response, or {}
+   */
+  async function dispatchHook(type, payload, env) {
+    if (!_hookRegistry) return {};
+
+    const listeners = _hookRegistry.getListeners(type);
+    if (!listeners || listeners.length === 0) return {};
+
+    const enrichedPayload = { ...payload, env };
+    let lastResponse = {};
+
+    for (const listener of listeners) {
+      try {
+        const result = await listener.handler(enrichedPayload);
+        if (result && typeof result === 'object' && Object.keys(result).length > 0) {
+          lastResponse = result;
+        }
+      } catch (handlerErr) {
+        throw new Error('Hook handler error (' + type + ', ' + listener.service + '): ' + handlerErr.message);
+      }
+    }
+
+    return lastResponse;
+  }
+
   const impl = {
     init, start, stop, healthCheck,
     registerHooks, getRegisteredHooks,
@@ -350,6 +385,7 @@ function createExciter() {
     claimSection, updateSection, releaseSection,
     getAgent, // optional
     registerSkill, // optional
+    dispatchHook, // optional
   };
 
   return createContract('exciter', EXCITER_SHAPE, impl);

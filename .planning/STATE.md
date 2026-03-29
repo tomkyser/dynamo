@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
 status: Ready to execute
-last_updated: "2026-03-29T04:18:38.356Z"
+last_updated: "2026-03-29T04:28:13.688Z"
 last_activity: 2026-03-29
 progress:
   total_phases: 13
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 1
+  completed_phases: 11
+  total_plans: 65
+  completed_plans: 59
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-23)
 ## Current Position
 
 Phase: 17 (persistent-runtime-prompt-infrastructure) — EXECUTING
-Plan: 3 of 10
+Plan: 4 of 10
 
 ## Performance Metrics
 
@@ -108,6 +108,7 @@ Plan: 3 of 10
 | Phase 16 P03 | 4min | 4 tasks | 8 files |
 | Phase 17 P03 | 3min | 2 tasks | 4 files |
 | Phase 17 P02 | 4min | 2 tasks | 4 files |
+| Phase 17 P05 | 3min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -238,6 +239,8 @@ Recent decisions affecting current work:
 - [Phase 17]: inspect() returns unfrozen plain object for BOM debug output, decoupled from Forme immutability
 - [Phase 17]: Budget overage logged to stderr, not thrown -- budget is advisory per PRD
 - [Phase 17]: cast() computes resolved_slots from Matrix slot keys present in context
+- [Phase 17]: require.main guard on main dispatch for testability without mock.module
+- [Phase 17]: dispatchHook uses listener.service matching hook registry schema from hooks.cjs
 
 ### Roadmap Evolution
 

@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "M2: Reverie Module"
 status: Ready to execute
-last_updated: "2026-03-29T04:16:29.508Z"
+last_updated: "2026-03-29T04:20:36.160Z"
 last_activity: 2026-03-29
 progress:
   total_phases: 13
   completed_phases: 11
   total_plans: 65
-  completed_plans: 55
+  completed_plans: 56
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-23)
 ## Current Position
 
 Phase: 17 (persistent-runtime-prompt-infrastructure) — EXECUTING
-Plan: 2 of 10
+Plan: 3 of 10
 
 ## Performance Metrics
 
@@ -107,6 +107,7 @@ Plan: 2 of 10
 | Phase 16 P02 | 6min | 2 tasks | 6 files |
 | Phase 16 P03 | 4min | 4 tasks | 8 files |
 | Phase 17 P03 | 3min | 2 tasks | 4 files |
+| Phase 17 P04 | 5min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -234,6 +235,8 @@ Recent decisions affecting current work:
 - [Phase 17]: Atomic PID file write pattern (tmp + rename) to prevent partial reads by thin client
 - [Phase 17]: 10MB log cap with tail-keep (last 5MB) rather than external log rotation
 - [Phase 17]: EPERM from process.kill(pid, 0) treated as alive (different owner) to avoid false stale detection
+- [Phase 17]: Inline _validateEnvelope in daemon-server.cjs avoids deep lib/ dependency chain in daemon context
+- [Phase 17]: Port resolution uses undefined/null checks (not falsy) to allow port 0 auto-assign for test isolation
 
 ### Roadmap Evolution
 

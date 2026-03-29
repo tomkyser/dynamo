@@ -1,24 +1,40 @@
 ---
 name: reverie
-description: "Reverie session management hub. Shows current mode, session topology, offers start/stop/inspect actions. Use when interacting with Reverie memory system."
+description: "Reverie memory module. Enable/disable the three-session architecture, check session state, inspect memory fragments and Self Model. Use when interacting with Reverie memory system."
 ---
 
-# Reverie Session Management
+# Reverie Memory Module
 
-Show the user Reverie's current state and offer session management actions.
+Manage Reverie's three-session memory architecture and inspect memory state.
 
-## Status
+## Prerequisites
 
-Run `bun bin/dynamo.cjs reverie status` to see:
-- Current operational mode (Active/Passive/REM/Dormant)
-- Session topology (Primary/Secondary/Tertiary)
-- Triplet ID if active (e.g., "Triplet a1b2")
-- Self Model personality summary, fragment count, recall stats
+Dynamo daemon must be running before Reverie can be enabled. If not running, tell the user to start it first: `bun bin/dynamo.cjs start`
+
+## Module Lifecycle
+
+1. **Enable Reverie**: `bun bin/dynamo.cjs reverie enable`
+   - Enables the Reverie module and spawns the three-session triad (Face + Secondary + Tertiary)
+   - Requires daemon to be running first
+
+2. **Disable Reverie**: `bun bin/dynamo.cjs reverie disable`
+   - Disables Reverie, initiates REM consolidation, terminates Secondary and Tertiary sessions
+
+3. **Check Status**: `bun bin/dynamo.cjs reverie status`
+   - Shows Reverie mode, triad ID, session states, turn count
+
+4. **Nuclear Option**: `bun bin/dynamo.cjs reverie kill`
+   - Kills all Reverie sessions directly (no daemon required)
+   - Use when daemon is unresponsive
+
+## Flow
+
+`/dynamo` (starts daemon) then `/reverie enable` (activates Reverie with 3 terminal windows)
 
 ## Session Control
 
-- Start Active mode: `bun bin/dynamo.cjs reverie start`
 - Graceful shutdown with REM: `bun bin/dynamo.cjs reverie stop`
+- Start Active mode: `bun bin/dynamo.cjs reverie start`
 
 ## Inspect
 
@@ -48,15 +64,15 @@ All reset commands require `--confirm` flag.
 
 Import historical conversation data:
 `bun bin/dynamo.cjs reverie backfill <file>`
-- `--dry-run` — preview without writing
-- `--limit N` — cap conversations processed
-- `--batch-size N` — control batch size
+- `--dry-run` -- preview without writing
+- `--limit N` -- cap conversations processed
+- `--batch-size N` -- control batch size
 
 ## Interaction
 
 Offer contextual actions based on current state:
-- If Dormant: suggest starting a session
-- If Active: offer inspect, status, or stop
+- If Dormant or not enabled: suggest enabling with `/reverie enable`
+- If Active: offer inspect, status, or disable
 - If Passive: offer upgrading to Active mode
 
 Present results conversationally. This is the friendly human interface -- show personality, not just data.

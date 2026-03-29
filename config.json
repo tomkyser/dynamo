@@ -5,5 +5,8 @@
     "level": "info"
   },
   "auto_init": true,
-  "max_triplets": 3
+  "max_triplets": 3,
+  "daemon": {
+    "port": 9876
+  }
 }

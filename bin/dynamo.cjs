@@ -1,221 +1,122 @@
 #!/usr/bin/env bun
 'use strict';
 
-const { bootstrap } = require('../core/core.cjs');
-const { main } = require('../core/sdk/pulley/cli.cjs');
+const path = require('node:path');
+const fs = require('node:fs');
+const { discoverRoot } = require('../lib/paths.cjs');
+const { readDaemonFile, isDaemonRunning, spawnDaemon, waitForHealth } = require('../core/daemon-lifecycle.cjs');
 
-/**
- * Hook dispatch entry point.
- *
- * Invoked by Claude Code via settings.json hook entries. Reads the hook
- * payload from stdin (JSON), bootstraps Dynamo, resolves module hook
- * handlers via Exciter, awaits them, and writes their response to stdout.
- *
- * Also emits via Commutator for observability (Switchboard events).
- *
- * Usage: bun run bin/dynamo.cjs hook <HookType>
- * Stdin: JSON payload from Claude Code (includes hook_event_name, etc.)
- * Stdout: JSON response (hookSpecificOutput with additionalContext, decision, etc.)
- */
-async function handleHook() {
-  // Dev bypass: skip all hook processing during active Dynamo/Reverie development.
-  // Set DYNAMO_DEV_BYPASS=1 in your shell to prevent hooks from interfering.
-  if (process.env.DYNAMO_DEV_BYPASS === '1') {
-    process.stdout.write('{}');
-    process.exit(0);
+function parseSimpleFlags(argv) {
+  const flags = {};
+  for (const a of argv) {
+    if (a === '--json') flags.json = true;
+    else if (a === '--raw') flags.raw = true;
+    else if (a === '--help') flags.help = true;
+    else if (a === '--confirm') flags.confirm = true;
+    else if (a === '--dry-run') flags.dryRun = true;
   }
+  return flags;
+}
 
-  const hookType = process.argv[3] || 'unknown';
+function readTriadFile(projectRoot) {
+  try { return JSON.parse(fs.readFileSync(path.join(projectRoot, '.dynamo', 'active-triad.json'), 'utf-8')); }
+  catch (_e) { return null; }
+}
 
-  // Read payload from stdin
+async function readStdin() {
   let input = '';
   const reader = Bun.stdin.stream().getReader();
+  try { while (true) { const { done, value } = await reader.read(); if (done) break; input += new TextDecoder().decode(value); } }
+  catch (_e) { /* stdin may be empty */ }
+  return input;
+}
+
+function getRoot() {
+  const r = discoverRoot(process.cwd());
+  if (!r.ok) { process.stderr.write('Error: ' + r.error.message + '\n'); process.exit(1); }
+  return r.value;
+}
+
+async function handleStart() {
+  const root = getRoot();
+  const s = isDaemonRunning(root);
+  if (s.running) { process.stdout.write('Dynamo already running (PID ' + s.pid + ', port ' + s.port + ')\n'); process.exit(0); }
+  const { logPath } = spawnDaemon(root, {});
+  const h = await waitForHealth(9876, 5000);
+  if (h.ok) { const d = readDaemonFile(root); process.stdout.write('Dynamo running (PID ' + (d ? d.pid : '?') + ', port ' + (d ? d.port : 9876) + ')\n'); process.exit(0); }
+  process.stderr.write('Daemon failed to start. Check ' + logPath + '\n'); process.exit(1);
+}
+
+async function handleStop() {
+  const root = getRoot(); const s = isDaemonRunning(root);
+  if (!s.running) { process.stdout.write('Dynamo is not running.\n'); process.exit(0); }
+  try { await fetch('http://localhost:' + s.port + '/shutdown', { method: 'POST' }); } catch (_e) { /* gone */ }
+  const dl = Date.now() + 5000;
+  while (Date.now() < dl) { if (!isDaemonRunning(root).running) break; await new Promise(r => setTimeout(r, 200)); }
+  process.stdout.write('Dynamo stopped.\n'); process.exit(0);
+}
+
+async function handleStatus() {
+  const root = getRoot(); const s = isDaemonRunning(root);
+  if (!s.running) { process.stdout.write('Dynamo is not running.\n'); process.exit(0); }
   try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      input += new TextDecoder().decode(value);
-    }
-  } catch (_e) {
-    // stdin may be empty for some hook types
-  }
-
-  let payload;
-  try {
-    payload = input ? JSON.parse(input) : {};
-  } catch (_e) {
-    process.stderr.write('Error: Invalid JSON on stdin\n');
-    process.exit(1);
-  }
-
-  // Bootstrap platform
-  const bootstrapResult = await bootstrap();
-  if (!bootstrapResult.ok) {
-    process.stderr.write('Error: ' + bootstrapResult.error.message + '\n');
-    process.exit(1);
-  }
-
-  const { container, lifecycle } = bootstrapResult.value;
-
-  // Emit via Commutator for observability (fire-and-forget Switchboard events)
-  const commutatorFacade = container.resolve('services.commutator');
-  if (commutatorFacade.ok) {
-    commutatorFacade.value.ingest({
-      type: hookType,
-      ...payload,
-    });
-  }
-
-  // Resolve Exciter to access registered hook handlers directly.
-  // This bypasses the Switchboard fire-and-forget path so we can:
-  //   1. Await async handlers (Wire sends, context init, etc.)
-  //   2. Capture their return value (hookSpecificOutput for Claude Code)
-  const exciterFacade = lifecycle.getFacade('services.exciter');
-  let response = {};
-
-  if (exciterFacade && typeof exciterFacade.getRegisteredHooks === 'function') {
-    const hooksResult = exciterFacade.getRegisteredHooks();
-    if (hooksResult.ok) {
-      const listeners = hooksResult.value[hookType];
-      if (listeners && listeners.length > 0) {
-        // Invoke all registered handlers for this hook type, awaiting each.
-        // Use the LAST non-empty response (modules override platform defaults).
-        for (const listener of listeners) {
-          try {
-            const handlerResult = await listener.handler(payload);
-            if (handlerResult && typeof handlerResult === 'object' && Object.keys(handlerResult).length > 0) {
-              response = handlerResult;
-            }
-          } catch (handlerErr) {
-            // Individual handler failure is non-fatal -- log and continue to next
-            process.stderr.write('Hook handler error (' + hookType + '): ' + (handlerErr.message || handlerErr) + '\n');
-            if (handlerErr.stack) process.stderr.write(handlerErr.stack + '\n');
-          }
-        }
-      }
-    }
-  }
-
-  // Write response to stdout for Claude Code
-  if (response && typeof response === 'object' && Object.keys(response).length > 0) {
-    process.stdout.write(JSON.stringify(response));
-  } else {
-    process.stdout.write('{}');
-  }
-
+    const d = await (await fetch('http://localhost:' + s.port + '/health')).json();
+    process.stdout.write('Status: ' + d.status + '\nPID: ' + d.pid + '\nPort: ' + d.port + '\nUptime: ' + d.uptime_seconds + 's\n');
+    if (d.modules && d.modules.length > 0) process.stdout.write('Modules: ' + d.modules.map(m => m.name + '(' + m.state + ')').join(', ') + '\n');
+  } catch (e) { process.stderr.write('Error fetching health: ' + e.message + '\n'); process.exit(1); }
   process.exit(0);
 }
 
-/**
- * Dynamo CLI entry point.
- *
- * Bootstraps the platform, extracts the Pulley CLI framework from the
- * container, and delegates argument routing to cli.cjs main().
- *
- * Calls process.exit() after completion because persistent handles
- * (DuckDB connections, EventEmitter listeners) keep the event loop alive.
- */
-/**
- * Force-kill all Reverie session processes without bootstrap.
- *
- * Pre-bootstrap handler for `dynamo reverie kill` — works even when
- * DuckDB is locked, bootstrap is broken, or Reverie fails to load.
- * Scans process table, kills matching processes, and exits.
- */
+async function handleHook() {
+  if (process.env.DYNAMO_DEV_BYPASS === '1') { process.stdout.write('{}'); process.exit(0); } // State 7
+  const hookType = process.argv[3] || 'unknown';
+  const input = await readStdin();
+  let payload;
+  try { payload = input ? JSON.parse(input) : {}; } catch (_e) { process.stderr.write('Error: Invalid JSON on stdin\n'); process.exit(1); }
+  const rootResult = discoverRoot(process.cwd());
+  if (!rootResult.ok) { process.stdout.write('{}'); process.exit(0); }
+  const root = rootResult.value; const s = isDaemonRunning(root);
+  if (!s.running && s.reason === 'no_pid_file') { process.stdout.write('{}'); process.exit(0); } // State 1
+  if (!s.running && s.reason === 'stale_pid') { process.stderr.write('Warning: Dynamo daemon had stale PID ' + s.pid + ' (cleaned up)\n'); process.exit(1); } // State 2
+  const triad = readTriadFile(root);
+  const env = { SESSION_IDENTITY: process.env.SESSION_IDENTITY || (triad && triad.faceSessionIdentity), TRIPLET_ID: process.env.TRIPLET_ID || (triad && triad.triadId) };
+  try {
+    const resp = await fetch('http://localhost:' + s.port + '/hook', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: hookType, payload, env }) });
+    if (!resp.ok) { process.stderr.write('Dynamo hook error (' + hookType + '): ' + (await resp.text()) + '\n'); process.exit(1); } // State 6
+    process.stdout.write(await resp.text()); process.exit(0); // State 5
+  } catch (e) { process.stderr.write('Dynamo hook error (' + hookType + '): ' + e.message + '\n'); process.exit(1); }
+}
+
 function handleReverieKill() {
   const { execSync } = require('node:child_process');
   const killed = [];
-
-  const patterns = [
-    'relay-server\\.cjs',
-    'channel-server\\.cjs',
-    'dangerously-load-development-channels.*dynamo-wire',
-  ];
-
-  for (const pattern of patterns) {
+  for (const pat of ['relay-server\\.cjs', 'channel-server\\.cjs', 'dangerously-load-development-channels.*dynamo-wire']) {
     try {
-      const output = execSync(
-        'ps aux | grep -E ' + JSON.stringify(pattern) + ' | grep -v grep',
-        { encoding: 'utf8', timeout: 5000 }
-      ).trim();
-
-      if (!output) continue;
-      for (const line of output.split('\n')) {
-        const parts = line.trim().split(/\s+/);
-        const pid = parseInt(parts[1], 10);
-        if (pid && pid !== process.pid) {
-          try {
-            process.kill(pid, 'SIGTERM');
-            killed.push({ pid, desc: parts.slice(10).join(' ').slice(0, 80) });
-          } catch (_e) { /* already dead */ }
-        }
-      }
-    } catch (_e) { /* grep returns 1 on no match */ }
+      const out = execSync('ps aux | grep -E ' + JSON.stringify(pat) + ' | grep -v grep', { encoding: 'utf8', timeout: 5000 }).trim();
+      if (!out) continue;
+      for (const line of out.split('\n')) { const p = line.trim().split(/\s+/); const pid = parseInt(p[1], 10); if (pid && pid !== process.pid) { try { process.kill(pid, 'SIGTERM'); killed.push({ pid, desc: p.slice(10).join(' ').slice(0, 80) }); } catch (_e) { /* dead */ } } }
+    } catch (_e) { /* no match */ }
   }
-
-  // Kill any stale bun processes holding DB locks (e.g., orphaned test runs)
-  try {
-    const output = execSync(
-      'lsof ' + JSON.stringify(require('node:path').join(process.cwd(), 'data', 'ledger.db')) + ' 2>/dev/null',
-      { encoding: 'utf8', timeout: 5000 }
-    ).trim();
-    if (output) {
-      for (const line of output.split('\n').slice(1)) {
-        const parts = line.trim().split(/\s+/);
-        const cmd = parts[0];
-        const pid = parseInt(parts[1], 10);
-        // Only kill bun/node processes, not system daemons like fileprovi
-        if (pid && pid !== process.pid && (cmd === 'bun' || cmd === 'node')) {
-          try { process.kill(pid, 'SIGTERM'); killed.push({ pid, desc: cmd + ' (holding ledger.db lock)' }); } catch (_e) { /* dead */ }
-        }
-      }
-    }
-  } catch (_e) { /* no lsof output = no locks */ }
-
-  // Clean up WAL/journal files that can cause lock issues
-  const fs = require('node:fs');
-  const path = require('node:path');
-  const dataDir = path.join(process.cwd(), 'data');
-  for (const suffix of ['.wal', '-journal', '-shm']) {
-    try { fs.unlinkSync(path.join(dataDir, 'ledger.db' + suffix)); } catch (_e) { /* not present */ }
-  }
-
-  if (killed.length === 0) {
-    process.stdout.write('No Reverie processes found\n');
-  } else {
-    process.stdout.write('Killed ' + killed.length + ' process(es):\n');
-    for (const p of killed) {
-      process.stdout.write('  PID ' + p.pid + ' — ' + p.desc + '\n');
-    }
-  }
+  if (killed.length === 0) process.stdout.write('No Reverie processes found\n');
+  else { process.stdout.write('Killed ' + killed.length + ' process(es):\n'); for (const p of killed) process.stdout.write('  PID ' + p.pid + ' -- ' + p.desc + '\n'); }
   process.exit(0);
 }
 
-async function run() {
-  // Pre-bootstrap handlers (must work without DuckDB, bootstrap, etc.)
-  if (process.argv[2] === 'reverie' && process.argv[3] === 'kill') {
-    handleReverieKill();
-    return;
-  }
-
-  // Hook dispatch mode: invoked by Claude Code via settings.json
-  if (process.argv[2] === 'hook') {
-    await handleHook();
-    return;
-  }
-
-  // Normal CLI path (unchanged)
-  const bootstrapResult = await bootstrap();
-
-  if (!bootstrapResult.ok) {
-    process.stderr.write(`Error: ${bootstrapResult.error.message}\n`);
-    process.exit(1);
-  }
-
-  const { pulley } = bootstrapResult.value;
-
-  await main(process.argv.slice(2), pulley);
-  process.exit(process.exitCode || 0);
+async function handleCli() {
+  const root = getRoot(); const s = isDaemonRunning(root);
+  if (!s.running) { process.stderr.write('Dynamo is not running. Start with: bun bin/dynamo.cjs start\n'); process.exit(1); }
+  try {
+    const r = await (await fetch('http://localhost:' + s.port + '/cli', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ command: process.argv[2], args: process.argv.slice(3), flags: parseSimpleFlags(process.argv) }) })).json();
+    process.stdout.write(r.output || ''); process.exit(r.exitCode || 0);
+  } catch (e) { process.stderr.write('Error: ' + e.message + '\n'); process.exit(1); }
 }
 
-run();
+const cmd = process.argv[2];
+if (cmd === 'reverie' && process.argv[3] === 'kill') handleReverieKill();
+else if (cmd === 'start') handleStart();
+else if (cmd === 'stop') handleStop();
+else if (cmd === 'status') handleStatus();
+else if (cmd === 'hook') handleHook();
+else handleCli();
+
+module.exports = { parseSimpleFlags, readTriadFile };

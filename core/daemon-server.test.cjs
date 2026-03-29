@@ -609,6 +609,124 @@ describe('daemon-server', () => {
     });
   });
 
+  describe('POST /module/enable with Circuit', () => {
+    it('delegates to circuit.enableModule when circuit is available', async () => {
+      let enabledModule = null;
+      const mockCircuit = {
+        enableModule: async (name) => {
+          enabledModule = name;
+          return { status: 'enabled', module: name, instance: { name } };
+        },
+      };
+
+      const state = createMockState({ circuit: mockCircuit });
+      server = createDaemonServer(state);
+      baseUrl = `http://localhost:${server.port}`;
+
+      const res = await fetch(`${baseUrl}/module/enable`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ module: 'reverie' }),
+      });
+
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.status).toBe('enabled');
+      expect(body.module).toBe('reverie');
+      expect(enabledModule).toBe('reverie');
+
+      // Verify module is tracked internally
+      const { modules } = _getInternalState();
+      expect(modules.get('reverie').state).toBe('enabled');
+      expect(modules.get('reverie').instance).not.toBeNull();
+    });
+
+    it('returns 500 when circuit.enableModule throws', async () => {
+      const mockCircuit = {
+        enableModule: async () => {
+          throw new Error('Module not found');
+        },
+      };
+
+      const state = createMockState({ circuit: mockCircuit });
+      server = createDaemonServer(state);
+      baseUrl = `http://localhost:${server.port}`;
+
+      const res = await fetch(`${baseUrl}/module/enable`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ module: 'nonexistent' }),
+      });
+
+      expect(res.status).toBe(500);
+      const body = await res.json();
+      expect(body.error).toBe('Module not found');
+    });
+  });
+
+  describe('POST /module/disable with Circuit', () => {
+    it('delegates to circuit.disableModule when circuit is available', async () => {
+      let disabledModule = null;
+      const mockCircuit = {
+        enableModule: async (name) => ({ status: 'enabled', module: name, instance: {} }),
+        disableModule: async (name) => {
+          disabledModule = name;
+          return { status: 'disabled', module: name };
+        },
+      };
+
+      const state = createMockState({ circuit: mockCircuit });
+      server = createDaemonServer(state);
+      baseUrl = `http://localhost:${server.port}`;
+
+      // Enable first
+      await fetch(`${baseUrl}/module/enable`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ module: 'reverie' }),
+      });
+
+      // Disable
+      const res = await fetch(`${baseUrl}/module/disable`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ module: 'reverie' }),
+      });
+
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.status).toBe('disabled');
+      expect(body.module).toBe('reverie');
+      expect(disabledModule).toBe('reverie');
+
+      // Verify module state
+      const { modules } = _getInternalState();
+      expect(modules.get('reverie').state).toBe('disabled');
+      expect(modules.get('reverie').instance).toBeNull();
+    });
+  });
+
+  describe('GET /health enriched module info', () => {
+    it('includes module_count and has_instance fields', async () => {
+      const state = createMockState();
+      server = createDaemonServer(state);
+      baseUrl = `http://localhost:${server.port}`;
+
+      // Enable a module
+      await fetch(`${baseUrl}/module/enable`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ module: 'test-mod' }),
+      });
+
+      const res = await fetch(`${baseUrl}/health`);
+      const body = await res.json();
+
+      expect(body.module_count).toBe(1);
+      expect(body.modules[0].has_instance).toBe(false);
+    });
+  });
+
   describe('404 on unknown routes', () => {
     it('returns 404 for unmatched route', async () => {
       const state = createMockState();

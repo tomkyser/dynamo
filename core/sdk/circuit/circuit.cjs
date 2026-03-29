@@ -3,6 +3,8 @@
 const { ok, err, isOk, isErr, createContract, validate } = require('../../../lib/index.cjs');
 const { createEventProxy } = require('./event-proxy.cjs');
 const { validateModuleManifest } = require('./module-manifest.cjs');
+const { createTemplateRegistry } = require('./template-registry.cjs');
+const { loadModule } = require('../../armature/module-discovery.cjs');
 
 /**
  * Contract shape for the Circuit module API.
@@ -10,7 +12,7 @@ const { validateModuleManifest } = require('./module-manifest.cjs');
  */
 const CIRCUIT_SHAPE = {
   required: ['registerModule', 'shutdownModule', 'getService', 'getProvider', 'getModuleInfo', 'listModules'],
-  optional: ['registerCommand', 'registerMcpTool'],
+  optional: ['registerCommand', 'registerMcpTool', 'registerTemplates', 'getTemplate', 'castTemplate', 'listTemplates', 'enableModule', 'disableModule'],
 };
 
 /**
@@ -38,6 +40,13 @@ function createCircuit(options = {}) {
    * @type {Map<string, {manifest: Object, eventProxy: Object}>}
    */
   const _modules = new Map();
+
+  /**
+   * Template registry instance for this Circuit.
+   * Provides namespaced template registration, retrieval, and casting.
+   * @type {Object}
+   */
+  const _templateRegistry = createTemplateRegistry();
 
   /**
    * Returns a facade for a service, scoped to the module's declared dependencies.
@@ -293,6 +302,84 @@ function createCircuit(options = {}) {
     return pulley.registerMcpTool(name, handler, schema);
   }
 
+  /**
+   * Enables a discovered module by loading it, registering templates, and
+   * returning it as ready for use.
+   *
+   * @param {string} moduleName - Name of the module to enable
+   * @returns {Promise<{status: string, module: string, instance: Object|null}>}
+   * @throws {Error} If the module is not found or cannot be loaded
+   */
+  async function enableModule(moduleName) {
+    // Resolve module directory from container's discovered modules
+    const armature = container.has('armature') ? container.resolve('armature') : null;
+    const moduleManifest = armature?.getModuleManifest?.(moduleName);
+
+    // Try module-discovery loadModule as fallback
+    let moduleDir = null;
+    let manifest = null;
+    let entryPath = null;
+
+    if (moduleManifest) {
+      manifest = moduleManifest;
+      moduleDir = manifest._moduleRoot;
+      entryPath = manifest._entryPath;
+    } else {
+      // Search in modules/ directory
+      const path = require('node:path');
+      const projectRoot = container.has('projectRoot') ? container.resolve('projectRoot') : process.cwd();
+      const candidateDir = path.join(projectRoot, 'modules', moduleName);
+      const loadResult = loadModule(candidateDir);
+      if (!loadResult.ok) {
+        throw new Error(`Module "${moduleName}" not found: ${loadResult.error.message}`);
+      }
+      manifest = loadResult.value.manifest;
+      moduleDir = candidateDir;
+      entryPath = loadResult.value.entryPath;
+    }
+
+    // Register templates if manifest has templates section
+    if (manifest.templates && moduleDir) {
+      await _templateRegistry.registerTemplates(manifest, moduleDir);
+    }
+
+    // Load module entry point if available
+    let instance = null;
+    if (entryPath) {
+      try {
+        const moduleEntry = require(entryPath);
+        if (typeof moduleEntry.register === 'function') {
+          instance = moduleEntry;
+        }
+      } catch (_e) {
+        // Entry point load failure is non-fatal for enable
+      }
+    }
+
+    return { status: 'enabled', module: moduleName, instance };
+  }
+
+  /**
+   * Disables a module by cleaning up its templates and resources.
+   *
+   * For v1 single-module, clear all templates. Future multi-module
+   * support would clear only the module's namespace.
+   *
+   * @param {string} moduleName - Name of the module to disable
+   * @returns {Promise<{status: string, module: string}>}
+   */
+  async function disableModule(moduleName) {
+    // Clear templates (v1 single-module: clear all)
+    _templateRegistry.clear();
+
+    // Shutdown module from Circuit registry if registered
+    if (_modules.has(moduleName)) {
+      shutdownModule(moduleName);
+    }
+
+    return { status: 'disabled', module: moduleName };
+  }
+
   return createContract('circuit', CIRCUIT_SHAPE, {
     registerModule,
     shutdownModule,
@@ -302,6 +389,12 @@ function createCircuit(options = {}) {
     listModules,
     registerCommand,
     registerMcpTool,
+    registerTemplates: (manifest, moduleRoot) => _templateRegistry.registerTemplates(manifest, moduleRoot),
+    getTemplate: (name) => _templateRegistry.getTemplate(name),
+    castTemplate: (name, context, options) => _templateRegistry.castTemplate(name, context, options),
+    listTemplates: (namespace) => _templateRegistry.listTemplates(namespace),
+    enableModule,
+    disableModule,
   });
 }
 

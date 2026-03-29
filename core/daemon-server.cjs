@@ -204,7 +204,9 @@ function _handleHealth(state) {
     modules: Array.from(_modules.entries()).map(([name, m]) => ({
       name,
       state: m.state,
+      has_instance: m.instance !== null,
     })),
+    module_count: _modules.size,
   });
 }
 
@@ -224,49 +226,92 @@ function _handleShutdown(state) {
 }
 
 /**
- * POST /module/enable -> Enable a module.
+ * POST /module/enable -> Enable a module via Circuit lifecycle.
  *
+ * Delegates to circuit.enableModule() when Circuit is available in daemon state.
+ * Falls back to simple state tracking when Circuit is not yet bootstrapped.
+ *
+ * @param {Object} state - Daemon state
  * @param {Request} req
  * @returns {Promise<Response>}
  */
-async function _handleModuleEnable(req) {
+async function _handleModuleEnable(state, req) {
   const body = await _parseJsonBody(req);
   if (!body || !body.module) {
     return _jsonResponse({ error: 'Missing module name' }, 400);
   }
 
   const moduleName = body.module;
-  const existing = _modules.get(moduleName);
-  if (existing) {
-    existing.state = 'enabled';
-  } else {
-    _modules.set(moduleName, { state: 'enabled', instance: null });
-  }
 
-  return _jsonResponse({ status: 'enabled', module: moduleName });
+  try {
+    // Delegate to Circuit if available
+    const circuit = state.circuit;
+    if (circuit && typeof circuit.enableModule === 'function') {
+      const result = await circuit.enableModule(moduleName);
+      _modules.set(moduleName, { state: 'enabled', instance: result.instance || null });
+      return _jsonResponse({ status: 'enabled', module: moduleName });
+    }
+
+    // Fallback: simple state tracking when Circuit not bootstrapped
+    const existing = _modules.get(moduleName);
+    if (existing) {
+      existing.state = 'enabled';
+    } else {
+      _modules.set(moduleName, { state: 'enabled', instance: null });
+    }
+
+    return _jsonResponse({ status: 'enabled', module: moduleName });
+  } catch (e) {
+    return _jsonResponse({ error: e.message }, 500);
+  }
 }
 
 /**
- * POST /module/disable -> Disable a module.
+ * POST /module/disable -> Disable a module via Circuit lifecycle.
  *
+ * Delegates to circuit.disableModule() when Circuit is available in daemon state.
+ * Falls back to simple state tracking when Circuit is not yet bootstrapped.
+ *
+ * @param {Object} state - Daemon state
  * @param {Request} req
  * @returns {Promise<Response>}
  */
-async function _handleModuleDisable(req) {
+async function _handleModuleDisable(state, req) {
   const body = await _parseJsonBody(req);
   if (!body || !body.module) {
     return _jsonResponse({ error: 'Missing module name' }, 400);
   }
 
   const moduleName = body.module;
-  const existing = _modules.get(moduleName);
-  if (existing) {
-    existing.state = 'disabled';
-  } else {
-    _modules.set(moduleName, { state: 'disabled', instance: null });
-  }
 
-  return _jsonResponse({ status: 'disabled', module: moduleName });
+  try {
+    // Delegate to Circuit if available
+    const circuit = state.circuit;
+    if (circuit && typeof circuit.disableModule === 'function') {
+      await circuit.disableModule(moduleName);
+      const existing = _modules.get(moduleName);
+      if (existing) {
+        existing.state = 'disabled';
+        existing.instance = null;
+      } else {
+        _modules.set(moduleName, { state: 'disabled', instance: null });
+      }
+
+      return _jsonResponse({ status: 'disabled', module: moduleName });
+    }
+
+    // Fallback: simple state tracking
+    const existing = _modules.get(moduleName);
+    if (existing) {
+      existing.state = 'disabled';
+    } else {
+      _modules.set(moduleName, { state: 'disabled', instance: null });
+    }
+
+    return _jsonResponse({ status: 'disabled', module: moduleName });
+  } catch (e) {
+    return _jsonResponse({ error: e.message }, 500);
+  }
 }
 
 /**
@@ -483,12 +528,12 @@ function createDaemonServer(state) {
 
       // -- Module enable --
       if (pathname === '/module/enable' && method === 'POST') {
-        return _handleModuleEnable(req);
+        return _handleModuleEnable(state, req);
       }
 
       // -- Module disable --
       if (pathname === '/module/disable' && method === 'POST') {
-        return _handleModuleDisable(req);
+        return _handleModuleDisable(state, req);
       }
 
       // -- Wire relay routes --
